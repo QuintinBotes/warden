@@ -144,7 +144,7 @@ Each: owns / depends / contract / acceptance. All depend only on `@warden/core` 
 
 ### WS2-18 · Sentinel design system — `@warden/design-system`
 - **Owns:** `packages/design-system/**` (`tokens/`, `themes/`, `components/`, `logo/`).
-- **Contract:** exports the **Sentinel** design tokens (the values from the design artifact: status-semantic color roles `PASS/FAIL/FLAKY/BLOCKED/SKIPPED/QUARANTINED`, base/ink/accent, type scale, spacing, radii), theme definitions (Sentinel dark default + light + high-contrast), the **Warden portcullis logo** as SVG components, and headless-styled primitives the dashboard consumes (VerdictCard, StatusPill, CoverageMatrix, TestResultRow, TrendTile, ThemeToggle).
+- **Contract:** exports the **Sentinel** design tokens (the values from the design artifact: status-semantic color roles `PASS/FAIL/FLAKY/BLOCKED/SKIPPED/QUARANTINED`, base/ink/accent, type scale, spacing, radii), the type pairing **self-hosted Fira Code (mono display/data) + Fira Sans (body)** (validated by the ui-ux-pro-max engine for data-dense operations UIs; `font-display: swap`, no CDN), theme definitions (Sentinel **Watch** dark default + **Day** light + **Signal** high-contrast), the **Warden portcullis logo** as SVG components, and headless-styled primitives the dashboard consumes (VerdictCard, StatusPill, CoverageMatrix, TestResultRow, TrendTile, ThemeToggle).
 - **Acceptance:** tokens exported as CSS variables + a TS token object; themes swap via `data-theme`; every status role passes WCAG AA on its surface in all themes; logo renders at 16/24/32/full lockup; components are visually verified against the design artifact.
 - **Test:** `pnpm --filter @warden/design-system test` (token + a11y-contrast tests) + Storybook/visual snapshot.
 

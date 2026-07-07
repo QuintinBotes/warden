@@ -1,0 +1,736 @@
+<title>Warden — Sentinel Design System</title>
+<style>
+  /* ============================================================= *
+   * SENTINEL — Warden design system
+   * Dark-first command center. Status semantics are the palette.
+   * Three themes driven by [data-sentinel] on :root.
+   * ============================================================= */
+
+  :root {
+    /* WATCH — dark, default */
+    --g0:#0B1417; --g1:#0F1E23; --g2:#16292F; --g3:#1D343A;
+    --hair:#24393F; --hair-soft:#1A2B31;
+    --ink0:#F0EADD; --ink1:#A6B2B1; --ink2:#6E7D7F;
+    --accent:#E9B44C; --accent-bright:#F4CB78; --accent-dim:#B98A34;
+    --pass:#43B98A; --fail:#E5484D; --flaky:#E08A2C;
+    --blocked:#8B7BD8; --skip:#6B7C82; --quar:#C2624B;
+    --pass-t:rgba(67,185,138,.14); --fail-t:rgba(229,72,77,.15);
+    --flaky-t:rgba(224,138,44,.15); --blocked-t:rgba(139,123,216,.16);
+    --skip-t:rgba(107,124,130,.16); --quar-t:rgba(194,98,75,.16);
+    --shadow:0 1px 0 rgba(255,255,255,.02) inset, 0 18px 40px -24px rgba(0,0,0,.8);
+    --beacon:0 0 0 rgba(233,180,76,.0);
+
+    /* type */
+    --mono: ui-monospace,'SF Mono','JetBrains Mono','Roboto Mono',Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --fs-eyebrow:.72rem; --fs-body:.95rem; --fs-lead:1.12rem;
+    --step: clamp(2.1rem, 6.5vw, 4.4rem);
+
+    /* space + shape */
+    --sp:1rem; --r-sm:6px; --r:10px; --r-lg:16px; --maxw:1120px;
+    color-scheme: dark;
+  }
+
+  :root[data-sentinel="day"] {
+    --g0:#F1EEE5; --g1:#FBF9F2; --g2:#E9E4D7; --g3:#E0DACB;
+    --hair:#D7D0C0; --hair-soft:#E4DECF;
+    --ink0:#13201E; --ink1:#4B5A55; --ink2:#7A857F;
+    --accent:#A8781A; --accent-bright:#8A6212; --accent-dim:#C29A44;
+    --pass:#157A56; --fail:#C0343A; --flaky:#9C6015;
+    --blocked:#5B4CB0; --skip:#566468; --quar:#9B4630;
+    --pass-t:rgba(21,122,86,.10); --fail-t:rgba(192,52,58,.10);
+    --flaky-t:rgba(156,96,21,.11); --blocked-t:rgba(91,76,176,.10);
+    --skip-t:rgba(86,100,104,.12); --quar-t:rgba(155,70,48,.10);
+    --shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 18px 34px -26px rgba(40,30,10,.4);
+    color-scheme: light;
+  }
+
+  :root[data-sentinel="signal"] {
+    --g0:#05090A; --g1:#0A1113; --g2:#10191B; --g3:#17262A;
+    --hair:#2E4247; --hair-soft:#1C2C30;
+    --ink0:#FFFFFF; --ink1:#D6DEDD; --ink2:#98A4A3;
+    --accent:#FFC24D; --accent-bright:#FFD57E; --accent-dim:#C79430;
+    --pass:#43D19A; --fail:#FF5B60; --flaky:#FFB04A;
+    --blocked:#AC9DF3; --skip:#8A9B9D; --quar:#F08466;
+    --pass-t:rgba(67,209,154,.16); --fail-t:rgba(255,91,96,.18);
+    --flaky-t:rgba(255,176,74,.16); --blocked-t:rgba(172,157,243,.18);
+    --skip-t:rgba(138,155,157,.18); --quar-t:rgba(240,132,102,.18);
+    --shadow:0 0 0 1px rgba(255,255,255,.04) inset, 0 20px 44px -24px #000;
+    color-scheme: dark;
+  }
+
+  * { box-sizing:border-box; }
+  body { margin:0; }
+  .page {
+    background:var(--g0); color:var(--ink0);
+    font-family:var(--sans); font-size:var(--fs-body); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    transition:background .4s ease, color .4s ease;
+    min-height:100vh; overflow-x:hidden;
+  }
+  .wrap { max-width:var(--maxw); margin:0 auto; padding:0 clamp(1.1rem,4vw,2.5rem); }
+
+  h1,h2,h3 { font-family:var(--mono); font-weight:700; margin:0;
+    text-transform:uppercase; letter-spacing:.02em; text-wrap:balance; }
+  a { color:var(--accent); text-underline-offset:3px; }
+  .mono { font-family:var(--mono); }
+  .tnum { font-variant-numeric:tabular-nums; }
+
+  .eyebrow {
+    font-family:var(--mono); font-size:var(--fs-eyebrow); font-weight:600;
+    text-transform:uppercase; letter-spacing:.28em; color:var(--accent);
+    display:inline-flex; align-items:center; gap:.6rem;
+  }
+  .eyebrow::before { content:""; width:1.6rem; height:1px; background:var(--accent); opacity:.6; }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position:sticky; top:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    padding:.85rem 0; background:color-mix(in srgb, var(--g0) 82%, transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--hair);
+  }
+  .brand { display:flex; align-items:center; gap:.7rem; }
+  .brand .mark { width:30px; height:30px; display:block; }
+  .brand .name { font-family:var(--mono); font-weight:700; letter-spacing:.24em;
+    text-transform:uppercase; font-size:.98rem; }
+  .brand .sub { font-family:var(--mono); font-size:.62rem; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--ink2); border-left:1px solid var(--hair);
+    padding-left:.7rem; margin-left:.15rem; }
+  @media (max-width:560px){ .brand .sub{ display:none; } }
+
+  .switch { display:inline-flex; padding:3px; gap:2px; border:1px solid var(--hair);
+    border-radius:999px; background:var(--g1); }
+  .switch button {
+    font-family:var(--mono); font-size:.66rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink2); background:transparent; border:0; cursor:pointer;
+    padding:.42rem .7rem; border-radius:999px; transition:color .2s, background .2s;
+  }
+  .switch button[aria-pressed="true"]{ color:var(--g0); background:var(--accent); }
+  .switch button:focus-visible{ outline:2px solid var(--accent-bright); outline-offset:2px; }
+
+  /* ---------- hero / the gate ---------- */
+  .hero { padding:clamp(2.4rem,7vw,5rem) 0 clamp(2rem,5vw,3.5rem); }
+  .hero-grid { display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(1.5rem,4vw,3rem);
+    align-items:center; }
+  @media (max-width:860px){ .hero-grid{ grid-template-columns:1fr; } }
+  .hero h1 { font-size:var(--step); line-height:1.02; margin:.9rem 0 0; }
+  .hero h1 .lo { color:var(--ink2); }
+  .hero .lead { color:var(--ink1); font-size:var(--fs-lead); max-width:46ch; margin:1.1rem 0 0; }
+
+  .gate-stage {
+    position:relative; border:1px solid var(--hair); border-radius:var(--r-lg);
+    background:
+      radial-gradient(120% 90% at 50% -10%, color-mix(in srgb,var(--accent) 10%, transparent), transparent 60%),
+      linear-gradient(180deg, var(--g1), var(--g0));
+    padding:1.4rem 1.4rem 1.1rem; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .gate-stage .scan { position:absolute; inset:0; pointer-events:none; opacity:.5;
+    background:repeating-linear-gradient(180deg, transparent 0 4px, rgba(255,255,255,.015) 4px 5px); }
+  .gate-head { display:flex; align-items:center; justify-content:space-between;
+    font-family:var(--mono); font-size:.66rem; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--ink2); margin-bottom:.9rem; }
+  .live { display:inline-flex; align-items:center; gap:.45rem; color:var(--pass); }
+  .live .dot { width:7px; height:7px; border-radius:50%; background:currentColor;
+    box-shadow:0 0 0 0 currentColor; animation:pulse 2.4s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 color-mix(in srgb,currentColor 60%,transparent);}
+    70%{box-shadow:0 0 0 8px transparent;} 100%{box-shadow:0 0 0 0 transparent;} }
+
+  .gate-svg { width:100%; height:auto; display:block; }
+  .gate-bars { transition:transform .9s cubic-bezier(.2,.9,.2,1); transform:translateY(0); }
+  .gate--open .gate-bars { transform:translateY(-34%); }
+  .gate-bar { fill:var(--accent); transition:fill .5s; }
+  .gate--open .gate-bar { fill:var(--pass); }
+  .gate--blocked .gate-bar { fill:var(--fail); }
+  .gate-frame { fill:none; stroke:var(--hair); stroke-width:1.4; }
+  .gate-threshold { stroke-width:2; stroke-dasharray:5 5; opacity:.55;
+    stroke:var(--pass); transition:stroke .5s, opacity .5s; }
+  .gate--blocked .gate-threshold { stroke:var(--fail); }
+  .gate-glow { filter:blur(16px); opacity:.35; transition:fill .5s; fill:var(--pass); }
+  .gate--blocked .gate-glow { fill:var(--fail); }
+
+  .gate-foot { display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    margin-top:1rem; flex-wrap:wrap; }
+  .gate-verdict { font-family:var(--mono); font-size:.8rem; letter-spacing:.02em; }
+  .gate-verdict b { display:block; font-size:1.02rem; text-transform:uppercase; letter-spacing:.06em; }
+  .gate--open .gate-verdict b { color:var(--pass); }
+  .gate--blocked .gate-verdict b { color:var(--fail); }
+  .gate-verdict span { color:var(--ink2); }
+
+  .btn {
+    font-family:var(--mono); font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+    cursor:pointer; border-radius:999px; padding:.6rem 1rem; border:1px solid var(--hair);
+    background:var(--g2); color:var(--ink0); transition:border-color .2s, transform .1s, background .2s;
+  }
+  .btn:hover { border-color:var(--accent); }
+  .btn:active { transform:translateY(1px); }
+  .btn:focus-visible { outline:2px solid var(--accent-bright); outline-offset:2px; }
+  .btn--ghost { background:transparent; }
+
+  /* ---------- section scaffold ---------- */
+  section.block { padding:clamp(2.2rem,5vw,3.6rem) 0; border-top:1px solid var(--hair); }
+  .block-head { display:flex; align-items:baseline; justify-content:space-between;
+    gap:1rem; margin-bottom:1.6rem; flex-wrap:wrap; }
+  .block-head h2 { font-size:clamp(1.15rem,2.6vw,1.6rem); }
+  .block-head p { color:var(--ink1); margin:.3rem 0 0; max-width:52ch; }
+  .idx { font-family:var(--mono); color:var(--ink2); font-size:.72rem; letter-spacing:.2em; }
+
+  /* ---------- logo / identity ---------- */
+  .id-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:1.4rem; align-items:stretch; }
+  @media (max-width:760px){ .id-grid{ grid-template-columns:1fr; } }
+  .panel { background:var(--g1); border:1px solid var(--hair); border-radius:var(--r-lg);
+    padding:1.3rem; box-shadow:var(--shadow); }
+  .logo-showcase { display:flex; align-items:center; justify-content:center; gap:2rem;
+    padding:1.8rem 1rem; flex-wrap:wrap; }
+  .logo-lockup { display:flex; align-items:center; gap:.8rem; }
+  .logo-lockup .mark { width:56px; height:56px; }
+  .logo-lockup .wm { font-family:var(--mono); font-weight:700; text-transform:uppercase;
+    letter-spacing:.22em; font-size:1.5rem; }
+  .size-row { display:flex; align-items:flex-end; gap:1.3rem; }
+  .size-row .cell { text-align:center; color:var(--ink2); font-family:var(--mono); font-size:.6rem; letter-spacing:.1em; }
+  .size-row .cell svg { display:block; margin:0 auto .5rem; }
+  .id-notes ul { margin:.4rem 0 0; padding-left:1.1rem; color:var(--ink1); }
+  .id-notes li { margin:.35rem 0; }
+  .id-notes b { color:var(--ink0); }
+
+  /* ---------- color / status ---------- */
+  .status-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.9rem; }
+  @media (max-width:760px){ .status-grid{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:460px){ .status-grid{ grid-template-columns:1fr; } }
+  .swatch { border:1px solid var(--hair); border-radius:var(--r); overflow:hidden; background:var(--g1); }
+  .swatch .chip { height:64px; display:flex; align-items:flex-end; padding:.5rem .6rem; }
+  .swatch .chip .pill { margin-left:auto; }
+  .swatch .meta { padding:.6rem .7rem .7rem; display:flex; justify-content:space-between; align-items:baseline; }
+  .swatch .meta .role { font-family:var(--mono); font-size:.74rem; letter-spacing:.12em; text-transform:uppercase; }
+  .swatch .meta .hex { font-family:var(--mono); font-size:.68rem; color:var(--ink2); }
+
+  .pill { display:inline-flex; align-items:center; gap:.4rem; font-family:var(--mono);
+    font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; font-weight:600;
+    padding:.28rem .55rem; border-radius:999px; border:1px solid transparent; white-space:nowrap; }
+  .pill .d { width:7px; height:7px; border-radius:2px; background:currentColor; }
+  .pill.pass   { color:var(--pass);   background:var(--pass-t);   border-color:color-mix(in srgb,var(--pass) 30%,transparent); }
+  .pill.fail   { color:var(--fail);   background:var(--fail-t);   border-color:color-mix(in srgb,var(--fail) 30%,transparent); }
+  .pill.flaky  { color:var(--flaky);  background:var(--flaky-t);  border-color:color-mix(in srgb,var(--flaky) 30%,transparent); }
+  .pill.blocked{ color:var(--blocked);background:var(--blocked-t);border-color:color-mix(in srgb,var(--blocked) 32%,transparent); }
+  .pill.skip   { color:var(--skip);   background:var(--skip-t);   border-color:color-mix(in srgb,var(--skip) 32%,transparent); }
+  .pill.quar   { color:var(--quar);   background:var(--quar-t);   border-color:color-mix(in srgb,var(--quar) 32%,transparent); }
+  .pill .d.round { border-radius:50%; }
+
+  .rule-note { margin-top:1rem; display:flex; gap:.7rem; align-items:flex-start;
+    font-size:.85rem; color:var(--ink1); border-left:2px solid var(--accent); padding:.2rem 0 .2rem .8rem; }
+
+  .ramp { display:flex; margin-top:1rem; border:1px solid var(--hair); border-radius:var(--r); overflow:hidden; }
+  .ramp .step { flex:1; height:44px; display:flex; align-items:flex-end; padding:4px 6px;
+    font-family:var(--mono); font-size:.55rem; color:var(--ink2); }
+
+  /* ---------- typography ---------- */
+  .type-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+  @media (max-width:760px){ .type-grid{ grid-template-columns:1fr; } }
+  .spec .lab { font-family:var(--mono); font-size:.6rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink2); }
+  .spec .d1 { font-family:var(--mono); font-weight:700; text-transform:uppercase; letter-spacing:.01em;
+    font-size:2.1rem; line-height:1; margin:.3rem 0; }
+  .spec .d2 { font-family:var(--mono); font-weight:700; text-transform:uppercase; font-size:1.15rem; letter-spacing:.06em; }
+  .spec .body { font-family:var(--sans); color:var(--ink1); max-width:40ch; }
+  .spec .data { font-family:var(--mono); color:var(--ink0); }
+
+  /* ---------- components ---------- */
+  .comp-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:1.1rem; }
+  @media (max-width:820px){ .comp-grid{ grid-template-columns:1fr; } }
+  .comp-label { font-family:var(--mono); font-size:.6rem; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--ink2); margin-bottom:.6rem; }
+
+  .verdict { border:1px solid var(--hair); border-radius:var(--r); background:var(--g1); overflow:hidden;
+    box-shadow:var(--shadow); }
+  .verdict .stripe { height:4px; }
+  .verdict.block .stripe { background:var(--fail); }
+  .verdict.warn .stripe { background:var(--flaky); }
+  .verdict.pass .stripe { background:var(--pass); }
+  .verdict .in { padding:1rem 1.1rem; }
+  .verdict .top { display:flex; align-items:center; justify-content:space-between; gap:.8rem; }
+  .verdict .decision { font-family:var(--mono); font-weight:700; text-transform:uppercase; letter-spacing:.05em; font-size:1.05rem; }
+  .verdict.block .decision { color:var(--fail); }
+  .verdict.warn .decision { color:var(--flaky); }
+  .verdict.pass .decision { color:var(--pass); }
+  .verdict .reason { color:var(--ink1); font-size:.88rem; margin:.5rem 0 0; }
+  .verdict .foot { display:flex; gap:1.2rem; margin-top:.9rem; padding-top:.8rem; border-top:1px solid var(--hair);
+    font-family:var(--mono); font-size:.7rem; color:var(--ink2); letter-spacing:.06em; }
+  .verdict .foot b { color:var(--ink0); }
+
+  .rows { border:1px solid var(--hair); border-radius:var(--r); overflow:hidden; background:var(--g1); }
+  .trow { display:grid; grid-template-columns:1fr auto auto; gap:.8rem; align-items:center;
+    padding:.7rem .9rem; border-top:1px solid var(--hair-soft); }
+  .trow:first-child { border-top:0; }
+  .trow .nm { font-family:var(--mono); font-size:.8rem; color:var(--ink0); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .trow .tags { display:flex; gap:.35rem; margin-top:.25rem; }
+  .trow .tag { font-family:var(--mono); font-size:.56rem; letter-spacing:.08em; color:var(--ink2);
+    border:1px solid var(--hair); border-radius:4px; padding:.05rem .3rem; }
+  .trow .dur { font-family:var(--mono); font-size:.72rem; color:var(--ink2); }
+
+  .matrix-scroll { overflow-x:auto; border:1px solid var(--hair); border-radius:var(--r); background:var(--g1); }
+  table.matrix { border-collapse:collapse; width:100%; min-width:520px; font-size:.82rem; }
+  table.matrix th, table.matrix td { padding:.6rem .7rem; text-align:left; border-bottom:1px solid var(--hair-soft); }
+  table.matrix thead th { font-family:var(--mono); font-size:.6rem; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--ink2); background:var(--g2); position:sticky; top:0; }
+  table.matrix .req { font-family:var(--mono); color:var(--ink0); white-space:nowrap; }
+  table.matrix .tc { font-family:var(--mono); color:var(--ink1); font-size:.72rem; }
+  table.matrix tr:last-child td { border-bottom:0; }
+  .cellstat { display:inline-flex; width:12px; height:12px; border-radius:3px; vertical-align:-1px; }
+  .cellstat.pass{ background:var(--pass);} .cellstat.fail{ background:var(--fail);}
+  .cellstat.flaky{ background:var(--flaky);} .cellstat.skip{ background:var(--skip);} .cellstat.nt{ background:var(--g3); border:1px solid var(--hair);}
+
+  .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:1.1rem; }
+  @media (max-width:760px){ .tiles{ grid-template-columns:1fr; } }
+  .tile { border:1px solid var(--hair); border-radius:var(--r); background:var(--g1); padding:1rem; box-shadow:var(--shadow); }
+  .tile .k { font-family:var(--mono); font-size:.6rem; letter-spacing:.18em; text-transform:uppercase; color:var(--ink2); }
+  .tile .v { font-family:var(--mono); font-weight:700; font-size:1.7rem; margin:.35rem 0 .1rem; letter-spacing:.01em; }
+  .tile .delta { font-family:var(--mono); font-size:.7rem; }
+  .tile .delta.up { color:var(--pass); } .tile .delta.down { color:var(--fail); }
+  .spark { width:100%; height:38px; display:block; margin-top:.5rem; }
+
+  .report { border:1px solid var(--hair); border-radius:var(--r); background:var(--g1); box-shadow:var(--shadow); overflow:hidden; }
+  .report .rh { padding:.9rem 1.1rem; border-bottom:1px solid var(--hair); display:flex; align-items:center; justify-content:space-between; }
+  .report .rh .t { font-family:var(--mono); font-weight:700; letter-spacing:.04em; }
+  .report .rb { padding:1rem 1.1rem; }
+  .report .bug { border-left:2px solid var(--fail); padding:.2rem 0 .2rem .8rem; margin:.1rem 0 .9rem; }
+  .report .bug .h { font-family:var(--mono); font-size:.82rem; color:var(--ink0); }
+  .report .bug .m { color:var(--ink1); font-size:.82rem; margin-top:.2rem; }
+  .report .bug.low { border-left-color:var(--flaky); }
+
+  /* ---------- themes strip ---------- */
+  .themes { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+  @media (max-width:760px){ .themes{ grid-template-columns:1fr; } }
+  .theme-card { border-radius:var(--r-lg); border:1px solid; overflow:hidden; }
+  .tc-in { padding:1rem; }
+  .tc-name { font-family:var(--mono); font-size:.66rem; letter-spacing:.2em; text-transform:uppercase; }
+  .tc-desc { font-size:.8rem; margin:.3rem 0 .8rem; }
+  /* self-contained theme previews (independent of page theme) */
+  .t-watch  { background:#0B1417; border-color:#24393F; color:#F0EADD; }
+  .t-watch .tc-name{ color:#E9B44C;} .t-watch .tc-desc{ color:#A6B2B1; }
+  .t-day    { background:#F1EEE5; border-color:#D7D0C0; color:#13201E; }
+  .t-day .tc-name{ color:#A8781A;} .t-day .tc-desc{ color:#4B5A55; }
+  .t-signal { background:#05090A; border-color:#2E4247; color:#FFFFFF; }
+  .t-signal .tc-name{ color:#FFC24D;} .t-signal .tc-desc{ color:#D6DEDD; }
+  .mini-pills { display:flex; gap:.4rem; flex-wrap:wrap; }
+  .mp { font-family:var(--mono); font-size:.58rem; letter-spacing:.08em; text-transform:uppercase;
+    padding:.22rem .45rem; border-radius:999px; border:1px solid; }
+
+  /* ---------- footer ---------- */
+  footer.foot { border-top:1px solid var(--hair); padding:2.2rem 0 3rem; color:var(--ink2);
+    font-family:var(--mono); font-size:.72rem; letter-spacing:.05em; }
+  footer.foot .row { display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+  footer.foot a { color:var(--accent); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation:none !important; transition:none !important; }
+  }
+</style>
+
+<div class="page">
+  <!-- reusable portcullis symbol -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="portcullis" viewBox="0 0 48 48">
+      <path class="gp-frame" d="M8 17 Q8 9 24 9 Q40 9 40 17" fill="none" stroke="currentColor" stroke-width="2.2" opacity=".9"/>
+      <rect x="8" y="16" width="32" height="2.6" fill="currentColor"/>
+      <rect x="8" y="25" width="32" height="2.2" fill="currentColor"/>
+      <g fill="currentColor">
+        <path d="M10.5 16 h2.4 v18 l-1.2 3 -1.2 -3 z"/>
+        <path d="M16.8 16 h2.4 v18 l-1.2 3 -1.2 -3 z"/>
+        <path d="M23.1 16 h2.4 v18 l-1.2 3 -1.2 -3 z"/>
+        <path d="M29.4 16 h2.4 v18 l-1.2 3 -1.2 -3 z"/>
+        <path d="M35.7 16 h2.4 v18 l-1.2 3 -1.2 -3 z" transform="translate(-.5 0)"/>
+      </g>
+    </symbol>
+  </svg>
+
+  <!-- ============ TOP BAR ============ -->
+  <div class="topbar">
+    <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding-top:0;padding-bottom:0;">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 48 48" style="color:var(--accent)"><use href="#portcullis"/></svg>
+        <span class="name">Warden</span>
+        <span class="sub">Sentinel&nbsp;·&nbsp;Design System</span>
+      </div>
+      <div class="switch" role="group" aria-label="Theme">
+        <button data-theme-btn="watch"  aria-pressed="true">Watch</button>
+        <button data-theme-btn="day"    aria-pressed="false">Day</button>
+        <button data-theme-btn="signal" aria-pressed="false">Signal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HERO / THE GATE ============ -->
+  <header class="hero">
+    <div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <span class="eyebrow">The quality gate, made literal</span>
+          <h1>Nothing ships <span class="lo">unwatched.</span></h1>
+          <p class="lead">Warden reads the diff, picks the tests, sends an AI agent to break the build, and
+            decides at the gate. Sentinel is the language it speaks — where a test's <em>status</em> is the
+            loudest color on the screen, and the portcullis is both logo and verdict.</p>
+          <div style="display:flex;gap:.7rem;margin-top:1.4rem;flex-wrap:wrap;">
+            <button class="btn" id="toggleGate" aria-pressed="false">Simulate a failing PR</button>
+            <a class="btn btn--ghost" href="#components" style="text-decoration:none;">See the UI kit</a>
+          </div>
+        </div>
+
+        <div class="gate-stage gate--open" id="gate">
+          <div class="scan" aria-hidden="true"></div>
+          <div class="gate-head">
+            <span>PR #482 · feat/checkout-redesign</span>
+            <span class="live"><span class="dot"></span>Live</span>
+          </div>
+          <svg class="gate-svg" viewBox="0 0 320 150" role="img" aria-label="The quality gate, currently cleared">
+            <ellipse class="gate-glow" cx="160" cy="150" rx="120" ry="26"></ellipse>
+            <line class="gate-threshold" x1="34" y1="120" x2="286" y2="120"></line>
+            <g class="gate-frame">
+              <path d="M40 60 Q40 26 160 26 Q280 26 280 60" />
+              <line x1="40" y1="60" x2="40" y2="122"/>
+              <line x1="280" y1="60" x2="280" y2="122"/>
+            </g>
+            <g class="gate-bars">
+              <rect class="gate-bar" x="52"  y="40" width="10" height="74" rx="2"/>
+              <rect class="gate-bar" x="86"  y="40" width="10" height="74" rx="2"/>
+              <rect class="gate-bar" x="120" y="40" width="10" height="74" rx="2"/>
+              <rect class="gate-bar" x="155" y="40" width="10" height="74" rx="2"/>
+              <rect class="gate-bar" x="190" y="40" width="10" height="74" rx="2"/>
+              <rect class="gate-bar" x="224" y="40" width="10" height="74" rx="2"/>
+              <rect class="gate-bar" x="258" y="40" width="10" height="74" rx="2"/>
+            </g>
+          </svg>
+          <div class="gate-foot">
+            <div class="gate-verdict">
+              <b id="gateWord">Gate open</b>
+              <span id="gateReason">All exit criteria met · 44/47 passing</span>
+            </div>
+            <span class="pill pass" id="gatePill"><span class="d round"></span>Cleared to merge</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ IDENTITY ============ -->
+  <section class="block" id="identity">
+    <div class="wrap">
+      <div class="block-head">
+        <div><span class="idx">01 — Identity</span><h2>The portcullis mark</h2>
+          <p>A gate of falling bars — the medieval warden's last line of defense. It is the logo, and the
+            same shape becomes the verdict in the hero. One idea, doing two jobs.</p></div>
+      </div>
+      <div class="id-grid">
+        <div class="panel">
+          <div class="logo-showcase">
+            <div class="logo-lockup">
+              <svg class="mark" viewBox="0 0 48 48" style="color:var(--accent)"><use href="#portcullis"/></svg>
+              <span class="wm">Warden</span>
+            </div>
+            <div class="size-row">
+              <div class="cell"><svg width="16" height="16" viewBox="0 0 48 48" style="color:var(--ink0)"><use href="#portcullis"/></svg>16</div>
+              <div class="cell"><svg width="24" height="24" viewBox="0 0 48 48" style="color:var(--ink0)"><use href="#portcullis"/></svg>24</div>
+              <div class="cell"><svg width="32" height="32" viewBox="0 0 48 48" style="color:var(--ink0)"><use href="#portcullis"/></svg>32</div>
+            </div>
+          </div>
+        </div>
+        <div class="panel id-notes">
+          <div class="comp-label">Construction</div>
+          <ul>
+            <li><b>Seven bars, spiked feet.</b> Reads as a gate at 16px and as a chart at 320px — the bars double as pass/fail columns in the UI.</li>
+            <li><b>Arched keystone.</b> The frame never moves; only the bars rise (open) or fall (block).</li>
+            <li><b>Gold at rest, status when live.</b> The mark is beacon-gold in chrome; in a verdict it takes the gate's status color.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COLOR / STATUS ============ -->
+  <section class="block" id="color">
+    <div class="wrap">
+      <div class="block-head">
+        <div><span class="idx">02 — Color</span><h2>Status is the palette</h2>
+          <p>Most systems bolt semantic colors onto a brand palette. Sentinel inverts it: the six test
+            statuses <em>are</em> the palette's brightest voices. Everything else stays quiet so they carry.</p></div>
+      </div>
+      <div class="status-grid">
+        <div class="swatch"><div class="chip" style="background:var(--pass-t)"><span class="pill pass"><span class="d round"></span>Pass</span></div>
+          <div class="meta"><span class="role">Pass</span><span class="hex">#43B98A</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--fail-t)"><span class="pill fail"><span class="d round"></span>Fail</span></div>
+          <div class="meta"><span class="role">Fail</span><span class="hex">#E5484D</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--flaky-t)"><span class="pill flaky"><span class="d round"></span>Flaky</span></div>
+          <div class="meta"><span class="role">Flaky</span><span class="hex">#E08A2C</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--blocked-t)"><span class="pill blocked"><span class="d round"></span>Blocked</span></div>
+          <div class="meta"><span class="role">Blocked</span><span class="hex">#8B7BD8</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--skip-t)"><span class="pill skip"><span class="d round"></span>Skipped</span></div>
+          <div class="meta"><span class="role">Skipped</span><span class="hex">#6B7C82</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--quar-t)"><span class="pill quar"><span class="d round"></span>Quarantined</span></div>
+          <div class="meta"><span class="role">Quarantined</span><span class="hex">#C2624B</span></div></div>
+      </div>
+
+      <div class="rule-note"><span class="mono" style="color:var(--accent)">RULE</span>
+        <span>Beacon-gold <b style="color:var(--accent)">#E9B44C</b> is the brand accent — logo, focus, primary action.
+          It is deliberately <em>not</em> a status. Amber <b style="color:var(--flaky)">#E08A2C</b> means Flaky, and only ever
+          appears as a labeled pill. Accent and status never trade places, so a glowing element is never mistaken for a warning.</span></div>
+
+      <div class="ramp" aria-label="Ground and ink ramp">
+        <div class="step" style="background:var(--g0)">g0</div>
+        <div class="step" style="background:var(--g1)">g1</div>
+        <div class="step" style="background:var(--g2)">g2</div>
+        <div class="step" style="background:var(--g3)">g3</div>
+        <div class="step" style="background:var(--ink2);color:var(--g0)">ink2</div>
+        <div class="step" style="background:var(--ink1);color:var(--g0)">ink1</div>
+        <div class="step" style="background:var(--ink0);color:var(--g0)">ink0</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TYPOGRAPHY ============ -->
+  <section class="block" id="type">
+    <div class="wrap">
+      <div class="block-head">
+        <div><span class="idx">03 — Type</span><h2>Console voice, prose warmth</h2>
+          <p>Tracked uppercase monospace speaks for the machine — headings, verdicts, IDs, data. A humanist
+            sans carries anything a human wrote. Ships as self-hosted <b>Fira Code</b> + <b>Fira Sans</b>; shown
+            here in the system mono/sans stack so the page stays webfont-free.</p></div>
+      </div>
+      <div class="type-grid">
+        <div class="panel spec">
+          <div class="lab">Display — mono 700 · uppercase · +2% tracking</div>
+          <div class="d1">Gate held</div>
+          <div class="d2">Regression · P1 · Checkout</div>
+          <div class="lab" style="margin-top:1rem">Data — mono · tabular</div>
+          <div class="data tnum">TC-042 &nbsp; 8,423 ms &nbsp; flake 2%</div>
+        </div>
+        <div class="panel spec">
+          <div class="lab">Body — humanist sans</div>
+          <p class="body" style="margin:.4rem 0 0">Warden found a payment failure on Visa cards ending 4242. The cart
+            is preserved and the build is held until it clears. Steps to reproduce are attached to the check run.</p>
+          <div class="lab" style="margin-top:1rem">Scale</div>
+          <div class="data tnum" style="color:var(--ink1);font-size:.82rem;margin-top:.3rem">
+            eyebrow .72 · body .95 · lead 1.12 · h2 1.6 · display clamp→4.4rem</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMPONENTS ============ -->
+  <section class="block" id="components">
+    <div class="wrap">
+      <div class="block-head">
+        <div><span class="idx">04 — Components</span><h2>The working kit</h2>
+          <p>Rendered for real, in the current theme — the same primitives <span class="mono">@warden/design-system</span>
+            ships to the dashboard. Try the theme switch above; every piece follows.</p></div>
+      </div>
+
+      <div class="comp-grid">
+        <div>
+          <div class="comp-label">Verdict card — the gate decision</div>
+          <div class="verdict block">
+            <div class="stripe"></div>
+            <div class="in">
+              <div class="top"><span class="decision">Block merge</span><span class="pill fail"><span class="d"></span>1 critical</span></div>
+              <p class="reason">Payment fails for Visa cards ending 4242. Resolve the critical defect before merging.</p>
+              <div class="foot"><span>Risk <b>7/10</b></span><span>Pass rate <b class="tnum">44/47</b></span><span>Exploratory <b>2 bugs</b></span></div>
+            </div>
+          </div>
+          <div style="height:.9rem"></div>
+          <div class="comp-label">Status pills — all six roles</div>
+          <div class="panel" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <span class="pill pass"><span class="d"></span>Pass</span>
+            <span class="pill fail"><span class="d"></span>Fail</span>
+            <span class="pill flaky"><span class="d"></span>Flaky</span>
+            <span class="pill blocked"><span class="d"></span>Blocked</span>
+            <span class="pill skip"><span class="d"></span>Skipped</span>
+            <span class="pill quar"><span class="d"></span>Quarantined</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="comp-label">Test result rows</div>
+          <div class="rows">
+            <div class="trow">
+              <div><div class="nm">checkout › complete with credit card</div>
+                <div class="tags"><span class="tag">@apps/checkout</span><span class="tag">@regression</span></div></div>
+              <span class="dur tnum">8,423ms</span><span class="pill fail"><span class="d"></span>Fail</span>
+            </div>
+            <div class="trow">
+              <div><div class="nm">cart › persists across reload</div>
+                <div class="tags"><span class="tag">@apps/cart</span><span class="tag">@smoke</span></div></div>
+              <span class="dur tnum">612ms</span><span class="pill pass"><span class="d"></span>Pass</span>
+            </div>
+            <div class="trow">
+              <div><div class="nm">auth › session refresh under load</div>
+                <div class="tags"><span class="tag">@lib/auth</span><span class="tag">@regression</span></div></div>
+              <span class="dur tnum">1,905ms</span><span class="pill flaky"><span class="d"></span>Flaky</span>
+            </div>
+            <div class="trow">
+              <div><div class="nm">admin › bulk export (known-brittle)</div>
+                <div class="tags"><span class="tag">@apps/admin</span></div></div>
+              <span class="dur tnum">—</span><span class="pill quar"><span class="d"></span>Quarantined</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:1.1rem"></div>
+      <div class="comp-label">Coverage matrix — requirement × test × last result</div>
+      <div class="matrix-scroll">
+        <table class="matrix">
+          <thead><tr><th>Requirement</th><th>Tests</th><th>Checkout</th><th>Cart</th><th>Auth</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="req">ISSUE-201 · Credit-card checkout</td><td class="tc">TC-042, TC-043</td>
+              <td><span class="cellstat fail"></span></td><td><span class="cellstat pass"></span></td><td><span class="cellstat pass"></span></td>
+              <td><span class="pill fail"><span class="d"></span>Failed</span></td></tr>
+            <tr><td class="req">ISSUE-205 · Cart persistence</td><td class="tc">TC-038</td>
+              <td><span class="cellstat pass"></span></td><td><span class="cellstat pass"></span></td><td><span class="cellstat skip"></span></td>
+              <td><span class="pill pass"><span class="d"></span>Passed</span></td></tr>
+            <tr><td class="req">ISSUE-210 · MFA on login</td><td class="tc">TC-051</td>
+              <td><span class="cellstat nt"></span></td><td><span class="cellstat nt"></span></td><td><span class="cellstat flaky"></span></td>
+              <td><span class="pill flaky"><span class="d"></span>Flaky</span></td></tr>
+            <tr><td class="req">ISSUE-217 · Guest checkout</td><td class="tc">— none —</td>
+              <td><span class="cellstat nt"></span></td><td><span class="cellstat nt"></span></td><td><span class="cellstat nt"></span></td>
+              <td><span class="pill skip"><span class="d"></span>Not tested</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="height:1.1rem"></div>
+      <div class="comp-label">Trend tiles</div>
+      <div class="tiles">
+        <div class="tile"><div class="k">Pass rate · 30d</div><div class="v tnum" style="color:var(--pass)">93.6%</div>
+          <div class="delta up">▲ 1.8 pts</div>
+          <svg class="spark" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 30 L15 27 L30 28 L45 22 L60 24 L75 16 L90 18 L105 11 L120 9 L120 38 L0 38 Z" fill="var(--pass-t)"/>
+            <polyline points="0,30 15,27 30,28 45,22 60,24 75,16 90,18 105,11 120,9" fill="none" stroke="var(--pass)" stroke-width="2"/>
+            <circle cx="120" cy="9" r="3" fill="var(--pass)"/></svg></div>
+        <div class="tile"><div class="k">Flake rate · 30d</div><div class="v tnum" style="color:var(--flaky)">2.1%</div>
+          <div class="delta down">▼ 0.4 pts</div>
+          <svg class="spark" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 12 L15 16 L30 14 L45 20 L60 18 L75 24 L90 22 L105 28 L120 30 L120 38 L0 38 Z" fill="var(--flaky-t)"/>
+            <polyline points="0,12 15,16 30,14 45,20 60,18 75,24 90,22 105,28 120,30" fill="none" stroke="var(--flaky)" stroke-width="2"/>
+            <circle cx="120" cy="30" r="3" fill="var(--flaky)"/></svg></div>
+        <div class="tile"><div class="k">MTTR · broken tests</div><div class="v tnum">4.2h</div>
+          <div class="delta up" style="color:var(--ink2)">— steady</div>
+          <svg class="spark" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 20 L15 18 L30 22 L45 19 L60 21 L75 18 L90 20 L105 19 L120 20 L120 38 L0 38 Z" fill="rgba(120,140,150,.14)"/>
+            <polyline points="0,20 15,18 30,22 45,19 60,21 75,18 90,20 105,19 120,20" fill="none" stroke="var(--ink2)" stroke-width="2"/>
+            <circle cx="120" cy="20" r="3" fill="var(--ink1)"/></svg></div>
+      </div>
+
+      <div style="height:1.1rem"></div>
+      <div class="comp-label">PR report card</div>
+      <div class="report">
+        <div class="rh"><span class="t">AI QA Report · PR #482</span><span class="pill fail"><span class="d round"></span>Block merge</span></div>
+        <div class="rb">
+          <div class="bug"><div class="h">[CRITICAL] Payment fails for Visa cards ending 4242</div>
+            <div class="m">Add to cart → Checkout → Visa 4242 → Submit. Expected “Payment confirmed”; got “Error processing payment.” Requirement ISSUE-201.</div></div>
+          <div class="bug low"><div class="h">[LOW] Checkout button truncated at 375px</div>
+            <div class="m">“Complete Purchase” renders as “Complete Purcha…” on mobile. Cosmetic; does not block.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ THEMES ============ -->
+  <section class="block" id="themes">
+    <div class="wrap">
+      <div class="block-head">
+        <div><span class="idx">05 — Themes</span><h2>Three grounds, one system</h2>
+          <p>The switch at the top retimes the whole page. Here they sit side by side — the status roles are
+            re-tuned for contrast on each ground, never naively inverted.</p></div>
+      </div>
+      <div class="themes">
+        <div class="theme-card t-watch"><div class="tc-in">
+          <div class="tc-name">Watch — dark, default</div>
+          <div class="tc-desc">Night shift in the tower. Slate-teal ground, beacon gold.</div>
+          <div class="mini-pills">
+            <span class="mp" style="color:#43B98A;border-color:#43B98A55;background:#43b98a24">Pass</span>
+            <span class="mp" style="color:#E5484D;border-color:#E5484D55;background:#e5484d24">Fail</span>
+            <span class="mp" style="color:#E08A2C;border-color:#E08A2C55;background:#e08a2c24">Flaky</span></div>
+        </div></div>
+        <div class="theme-card t-day"><div class="tc-in">
+          <div class="tc-name">Day — warm light</div>
+          <div class="tc-desc">Daylight review. Warm paper, deepened statuses for AA.</div>
+          <div class="mini-pills">
+            <span class="mp" style="color:#157A56;border-color:#157A5655;background:#157a5618">Pass</span>
+            <span class="mp" style="color:#C0343A;border-color:#C0343A55;background:#c0343a18">Fail</span>
+            <span class="mp" style="color:#9C6015;border-color:#9C601555;background:#9c601518">Flaky</span></div>
+        </div></div>
+        <div class="theme-card t-signal"><div class="tc-in">
+          <div class="tc-name">Signal — high contrast</div>
+          <div class="tc-desc">Max legibility. Near-black, pure-white ink, boosted chroma.</div>
+          <div class="mini-pills">
+            <span class="mp" style="color:#43D19A;border-color:#43D19A66;background:#43d19a28">Pass</span>
+            <span class="mp" style="color:#FF5B60;border-color:#FF5B6066;background:#ff5b6028">Fail</span>
+            <span class="mp" style="color:#FFB04A;border-color:#FFB04A66;background:#ffb04a28">Flaky</span></div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap">
+      <div class="row">
+        <span>Warden · Sentinel — status is the palette, the gate is the mark.</span>
+        <span>Tokens ship in <b style="color:var(--ink0)">@warden/design-system</b> · spec WS2-18</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btns = Array.prototype.slice.call(document.querySelectorAll('[data-theme-btn]'));
+    var userPicked = false;
+
+    function apply(theme) {
+      root.setAttribute('data-sentinel', theme);
+      btns.forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-btn') === theme));
+      });
+    }
+    // initialize from host: honor explicit data-theme, else OS preference
+    function hostTheme() {
+      var dt = root.getAttribute('data-theme');
+      if (dt === 'light') return 'day';
+      if (dt === 'dark') return 'watch';
+      try { if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'day'; } catch (e) {}
+      return 'watch';
+    }
+    apply(hostTheme());
+
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () { userPicked = true; apply(b.getAttribute('data-theme-btn')); });
+    });
+    // follow host toggle until the user chooses their own
+    try {
+      window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function () {
+        if (!userPicked) apply(hostTheme());
+      });
+      new MutationObserver(function () { if (!userPicked) apply(hostTheme()); })
+        .observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    } catch (e) {}
+
+    // hero gate demo
+    var gate = document.getElementById('gate');
+    var btn = document.getElementById('toggleGate');
+    var word = document.getElementById('gateWord');
+    var reason = document.getElementById('gateReason');
+    var pill = document.getElementById('gatePill');
+    var blocked = false;
+    btn.addEventListener('click', function () {
+      blocked = !blocked;
+      gate.classList.toggle('gate--blocked', blocked);
+      gate.classList.toggle('gate--open', !blocked);
+      btn.setAttribute('aria-pressed', String(blocked));
+      btn.textContent = blocked ? 'Clear the gate' : 'Simulate a failing PR';
+      word.textContent = blocked ? 'Gate held' : 'Gate open';
+      reason.textContent = blocked
+        ? '1 critical defect · payment flow · ISSUE-201'
+        : 'All exit criteria met · 44/47 passing';
+      pill.className = 'pill ' + (blocked ? 'fail' : 'pass');
+      pill.innerHTML = '<span class="d round"></span>' + (blocked ? 'Merge blocked' : 'Cleared to merge');
+    });
+  })();
+</script>
