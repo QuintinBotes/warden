@@ -1,0 +1,606 @@
+/* =============================================================== *
+ * SENTINEL — Warden design system
+ * Dark-first command center. Status semantics ARE the palette.
+ * Three themes driven by [data-theme] on :root. SIGNAL is default.
+ * Canonical source: docs/design/sentinel-design-system.html
+ * =============================================================== */
+
+:root {
+  /* SIGNAL — near-black, high-contrast · DEFAULT house theme */
+  --g0: #05090a;
+  --g1: #0a1113;
+  --g2: #10191b;
+  --g3: #17262a;
+  --hair: #2e4247;
+  --hair-soft: #1c2c30;
+  --ink0: #ffffff;
+  --ink1: #d6dedd;
+  --ink2: #98a4a3;
+  --accent: #ffc24d;
+  --accent-bright: #ffd57e;
+  --accent-dim: #c79430;
+
+  --pass: #43d19a;
+  --fail: #ff5b60;
+  --flaky: #ffb04a;
+  --blocked: #ac9df3;
+  --skip: #8a9b9d;
+  --quar: #f08466;
+
+  --pass-t: rgba(67, 209, 154, 0.16);
+  --fail-t: rgba(255, 91, 96, 0.18);
+  --flaky-t: rgba(255, 176, 74, 0.16);
+  --blocked-t: rgba(172, 157, 243, 0.18);
+  --skip-t: rgba(138, 155, 157, 0.18);
+  --quar-t: rgba(240, 132, 102, 0.18);
+
+  --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset, 0 20px 44px -24px #000;
+
+  --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --r-sm: 6px;
+  --r: 10px;
+  --r-lg: 16px;
+
+  color-scheme: dark;
+}
+
+:root[data-theme='signal'] {
+  --g0: #05090a;
+  --g1: #0a1113;
+  --g2: #10191b;
+  --g3: #17262a;
+  --hair: #2e4247;
+  --hair-soft: #1c2c30;
+  --ink0: #ffffff;
+  --ink1: #d6dedd;
+  --ink2: #98a4a3;
+  --accent: #ffc24d;
+  --accent-bright: #ffd57e;
+  --accent-dim: #c79430;
+  --pass: #43d19a;
+  --fail: #ff5b60;
+  --flaky: #ffb04a;
+  --blocked: #ac9df3;
+  --skip: #8a9b9d;
+  --quar: #f08466;
+  --pass-t: rgba(67, 209, 154, 0.16);
+  --fail-t: rgba(255, 91, 96, 0.18);
+  --flaky-t: rgba(255, 176, 74, 0.16);
+  --blocked-t: rgba(172, 157, 243, 0.18);
+  --skip-t: rgba(138, 155, 157, 0.18);
+  --quar-t: rgba(240, 132, 102, 0.18);
+  --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset, 0 20px 44px -24px #000;
+  color-scheme: dark;
+}
+
+:root[data-theme='watch'] {
+  /* WATCH — slate-teal dark, warmer command center */
+  --g0: #0b1417;
+  --g1: #0f1e23;
+  --g2: #16292f;
+  --g3: #1d343a;
+  --hair: #24393f;
+  --hair-soft: #1a2b31;
+  --ink0: #f0eadd;
+  --ink1: #a6b2b1;
+  --ink2: #6e7d7f;
+  --accent: #e9b44c;
+  --accent-bright: #f4cb78;
+  --accent-dim: #b98a34;
+  --pass: #43b98a;
+  --fail: #e5484d;
+  --flaky: #e08a2c;
+  --blocked: #8b7bd8;
+  --skip: #6b7c82;
+  --quar: #c2624b;
+  --pass-t: rgba(67, 185, 138, 0.14);
+  --fail-t: rgba(229, 72, 77, 0.15);
+  --flaky-t: rgba(224, 138, 44, 0.15);
+  --blocked-t: rgba(139, 123, 216, 0.16);
+  --skip-t: rgba(107, 124, 130, 0.16);
+  --quar-t: rgba(194, 98, 75, 0.16);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 18px 40px -24px rgba(0, 0, 0, 0.8);
+  color-scheme: dark;
+}
+
+:root[data-theme='day'] {
+  /* DAY — warm light, statuses deepened for AA */
+  --g0: #f1eee5;
+  --g1: #fbf9f2;
+  --g2: #e9e4d7;
+  --g3: #e0dacb;
+  --hair: #d7d0c0;
+  --hair-soft: #e4decf;
+  --ink0: #13201e;
+  --ink1: #4b5a55;
+  --ink2: #77837e;
+  --accent: #a8781a;
+  --accent-bright: #8a6212;
+  --accent-dim: #c29a44;
+  --pass: #157a56;
+  --fail: #c0343a;
+  --flaky: #9c6015;
+  --blocked: #5b4cb0;
+  --skip: #566468;
+  --quar: #9b4630;
+  --pass-t: rgba(21, 122, 86, 0.1);
+  --fail-t: rgba(192, 52, 58, 0.1);
+  --flaky-t: rgba(156, 96, 21, 0.11);
+  --blocked-t: rgba(91, 76, 176, 0.1);
+  --skip-t: rgba(86, 100, 104, 0.12);
+  --quar-t: rgba(155, 70, 48, 0.1);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 18px 34px -26px rgba(40, 30, 10, 0.4);
+  color-scheme: light;
+}
+
+/* ---------- shared helpers ---------- */
+.sentinel-tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- portcullis mark ---------- */
+.sentinel-portcullis {
+  display: inline-block;
+  color: var(--accent);
+  vertical-align: middle;
+}
+
+/* ---------- status pill ---------- */
+.sentinel-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  line-height: 1;
+}
+.sentinel-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+.sentinel-pill--pass {
+  color: var(--pass);
+  background: var(--pass-t);
+  border-color: color-mix(in srgb, var(--pass) 30%, transparent);
+}
+.sentinel-pill--fail {
+  color: var(--fail);
+  background: var(--fail-t);
+  border-color: color-mix(in srgb, var(--fail) 30%, transparent);
+}
+.sentinel-pill--flaky {
+  color: var(--flaky);
+  background: var(--flaky-t);
+  border-color: color-mix(in srgb, var(--flaky) 30%, transparent);
+}
+.sentinel-pill--blocked {
+  color: var(--blocked);
+  background: var(--blocked-t);
+  border-color: color-mix(in srgb, var(--blocked) 32%, transparent);
+}
+.sentinel-pill--skip {
+  color: var(--skip);
+  background: var(--skip-t);
+  border-color: color-mix(in srgb, var(--skip) 32%, transparent);
+}
+.sentinel-pill--quar {
+  color: var(--quar);
+  background: var(--quar-t);
+  border-color: color-mix(in srgb, var(--quar) 32%, transparent);
+}
+.sentinel-pill--nt {
+  color: var(--ink2);
+  background: var(--g3);
+  border-color: var(--hair);
+}
+
+/* ---------- verdict card ---------- */
+.sentinel-verdict {
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: var(--g1);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.sentinel-verdict-stripe {
+  height: 4px;
+}
+.sentinel-verdict--block .sentinel-verdict-stripe {
+  background: var(--fail);
+}
+.sentinel-verdict--warn .sentinel-verdict-stripe {
+  background: var(--flaky);
+}
+.sentinel-verdict--pass .sentinel-verdict-stripe {
+  background: var(--pass);
+}
+.sentinel-verdict-body {
+  padding: 1rem 1.1rem;
+}
+.sentinel-verdict-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+.sentinel-verdict-decision {
+  font-family: var(--mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 1.05rem;
+}
+.sentinel-verdict--block .sentinel-verdict-decision {
+  color: var(--fail);
+}
+.sentinel-verdict--warn .sentinel-verdict-decision {
+  color: var(--flaky);
+}
+.sentinel-verdict--pass .sentinel-verdict-decision {
+  color: var(--pass);
+}
+.sentinel-verdict-reason {
+  color: var(--ink1);
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  margin: 0.5rem 0 0;
+}
+.sentinel-verdict-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--hair);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink2);
+  letter-spacing: 0.06em;
+}
+.sentinel-verdict-foot b {
+  color: var(--ink0);
+}
+
+/* ---------- test result row ---------- */
+.sentinel-trow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.7rem 0.9rem;
+  border-top: 1px solid var(--hair-soft);
+  background: var(--g1);
+}
+.sentinel-trow:first-child {
+  border-top: 0;
+}
+.sentinel-trow-name {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--ink0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sentinel-trow-tags {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+}
+.sentinel-tag {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  color: var(--ink2);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+}
+.sentinel-trow-dur {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink2);
+}
+
+/* ---------- coverage matrix ---------- */
+.sentinel-matrix-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: var(--g1);
+}
+.sentinel-matrix {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 520px;
+  font-size: 0.82rem;
+}
+.sentinel-matrix th,
+.sentinel-matrix td {
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid var(--hair-soft);
+}
+.sentinel-matrix thead th {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  background: var(--g2);
+}
+.sentinel-matrix tr:last-child td {
+  border-bottom: 0;
+}
+.sentinel-matrix-req {
+  font-family: var(--mono);
+  color: var(--ink0);
+  white-space: nowrap;
+}
+.sentinel-matrix-tc {
+  font-family: var(--mono);
+  color: var(--ink1);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+.sentinel-cell {
+  display: inline-flex;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+.sentinel-cell--pass {
+  background: var(--pass);
+}
+.sentinel-cell--fail {
+  background: var(--fail);
+}
+.sentinel-cell--flaky {
+  background: var(--flaky);
+}
+.sentinel-cell--blocked {
+  background: var(--blocked);
+}
+.sentinel-cell--skip {
+  background: var(--skip);
+}
+.sentinel-cell--quar {
+  background: var(--quar);
+}
+.sentinel-cell--nt {
+  background: var(--g3);
+  border: 1px solid var(--hair);
+}
+
+/* ---------- trend tile ---------- */
+.sentinel-tile {
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: var(--g1);
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+.sentinel-tile-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+.sentinel-tile-value {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.7rem;
+  margin: 0.35rem 0 0.1rem;
+  letter-spacing: 0.01em;
+  color: var(--ink0);
+}
+.sentinel-tile-delta {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink2);
+}
+.sentinel-tile-delta[data-trend='up'] {
+  color: var(--pass);
+}
+.sentinel-tile-delta[data-trend='down'] {
+  color: var(--fail);
+}
+.sentinel-tile-delta[data-trend='flat'] {
+  color: var(--ink2);
+}
+.sentinel-spark {
+  width: 100%;
+  height: 38px;
+  display: block;
+  margin-top: 0.5rem;
+}
+.sentinel-spark-line {
+  stroke: var(--ink2);
+  stroke-width: 2;
+  fill: none;
+}
+.sentinel-spark-area {
+  fill: rgba(120, 140, 150, 0.14);
+  stroke: none;
+}
+.sentinel-spark-dot {
+  fill: var(--ink1);
+}
+
+/* tone-driven sparkline + value color */
+.sentinel-tile[data-tone='pass'] .sentinel-tile-value,
+.sentinel-tile[data-tone='pass'] .sentinel-spark-line,
+.sentinel-tile[data-tone='pass'] .sentinel-spark-dot {
+  color: var(--pass);
+  stroke: var(--pass);
+  fill: var(--pass);
+}
+.sentinel-tile[data-tone='pass'] .sentinel-tile-value {
+  color: var(--pass);
+}
+.sentinel-tile[data-tone='pass'] .sentinel-spark-area {
+  fill: var(--pass-t);
+}
+.sentinel-tile[data-tone='fail'] .sentinel-tile-value {
+  color: var(--fail);
+}
+.sentinel-tile[data-tone='fail'] .sentinel-spark-line,
+.sentinel-tile[data-tone='fail'] .sentinel-spark-dot {
+  stroke: var(--fail);
+  fill: var(--fail);
+}
+.sentinel-tile[data-tone='fail'] .sentinel-spark-area {
+  fill: var(--fail-t);
+}
+.sentinel-tile[data-tone='flaky'] .sentinel-tile-value {
+  color: var(--flaky);
+}
+.sentinel-tile[data-tone='flaky'] .sentinel-spark-line,
+.sentinel-tile[data-tone='flaky'] .sentinel-spark-dot {
+  stroke: var(--flaky);
+  fill: var(--flaky);
+}
+.sentinel-tile[data-tone='flaky'] .sentinel-spark-area {
+  fill: var(--flaky-t);
+}
+.sentinel-tile[data-tone='blocked'] .sentinel-tile-value {
+  color: var(--blocked);
+}
+.sentinel-tile[data-tone='blocked'] .sentinel-spark-line,
+.sentinel-tile[data-tone='blocked'] .sentinel-spark-dot {
+  stroke: var(--blocked);
+  fill: var(--blocked);
+}
+.sentinel-tile[data-tone='blocked'] .sentinel-spark-area {
+  fill: var(--blocked-t);
+}
+.sentinel-tile[data-tone='skip'] .sentinel-tile-value {
+  color: var(--skip);
+}
+.sentinel-tile[data-tone='skip'] .sentinel-spark-line,
+.sentinel-tile[data-tone='skip'] .sentinel-spark-dot {
+  stroke: var(--skip);
+  fill: var(--skip);
+}
+.sentinel-tile[data-tone='skip'] .sentinel-spark-area {
+  fill: var(--skip-t);
+}
+.sentinel-tile[data-tone='quar'] .sentinel-tile-value {
+  color: var(--quar);
+}
+.sentinel-tile[data-tone='quar'] .sentinel-spark-line,
+.sentinel-tile[data-tone='quar'] .sentinel-spark-dot {
+  stroke: var(--quar);
+  fill: var(--quar);
+}
+.sentinel-tile[data-tone='quar'] .sentinel-spark-area {
+  fill: var(--quar-t);
+}
+
+/* ---------- theme switch ---------- */
+.sentinel-switch {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background: var(--g1);
+}
+.sentinel-switch-btn {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 0.42rem 0.7rem;
+  border-radius: 999px;
+  transition:
+    color 0.2s,
+    background 0.2s;
+}
+.sentinel-switch-btn[aria-pressed='true'] {
+  color: var(--g0);
+  background: var(--accent);
+}
+.sentinel-switch-btn:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+/* ---------- replay viewer ---------- */
+.sentinel-replay {
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: var(--g1);
+  padding: 1rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.sentinel-replay-video {
+  width: 100%;
+  max-width: 100%;
+  border-radius: var(--r-sm);
+  background: var(--g0);
+  display: block;
+}
+.sentinel-replay-gallery {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.sentinel-replay-thumb {
+  width: 96px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--hair);
+  background: var(--g2);
+}
+.sentinel-replay-trace {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-underline-offset: 3px;
+  align-self: flex-start;
+}
+.sentinel-replay--empty {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 120px;
+}
+.sentinel-replay-emptytext {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--ink2);
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sentinel-switch-btn {
+    transition: none;
+  }
+}
