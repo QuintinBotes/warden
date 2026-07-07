@@ -14,7 +14,30 @@ export {
   type AnthropicTool,
   type AnthropicProviderDefaults,
 } from './anthropic-provider';
-export { createProvider } from './create-provider';
+export { createProvider, type CreateProviderOptions } from './create-provider';
+export {
+  OpenAIProvider,
+  defaultOpenAIClient,
+  mapToOpenAITool,
+  type OpenAILike,
+  type OpenAITool,
+  type OpenAIProviderDefaults,
+} from './providers/openai';
+export {
+  GeminiProvider,
+  defaultGeminiClient,
+  mapToGeminiTools,
+  type GeminiLike,
+  type GeminiTools,
+  type GeminiProviderDefaults,
+} from './providers/gemini';
+export {
+  OllamaProvider,
+  buildOllamaPrompt,
+  parseOllamaToolCalls,
+  type FetchLike,
+  type OllamaProviderDefaults,
+} from './providers/ollama';
 
 // Strategies
 export { createStrategy } from './create-strategy';

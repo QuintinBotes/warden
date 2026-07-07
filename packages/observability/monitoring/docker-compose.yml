@@ -1,0 +1,30 @@
+# Local Warden monitoring stack: Pushgateway (receives metrics from PrometheusMetricsEmitter),
+# Prometheus (scrapes the Pushgateway), and Grafana (visualizes via grafana-dashboard.json).
+#
+# Usage: docker compose -f monitoring/docker-compose.yml up
+services:
+  pushgateway:
+    image: prom/pushgateway:v1.9.0
+    ports:
+      - "9091:9091"
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    depends_on:
+      - pushgateway
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+    volumes:
+      - ./grafana-dashboard.json:/var/lib/grafana/dashboards/warden-quality.json:ro

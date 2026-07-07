@@ -1,0 +1,157 @@
+{
+  "id": null,
+  "uid": "warden-quality",
+  "title": "Warden — Quality Overview",
+  "description": "Pass rate, flake rate, MTTR, escaped-defect rate, suite duration, and coverage delta, scraped from the Warden Prometheus Pushgateway.",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "browser",
+  "style": "dark",
+  "tags": ["warden", "quality", "ci"],
+  "time": { "from": "now-7d", "to": "now" },
+  "refresh": "1m",
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "query",
+        "label": "Environment",
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "query": "label_values(warden_test_pass_rate, environment)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true
+      },
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "label": "Data source",
+        "query": "prometheus"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Pass Rate",
+      "description": "Fraction of test results that passed, per execution.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": { "unit": "percentunit", "min": 0, "max": 1 },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg(warden_test_pass_rate{environment=~\"$environment\"})",
+          "legendFormat": "pass rate"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Flake Rate",
+      "description": "Fraction of test results flagged flaky, per execution.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": { "unit": "percentunit", "min": 0, "max": 1 },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg(warden_test_flake_rate{environment=~\"$environment\"})",
+          "legendFormat": "flake rate"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "MTTR",
+      "description": "Mean time to recovery from a BLOCK gate decision to the next PASS, in hours.",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "h" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg(warden_mttr_seconds) / 3600",
+          "legendFormat": "MTTR"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Escaped Defect Rate",
+      "description": "Defects found in production per release that Warden did not catch pre-merge.",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(warden_escaped_defect_total[7d]))",
+          "legendFormat": "escaped defects (7d)"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Suite Duration",
+      "description": "Wall-clock duration of test executions, in seconds.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg(warden_test_duration_seconds{environment=~\"$environment\"})",
+          "legendFormat": "duration"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Coverage Delta",
+      "description": "Change in requirement coverage percentage since the previous execution.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "delta(warden_coverage_percent[1d])",
+          "legendFormat": "coverage delta"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Gate Decisions",
+      "description": "Most recent quality gate decision per PR/module (1=PASS, 0.5=WARN, 0=BLOCK).",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "min": 0, "max": 1 },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "warden_gate_decision",
+          "legendFormat": "{{ decision }} pr={{ pr }} module={{ module }}"
+        }
+      ]
+    }
+  ]
+}
