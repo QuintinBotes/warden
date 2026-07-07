@@ -1,0 +1,177 @@
+# Warden V2 — Swarm dispatch manifest
+# Machine-readable companion to 2026-07-07-warden-v2-design.md
+# Same protocol as V1: group by wave, dispatch parallel agents per wave, run barrier, advance.
+# V2 rule: WS2-00 is ADDITIVE-ONLY to @warden/core (no V1 signature may change).
+
+version: 1
+product: warden
+track: v2
+spec: ./2026-07-07-warden-v2-design.md
+requires: v1-shipped         # all @warden/* v1 packages exist and are green
+conventions:
+  language: typescript-esm-node20
+  monorepo: pnpm-workspaces + turborepo
+  unitTests: vitest
+  isolation: worktree
+  ownershipRule: "write only under ownsPaths; @warden/core changes are additive-only in WS2-00"
+
+barriers:
+  afterWave: "pnpm -w build && pnpm -w test && pnpm -w typecheck"
+
+waves:
+  - wave: 0
+    barrier: "pnpm --filter @warden/core build && pnpm -w test  # no V1 signature changed; new exports frozen"
+    workstreams:
+      - id: WS2-00
+        package: "@warden/core (additive)"
+        wave: 0
+        dependsOn: []
+        ownsPaths: [packages/core/src/v2/**]
+        contract: "spec.md#part-c--ws2-00-core-v2-contract-extensions-wave-0-solo"
+        acceptanceCriteria:
+          - "ProviderRegistry, MetricsEmitter, DashboardDataApi, IntegrationAdapter, SessionRecorder, TestSynthesizer exported"
+          - "WardenConfig extended additively: observability/dashboard/recorder/integrations/performance/security/mobile + openai/gemini/ollama provider config"
+          - "every V1 test still green; defineConfig back-compatible; no V1 signature changed"
+        testCmd: "pnpm --filter @warden/core test"
+
+  - wave: 1
+    barrier: "pnpm -w build && pnpm -w test  # all wave-1 packages green against core-v2"
+    workstreams:
+      - id: WS2-10
+        package: "@warden/agent/providers"
+        wave: 1
+        dependsOn: [WS2-00]
+        ownsPaths: [packages/agent/src/providers/openai.ts, packages/agent/src/providers/gemini.ts, packages/agent/src/providers/ollama.ts, packages/agent/src/registry.ts]
+        contract: "spec.md#ws2-10--multi-provider-ai--wardenagentproviders"
+        acceptanceCriteria:
+          - "openai/gemini/ollama each implement LLMProvider; registered so createProvider returns them"
+          - "tool-format mapping + tool-call parsing per SDK (faked HTTP; no live keys)"
+          - "fallbackProvider falls back to Ollama when primary key missing"
+          - "parity: same prompt -> same AgentOutput shape across providers"
+        testCmd: "pnpm --filter @warden/agent test"
+      - id: WS2-11
+        package: "@warden/runner/stagehand"
+        wave: 1
+        dependsOn: [WS2-00]
+        ownsPaths: [packages/runner/src/engines/stagehand.ts]
+        contract: "spec.md#ws2-11--stagehand-hybrid-engine--wardenrunnerenginesstagehand"
+        acceptanceCriteria:
+          - "implements BrowserEngine/BrowserSession; deterministic steps via Playwright, act/extract via faked Stagehand client"
+          - "selected by cfg.browser.engine === 'stagehand'; extract returns zod-validated results"
+        testCmd: "pnpm --filter @warden/runner test"
+      - id: WS2-12
+        package: "@warden/observability"
+        wave: 1
+        dependsOn: [WS2-00]
+        ownsPaths: [packages/observability/**, monitoring/**, docker-compose.yml]
+        contract: "spec.md#ws2-12--observability--wardenobservability"
+        acceptanceCriteria:
+          - "MetricsEmitter pushes to faked pushgateway with correct metric formatting"
+          - "provisioned Grafana dashboard JSON valid (pass rate/flake/MTTR/escaped-defect/duration/coverage delta)"
+          - "docker-compose config validates"
+        testCmd: "pnpm --filter @warden/observability test"
+      - id: WS2-13
+        package: "@warden/integrations"
+        wave: 1
+        dependsOn: [WS2-00]
+        ownsPaths: [packages/integrations/**]
+        contract: "spec.md#ws2-13--issue-tracker-sync--wardenintegrations"
+        acceptanceCriteria:
+          - "linear/jira/github-projects each implement IntegrationAdapter"
+          - "fetchRequirements maps API objects -> Requirement; pushResult updates status (mocked HTTP)"
+          - "round-trips against recorded fixtures; no live tokens"
+        testCmd: "pnpm --filter @warden/integrations test"
+      - id: WS2-14
+        package: "@warden/recorder"
+        wave: 1
+        dependsOn: [WS2-00]
+        ownsPaths: [packages/recorder/**]
+        contract: "spec.md#ws2-14--session-recording--tests--wardenrecorder"
+        acceptanceCriteria:
+          - "SessionRecorder.record produces RecordedSession from faked trace/HAR"
+          - "TestSynthesizer.synthesize emits valid tagged Playwright specs (role-based locators)"
+          - "dedupes overlapping flows"
+        testCmd: "pnpm --filter @warden/recorder test"
+      - id: WS2-15
+        package: "@warden/runner/k6"
+        wave: 1
+        dependsOn: [WS2-00]
+        ownsPaths: [packages/runner/src/perf/**, examples/perf/**]
+        contract: "spec.md#ws2-15--performance-k6--wardenrunnerk6"
+        acceptanceCriteria:
+          - "runK6 parses k6 JSON summary -> CTRF"
+          - "p95/throughput thresholds -> GateDecision (PASS/WARN/BLOCK)"
+        testCmd: "pnpm --filter @warden/runner test"
+      - id: WS2-16
+        package: "@warden/runner/security"
+        wave: 1
+        dependsOn: [WS2-00]
+        ownsPaths: [packages/runner/src/security/**]
+        contract: "spec.md#ws2-16--security-owasp-zap--wardenrunnersecurity"
+        acceptanceCriteria:
+          - "runZapBaseline parses ZAP JSON -> CTRF findings w/ OWASP category + severity"
+          - "high-severity alert -> gate BLOCK per config"
+        testCmd: "pnpm --filter @warden/runner test"
+      - id: WS2-17
+        package: "@warden/runner/appium+matrix"
+        wave: 1
+        dependsOn: [WS2-00]
+        ownsPaths: [packages/runner/src/mobile/**, packages/runner/src/matrix.ts]
+        contract: "spec.md#ws2-17--mobile--multi-browser-matrix--wardenrunnerappium--matrix"
+        acceptanceCriteria:
+          - "matrix expands chromium|firefox|webkit from config"
+          - "Appium session implements BrowserSession (faked driver); mobile viewport parity with V1"
+        testCmd: "pnpm --filter @warden/runner test"
+      - id: WS2-18
+        package: "@warden/design-system"
+        wave: 1
+        dependsOn: [WS2-00]
+        ownsPaths: [packages/design-system/**]
+        contract: "spec.md#ws2-18--sentinel-design-system--wardendesign-system"
+        acceptanceCriteria:
+          - "Sentinel tokens exported as CSS variables + TS token object (status roles + base/ink/accent + type/space/radii)"
+          - "themes: sentinel-dark (default) + light + high-contrast swap via data-theme"
+          - "every status role passes WCAG AA on its surface in all themes"
+          - "Warden portcullis logo as SVG at 16/24/32/full lockup"
+          - "primitives: VerdictCard/StatusPill/CoverageMatrix/TestResultRow/TrendTile/ThemeToggle match the design artifact"
+        testCmd: "pnpm --filter @warden/design-system test"
+
+  - wave: 2
+    barrier: "dashboard renders live data in all Sentinel themes; E2E green"
+    workstreams:
+      - id: WS2-20
+        package: "apps/dashboard"
+        wave: 2
+        dependsOn: [WS2-18, WS2-21]
+        ownsPaths: [apps/dashboard/**]
+        contract: "spec.md#ws2-20--requirements-traceability-dashboard--appsdashboard"
+        acceptanceCriteria:
+          - "screens: Coverage Matrix, Execution history & trends, Flake board/quarantine, PR gate timeline, Requirement drill-down"
+          - "reads live data via DashboardDataApi; filters by module/status; trends over time"
+          - "responsive; dark(default)/light/high-contrast; keyboard-navigable; matches Sentinel artifact"
+        testCmd: "pnpm --filter dashboard test"
+      - id: WS2-21
+        package: "@warden/dashboard-api"
+        wave: 2
+        dependsOn: [WS2-00]     # can start with wave 1; groups in wave 2 with the app it serves
+        ownsPaths: [packages/dashboard-api/**]
+        contract: "spec.md#ws2-21--dashboard-data-api--wardendashboard-api"
+        acceptanceCriteria:
+          - "concrete DashboardDataApi over SQLite store + Prometheus"
+          - "every method returns validated shapes; pagination + date-range filters"
+          - "unit-tested against a seeded temp store"
+        testCmd: "pnpm --filter @warden/dashboard-api test"
+
+  - wave: 3
+    barrier: "one-command self-host stack up; docs published"
+    workstreams:
+      - id: WS2-30
+        package: docs+examples+deploy
+        wave: 3
+        dependsOn: [WS2-20]
+        ownsPaths: [docs-site/**, examples/**, deploy/**]
+        contract: "spec.md#ws2-30--docs--examples--one-command-deploy"
+        acceptanceCriteria:
+          - "docker compose -f deploy/docker-compose.yml up brings up Warden + dashboard + Grafana"
+          - "docs cover install/config/providers/dashboard/plugins; examples demo every V2 tier"
+        testCmd: "pnpm --filter docs-site build"
