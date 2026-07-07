@@ -17,3 +17,4 @@ export * from './agent';
 export * from './plugin';
 export * from './config';
 export * from './logger';
+export * from './v2';
