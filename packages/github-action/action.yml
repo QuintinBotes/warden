@@ -1,0 +1,42 @@
+name: 'Warden AI QA'
+description: >-
+  Tiered AI QA on every pull request: analyze the diff, run the right test tiers,
+  drive an AI exploratory agent, and post a merge-gate verdict back to GitHub
+  (CTRF report, job summary, PR comment, and check-run annotations).
+author: 'Warden'
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  provider:
+    description: 'LLM provider to use (v1 ships anthropic).'
+    required: false
+    default: 'anthropic'
+  model:
+    description: 'Model id override for the provider (defaults to the provider default).'
+    required: false
+    default: ''
+  strategy:
+    description: 'AI agent strategy: exploratory | generative | healer.'
+    required: false
+    default: 'exploratory'
+  risk-threshold:
+    description: 'Minimum change-surface risk score (1-10) that triggers the AI exploratory agent.'
+    required: false
+    default: '4'
+  anthropic-api-key:
+    description: 'Anthropic API key used by the AI agent (pass ${{ secrets.ANTHROPIC_API_KEY }}).'
+    required: true
+
+outputs:
+  gate:
+    description: 'The QA gate decision: PASS | WARN | BLOCK.'
+  risk-score:
+    description: 'The computed change-surface risk score (0-10).'
+  report-path:
+    description: 'Path to the aggregated CTRF report file.'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

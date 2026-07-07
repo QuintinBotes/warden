@@ -1,0 +1,84 @@
+# Warden AI QA — copy this into your repo at .github/workflows/ai-qa.yml
+#
+# One Action + one config file (warden.config.ts) + one secret (ANTHROPIC_API_KEY)
+# gives you tiered AI QA on every pull request. The Warden Action orchestrates the
+# tiers internally (smoke -> analyze -> selective/exploratory -> gate) and posts
+# four reporting surfaces: a CTRF report, a GitHub job summary, a PR review
+# comment, and check-run annotations.
+name: Warden AI QA
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+# The gate needs to write PR comments and checks.
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+concurrency:
+  group: warden-ai-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ai-qa:
+    name: Warden AI QA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history so the diff can be computed)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # Bring the app under test up so smoke / selective / exploratory tiers can hit it.
+      # Point WARDEN_BASE_URL at wherever your app serves (default http://localhost:3000).
+      - name: Start application
+        run: npm run dev &
+        env:
+          PORT: 3000
+
+      - name: Wait for the app
+        run: npx wait-on http://localhost:3000 --timeout 60000
+
+      # ── The Warden Action runs every tier and posts the QA gate ──────────────
+      - name: Run Warden AI QA
+        id: warden
+        uses: warden-action@v1 # or: uses: ./packages/github-action (local)
+        with:
+          provider: anthropic
+          strategy: exploratory
+          risk-threshold: '4'
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WARDEN_BASE_URL: http://localhost:3000
+
+      - name: Upload Warden report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warden-report
+          path: ${{ steps.warden.outputs.report-path }}
+
+      # The Action already sets a failing check on BLOCK; this makes the job status
+      # mirror the gate for branch-protection required-status-check rules.
+      - name: Enforce QA gate
+        if: always() && steps.warden.outputs.gate == 'BLOCK'
+        run: |
+          echo "Warden QA gate: BLOCK (risk ${{ steps.warden.outputs.risk-score }}/10)"
+          exit 1

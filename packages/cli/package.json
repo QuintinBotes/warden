@@ -1,0 +1,40 @@
+{
+  "name": "@warden/cli",
+  "version": "0.1.0",
+  "description": "Warden CLI — analyze, run, agent, report, plan, and init commands",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "warden": "./dist/bin/warden.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@warden/core": "workspace:*",
+    "@warden/orchestrator": "workspace:*",
+    "@warden/agent": "workspace:*",
+    "@warden/runner": "workspace:*",
+    "@warden/test-management": "workspace:*",
+    "@warden/reporter": "workspace:*",
+    "commander": "^12.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3"
+  }
+}

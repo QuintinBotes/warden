@@ -2,7 +2,17 @@
 
 **Open-source, AI-native QA platform.** Warden reads a pull request's diff, selects the tests that matter, sends an AI agent to break the build, and posts a merge-gate verdict back to GitHub. Claude is the default engine, abstracted behind a provider interface so any model can be swapped in. Everything is self-hostable and MIT-licensed.
 
-> Status: **planning + foundation.** The full V1/V2 build specs are written and the first wave — `@warden/core`, the shared contract surface — is implemented and green. Later waves are built by a swarm of parallel agents against these frozen contracts.
+> Status: **V1 in progress.** Specs written; `@warden/core` plus Wave 1 (`orchestrator`, `agent`, `runner`, `test-management`, `reporter`) are implemented and green. The CLI and GitHub Action land next. Built by a swarm of parallel agents against frozen contracts.
+
+## Documentation
+
+Full docs live in **[`docs/`](docs/README.md)**:
+
+- [Getting Started](docs/getting-started.md) — first AI QA report in ~10 minutes
+- [Architecture](docs/architecture.md) · [Configuration](docs/configuration.md) · [CLI](docs/cli.md) · [GitHub Action](docs/github-action.md)
+- [AI Providers & Engines](docs/providers-and-engines.md) · [Reporting](docs/reporting.md)
+- [Deployment & Self-Hosting](docs/deployment.md) · [Design System](docs/design-system.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## What's here
 
