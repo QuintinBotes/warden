@@ -1,0 +1,368 @@
+{
+  "generatedAt": "2026-07-07T22:30:15.602Z",
+  "run": {
+    "trigger": "PR #42",
+    "environment": "staging",
+    "ranAt": "Jul 6",
+    "requirementCount": 5,
+    "testCount": 7
+  },
+  "kpis": {
+    "passRate": {
+      "label": "Pass rate",
+      "value": "66.7%",
+      "tone": "pass",
+      "points": [
+        83.3,
+        83.3,
+        50,
+        83.3,
+        66.7
+      ],
+      "delta": "▼ 16.6 pts",
+      "trend": "down"
+    },
+    "flakeRate": {
+      "label": "Flake rate",
+      "value": "16.7%",
+      "tone": "flaky",
+      "points": [
+        0,
+        0,
+        16.7,
+        0,
+        16.7
+      ],
+      "delta": "▲ 16.7 pts",
+      "trend": "down"
+    },
+    "mttr": {
+      "label": "MTTR",
+      "value": "1.4s",
+      "tone": "neutral",
+      "points": [
+        1800,
+        1800,
+        1375,
+        1800,
+        1375
+      ],
+      "delta": "▼ 0.4s",
+      "trend": "up"
+    },
+    "coverage": {
+      "label": "Coverage",
+      "value": "85.7%",
+      "tone": "pass",
+      "points": [
+        85.7,
+        85.7,
+        85.7,
+        85.7,
+        85.7
+      ],
+      "delta": "no change",
+      "trend": "flat"
+    }
+  },
+  "latestGate": {
+    "decision": "BLOCK",
+    "reason": "checkout › apply discount code failed on refs/pull/42: “Discount not applied”. 1 test is quarantined for flakiness.",
+    "meta": [
+      {
+        "label": "Trigger",
+        "value": "PR #42"
+      },
+      {
+        "label": "Environment",
+        "value": "staging"
+      },
+      {
+        "label": "Pass rate",
+        "value": "66.7%"
+      },
+      {
+        "label": "Failing",
+        "value": "1 test"
+      },
+      {
+        "label": "Quarantined",
+        "value": "1 test"
+      }
+    ]
+  },
+  "coverageColumns": [
+    "Jun 28",
+    "Jun 30",
+    "Jul 2",
+    "Jul 4",
+    "Jul 6"
+  ],
+  "coverageRows": [
+    {
+      "requirementId": "REQ-AUTH-001",
+      "title": "Users can log in with valid credentials",
+      "tests": [
+        "TC-AUTH-001",
+        "TC-AUTH-002"
+      ],
+      "cells": [
+        {
+          "col": "Jun 28",
+          "status": "PASS"
+        },
+        {
+          "col": "Jun 30",
+          "status": "PASS"
+        },
+        {
+          "col": "Jul 2",
+          "status": "FLAKY"
+        },
+        {
+          "col": "Jul 4",
+          "status": "PASS"
+        },
+        {
+          "col": "Jul 6",
+          "status": "FLAKY"
+        }
+      ],
+      "status": "FLAKY"
+    },
+    {
+      "requirementId": "REQ-AUTH-002",
+      "title": "Users can log out",
+      "tests": [
+        "TC-AUTH-003"
+      ],
+      "cells": [
+        {
+          "col": "Jun 28",
+          "status": "PASS"
+        },
+        {
+          "col": "Jun 30",
+          "status": "PASS"
+        },
+        {
+          "col": "Jul 2",
+          "status": "PASS"
+        },
+        {
+          "col": "Jul 4",
+          "status": "PASS"
+        },
+        {
+          "col": "Jul 6",
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirementId": "REQ-CHECKOUT-001",
+      "title": "Users can complete checkout with a saved card",
+      "tests": [
+        "TC-CHECKOUT-001"
+      ],
+      "cells": [
+        {
+          "col": "Jun 28",
+          "status": "PASS"
+        },
+        {
+          "col": "Jun 30",
+          "status": "PASS"
+        },
+        {
+          "col": "Jul 2",
+          "status": "PASS"
+        },
+        {
+          "col": "Jul 4",
+          "status": "PASS"
+        },
+        {
+          "col": "Jul 6",
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirementId": "REQ-CHECKOUT-002",
+      "title": "Discount codes apply correctly at checkout",
+      "tests": [
+        "TC-CHECKOUT-002"
+      ],
+      "cells": [
+        {
+          "col": "Jun 28",
+          "status": "FAIL"
+        },
+        {
+          "col": "Jun 30",
+          "status": "FAIL"
+        },
+        {
+          "col": "Jul 2",
+          "status": "FAIL"
+        },
+        {
+          "col": "Jul 4",
+          "status": "FAIL"
+        },
+        {
+          "col": "Jul 6",
+          "status": "FAIL"
+        }
+      ],
+      "status": "FAIL"
+    },
+    {
+      "requirementId": "REQ-SEARCH-001",
+      "title": "Search returns relevant results",
+      "tests": [
+        "TC-SEARCH-001",
+        "TC-SEARCH-002"
+      ],
+      "cells": [
+        {
+          "col": "Jun 28",
+          "status": "PASS"
+        },
+        {
+          "col": "Jun 30",
+          "status": "PASS"
+        },
+        {
+          "col": "Jul 2",
+          "status": "SKIPPED"
+        },
+        {
+          "col": "Jul 4",
+          "status": "PASS"
+        },
+        {
+          "col": "Jul 6",
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "results": [
+    {
+      "id": "TC-CHECKOUT-002",
+      "name": "checkout › apply discount code",
+      "durationMs": 1800,
+      "tags": [
+        "checkout",
+        "e2e"
+      ],
+      "status": "FAIL",
+      "replay": {
+        "errorMessage": "Discount not applied",
+        "screenshots": [
+          "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22320%22%20height%3D%22200%22%20viewBox%3D%220%200%20320%20200%22%3E%0A%20%20%3Crect%20width%3D%22320%22%20height%3D%22200%22%20fill%3D%22%230a1113%22%2F%3E%0A%20%20%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%22320%22%20height%3D%2226%22%20fill%3D%22%2310191b%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2214%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%23ff5b60%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2228%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%23ffb04a%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2242%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%2343d19a%22%2F%3E%0A%20%20%3Crect%20x%3D%2260%22%20y%3D%227%22%20width%3D%22220%22%20height%3D%2212%22%20rx%3D%226%22%20fill%3D%22%2317262a%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2248%22%20width%3D%22160%22%20height%3D%2214%22%20rx%3D%224%22%20fill%3D%22%2317262a%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2274%22%20width%3D%22272%22%20height%3D%2210%22%20rx%3D%223%22%20fill%3D%22%23122024%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2292%22%20width%3D%22240%22%20height%3D%2210%22%20rx%3D%223%22%20fill%3D%22%23122024%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%22128%22%20width%3D%22272%22%20height%3D%2244%22%20rx%3D%226%22%20fill%3D%22rgba(255%2C91%2C96%2C0.12)%22%20stroke%3D%22%23ff5b60%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2242%22%20cy%3D%22150%22%20r%3D%227%22%20fill%3D%22none%22%20stroke%3D%22%23ff5b60%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%3Ctext%20x%3D%2242%22%20y%3D%22154%22%20font-family%3D%22monospace%22%20font-size%3D%2210%22%20fill%3D%22%23ff5b60%22%20text-anchor%3D%22middle%22%3E!%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2260%22%20y%3D%22147%22%20font-family%3D%22monospace%22%20font-size%3D%2210%22%20fill%3D%22%23ff5b60%22%3Echeckout%20%E2%80%BA%20apply%20discount%20code%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2260%22%20y%3D%22162%22%20font-family%3D%22monospace%22%20font-size%3D%229%22%20fill%3D%22%23d6dedd%22%3EDiscount%20not%20applied%3C%2Ftext%3E%0A%3C%2Fsvg%3E",
+          "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22320%22%20height%3D%22200%22%20viewBox%3D%220%200%20320%20200%22%3E%0A%20%20%3Crect%20width%3D%22320%22%20height%3D%22200%22%20fill%3D%22%230a1113%22%2F%3E%0A%20%20%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%22320%22%20height%3D%2226%22%20fill%3D%22%2310191b%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2214%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%23ff5b60%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2228%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%23ffb04a%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2242%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%2343d19a%22%2F%3E%0A%20%20%3Crect%20x%3D%2260%22%20y%3D%227%22%20width%3D%22220%22%20height%3D%2212%22%20rx%3D%226%22%20fill%3D%22%2317262a%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2248%22%20width%3D%22160%22%20height%3D%2214%22%20rx%3D%224%22%20fill%3D%22%2317262a%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2274%22%20width%3D%22272%22%20height%3D%2210%22%20rx%3D%223%22%20fill%3D%22%23122024%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2292%22%20width%3D%22240%22%20height%3D%2210%22%20rx%3D%223%22%20fill%3D%22%23122024%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%22128%22%20width%3D%22272%22%20height%3D%2244%22%20rx%3D%226%22%20fill%3D%22rgba(255%2C91%2C96%2C0.12)%22%20stroke%3D%22%23ff5b60%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2242%22%20cy%3D%22150%22%20r%3D%227%22%20fill%3D%22none%22%20stroke%3D%22%23ff5b60%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%3Ctext%20x%3D%2242%22%20y%3D%22154%22%20font-family%3D%22monospace%22%20font-size%3D%2210%22%20fill%3D%22%23ff5b60%22%20text-anchor%3D%22middle%22%3E!%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2260%22%20y%3D%22147%22%20font-family%3D%22monospace%22%20font-size%3D%2210%22%20fill%3D%22%23ff5b60%22%3ECheckout%20%C2%B7%20retry%201%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2260%22%20y%3D%22162%22%20font-family%3D%22monospace%22%20font-size%3D%229%22%20fill%3D%22%23d6dedd%22%3EDiscount%20not%20applied%3C%2Ftext%3E%0A%3C%2Fsvg%3E"
+        ],
+        "tracePath": "data:application/json;charset=utf-8,%7B%0A%20%20%22testCaseId%22%3A%20%22TC-CHECKOUT-002%22%2C%0A%20%20%22status%22%3A%20%22FAIL%22%2C%0A%20%20%22durationMs%22%3A%201800%2C%0A%20%20%22error%22%3A%20%22Discount%20not%20applied%22%2C%0A%20%20%22execution%22%3A%20%22EXEC-5%22%2C%0A%20%20%22trigger%22%3A%20%22refs%2Fpull%2F42%22%2C%0A%20%20%22environment%22%3A%20%22staging%22%2C%0A%20%20%22startedAt%22%3A%20%222026-07-06T12%3A00%3A00.000Z%22%2C%0A%20%20%22note%22%3A%20%22Synthesised%20trace%20for%20the%20Warden%20dashboard%20demo.%22%0A%7D"
+      }
+    },
+    {
+      "id": "TC-AUTH-002",
+      "name": "auth › post-login redirect",
+      "durationMs": 950,
+      "tags": [
+        "auth",
+        "e2e"
+      ],
+      "status": "FLAKY",
+      "replay": {
+        "errorMessage": "Timed out waiting for redirect",
+        "screenshots": [
+          "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22320%22%20height%3D%22200%22%20viewBox%3D%220%200%20320%20200%22%3E%0A%20%20%3Crect%20width%3D%22320%22%20height%3D%22200%22%20fill%3D%22%230a1113%22%2F%3E%0A%20%20%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%22320%22%20height%3D%2226%22%20fill%3D%22%2310191b%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2214%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%23ff5b60%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2228%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%23ffb04a%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2242%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%2343d19a%22%2F%3E%0A%20%20%3Crect%20x%3D%2260%22%20y%3D%227%22%20width%3D%22220%22%20height%3D%2212%22%20rx%3D%226%22%20fill%3D%22%2317262a%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2248%22%20width%3D%22160%22%20height%3D%2214%22%20rx%3D%224%22%20fill%3D%22%2317262a%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2274%22%20width%3D%22272%22%20height%3D%2210%22%20rx%3D%223%22%20fill%3D%22%23122024%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2292%22%20width%3D%22240%22%20height%3D%2210%22%20rx%3D%223%22%20fill%3D%22%23122024%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%22128%22%20width%3D%22272%22%20height%3D%2244%22%20rx%3D%226%22%20fill%3D%22rgba(255%2C91%2C96%2C0.12)%22%20stroke%3D%22%23ff5b60%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2242%22%20cy%3D%22150%22%20r%3D%227%22%20fill%3D%22none%22%20stroke%3D%22%23ff5b60%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%3Ctext%20x%3D%2242%22%20y%3D%22154%22%20font-family%3D%22monospace%22%20font-size%3D%2210%22%20fill%3D%22%23ff5b60%22%20text-anchor%3D%22middle%22%3E!%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2260%22%20y%3D%22147%22%20font-family%3D%22monospace%22%20font-size%3D%2210%22%20fill%3D%22%23ff5b60%22%3Eauth%20%E2%80%BA%20post-login%20redirect%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2260%22%20y%3D%22162%22%20font-family%3D%22monospace%22%20font-size%3D%229%22%20fill%3D%22%23d6dedd%22%3ETimed%20out%20waiting%20for%20redirect%3C%2Ftext%3E%0A%3C%2Fsvg%3E",
+          "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22320%22%20height%3D%22200%22%20viewBox%3D%220%200%20320%20200%22%3E%0A%20%20%3Crect%20width%3D%22320%22%20height%3D%22200%22%20fill%3D%22%230a1113%22%2F%3E%0A%20%20%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%22320%22%20height%3D%2226%22%20fill%3D%22%2310191b%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2214%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%23ff5b60%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2228%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%23ffb04a%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2242%22%20cy%3D%2213%22%20r%3D%224%22%20fill%3D%22%2343d19a%22%2F%3E%0A%20%20%3Crect%20x%3D%2260%22%20y%3D%227%22%20width%3D%22220%22%20height%3D%2212%22%20rx%3D%226%22%20fill%3D%22%2317262a%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2248%22%20width%3D%22160%22%20height%3D%2214%22%20rx%3D%224%22%20fill%3D%22%2317262a%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2274%22%20width%3D%22272%22%20height%3D%2210%22%20rx%3D%223%22%20fill%3D%22%23122024%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%2292%22%20width%3D%22240%22%20height%3D%2210%22%20rx%3D%223%22%20fill%3D%22%23122024%22%2F%3E%0A%20%20%3Crect%20x%3D%2224%22%20y%3D%22128%22%20width%3D%22272%22%20height%3D%2244%22%20rx%3D%226%22%20fill%3D%22rgba(255%2C91%2C96%2C0.12)%22%20stroke%3D%22%23ff5b60%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2242%22%20cy%3D%22150%22%20r%3D%227%22%20fill%3D%22none%22%20stroke%3D%22%23ff5b60%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%3Ctext%20x%3D%2242%22%20y%3D%22154%22%20font-family%3D%22monospace%22%20font-size%3D%2210%22%20fill%3D%22%23ff5b60%22%20text-anchor%3D%22middle%22%3E!%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2260%22%20y%3D%22147%22%20font-family%3D%22monospace%22%20font-size%3D%2210%22%20fill%3D%22%23ff5b60%22%3EAuth%20%C2%B7%20retry%201%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2260%22%20y%3D%22162%22%20font-family%3D%22monospace%22%20font-size%3D%229%22%20fill%3D%22%23d6dedd%22%3ETimed%20out%20waiting%20for%20redirect%3C%2Ftext%3E%0A%3C%2Fsvg%3E"
+        ],
+        "tracePath": "data:application/json;charset=utf-8,%7B%0A%20%20%22testCaseId%22%3A%20%22TC-AUTH-002%22%2C%0A%20%20%22status%22%3A%20%22FAIL%22%2C%0A%20%20%22durationMs%22%3A%20950%2C%0A%20%20%22error%22%3A%20%22Timed%20out%20waiting%20for%20redirect%22%2C%0A%20%20%22execution%22%3A%20%22EXEC-5%22%2C%0A%20%20%22trigger%22%3A%20%22refs%2Fpull%2F42%22%2C%0A%20%20%22environment%22%3A%20%22staging%22%2C%0A%20%20%22startedAt%22%3A%20%222026-07-06T12%3A00%3A00.000Z%22%2C%0A%20%20%22note%22%3A%20%22Synthesised%20trace%20for%20the%20Warden%20dashboard%20demo.%22%0A%7D"
+      }
+    },
+    {
+      "id": "TC-CHECKOUT-001",
+      "name": "checkout › pay with saved card",
+      "durationMs": 2100,
+      "tags": [
+        "checkout",
+        "e2e"
+      ],
+      "status": "PASS",
+      "replay": null
+    },
+    {
+      "id": "TC-AUTH-001",
+      "name": "auth › valid credentials sign-in",
+      "durationMs": 800,
+      "tags": [
+        "auth",
+        "e2e"
+      ],
+      "status": "PASS",
+      "replay": null
+    },
+    {
+      "id": "TC-SEARCH-001",
+      "name": "search › relevant results",
+      "durationMs": 600,
+      "tags": [
+        "search",
+        "e2e"
+      ],
+      "status": "PASS",
+      "replay": null
+    },
+    {
+      "id": "TC-AUTH-003",
+      "name": "auth › logout clears session",
+      "durationMs": 400,
+      "tags": [
+        "auth",
+        "e2e"
+      ],
+      "status": "PASS",
+      "replay": null
+    }
+  ],
+  "defaultSelectedId": "TC-CHECKOUT-002",
+  "flake": [
+    {
+      "testCaseId": "TC-CHECKOUT-002",
+      "name": "checkout › apply discount code",
+      "flakeRate": 1,
+      "ratePct": 100,
+      "quarantined": false,
+      "pill": "FAIL"
+    },
+    {
+      "testCaseId": "TC-AUTH-002",
+      "name": "auth › post-login redirect",
+      "flakeRate": 0.4,
+      "ratePct": 40,
+      "quarantined": true,
+      "pill": "QUARANTINED"
+    }
+  ],
+  "learning": [
+    {
+      "title": "Taming the flaky post-login redirect",
+      "durationLabel": "4:12",
+      "embedId": "wardn-auth-002"
+    },
+    {
+      "title": "Why the discount-code check fails at checkout",
+      "durationLabel": "6:38",
+      "embedId": "wardn-checkout-002"
+    }
+  ]
+}
