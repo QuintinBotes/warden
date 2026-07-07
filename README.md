@@ -1,5 +1,8 @@
 # Warden
 
+[![CI](https://github.com/QuintinBotes/warden/actions/workflows/ci.yml/badge.svg)](https://github.com/QuintinBotes/warden/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Open-source, AI-native QA platform.** Warden reads a pull request's diff, selects the tests that matter, sends an AI agent to break the build, and posts a merge-gate verdict back to GitHub. Claude is the default engine, abstracted behind a provider interface so any model can be swapped in. Everything is self-hostable and MIT-licensed.
 
 > Status: **V1 in progress.** Specs written; `@warden/core` plus Wave 1 (`orchestrator`, `agent`, `runner`, `test-management`, `reporter`) are implemented and green. The CLI and GitHub Action land next. Built by a swarm of parallel agents against frozen contracts.
