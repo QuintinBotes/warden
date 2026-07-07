@@ -105,6 +105,57 @@ export const WardenConfigSchema = z.object({
       commitGeneratedTests: z.boolean().default(true),
     })
     .default({}),
+  // ── V2 (additive; all optional with defaults, so V1 configs stay valid) ──────────
+  observability: z
+    .object({
+      enabled: z.boolean().default(false),
+      pushgatewayUrl: z.string().optional(),
+    })
+    .default({}),
+  dashboard: z
+    .object({
+      enabled: z.boolean().default(false),
+      port: z.number().default(3001),
+      dbPath: z.string().default('.warden/warden.sqlite'),
+    })
+    .default({}),
+  recorder: z
+    .object({
+      enabled: z.boolean().default(false),
+      outDir: z.string().default('tests/e2e/recorded/'),
+    })
+    .default({}),
+  integrations: z
+    .object({
+      provider: z.enum(['none', 'linear', 'jira', 'github-projects']).default('none'),
+    })
+    .default({}),
+  performance: z
+    .object({
+      enabled: z.boolean().default(false),
+      p95LatencyMs: z.number().default(500),
+    })
+    .default({}),
+  security: z
+    .object({
+      enabled: z.boolean().default(false),
+      zapBaselineUrl: z.string().optional(),
+    })
+    .default({}),
+  mobile: z
+    .object({
+      enabled: z.boolean().default(false),
+      platforms: z.array(z.enum(['ios', 'android'])).default([]),
+    })
+    .default({}),
+  learningContent: z
+    .object({
+      enabled: z.boolean().default(false),
+      format: z.enum(['video', 'article', 'both']).default('both'),
+      voiceover: z.boolean().default(true),
+      publishDir: z.string().default('learning/'),
+    })
+    .default({}),
   plugins: z.array(z.custom<QAPlatformPlugin>()).default([]),
 });
 
