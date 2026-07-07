@@ -15,13 +15,17 @@ describe('runInit', () => {
     await fs.rm(dir, { recursive: true, force: true });
   });
 
-  it('scaffolds warden.config.ts using defineConfig', async () => {
+  it('scaffolds an import-free warden.config.ts that loads without deps installed', async () => {
     const result = await runInit({ cwd: dir });
 
     expect(result.configPath).toBe(path.join(dir, 'warden.config.ts'));
     const config = await fs.readFile(result.configPath, 'utf-8');
-    expect(config).toContain("from '@warden/core'");
-    expect(config).toContain('defineConfig(');
+    // Import-free so `npx warden` works before @warden/core is resolvable:
+    // no real top-level import statement (the JSDoc may mention one as an example).
+    expect(config).not.toMatch(/^import /m);
+    expect(config).toContain('export default {');
+    expect(config).toContain("provider: 'anthropic'");
+    expect(config).toContain('WardenConfigInput'); // JSDoc type for editor support
   });
 
   it('scaffolds a sample .github/workflows/ai-qa.yml', async () => {
