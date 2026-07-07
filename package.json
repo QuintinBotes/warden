@@ -11,8 +11,8 @@
     "onlyBuiltDependencies": ["esbuild", "better-sqlite3"]
   },
   "scripts": {
-    "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm --filter=./packages/* build",
+    "typecheck": "pnpm --filter=./packages/* typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "prettier --check \"packages/**/*.{ts,json}\""

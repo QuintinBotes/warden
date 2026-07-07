@@ -1,0 +1,28 @@
+{
+  "name": "dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Warden dashboard — Next.js app rendering the Sentinel design system over dashboard-api data",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "snapshot": "node scripts/snapshot.mjs"
+  },
+  "dependencies": {
+    "@warden/core": "workspace:*",
+    "@warden/dashboard-api": "workspace:*",
+    "@warden/design-system": "workspace:*",
+    "@warden/test-management": "workspace:*",
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.6.3"
+  }
+}

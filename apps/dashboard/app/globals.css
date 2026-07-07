@@ -1,0 +1,368 @@
+/* Dashboard layout scaffolding. Colours come entirely from Sentinel tokens
+   (--g0, --ink1, --hair, status colours, …) so every theme just works. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--g0);
+  color: var(--ink1);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+.wd-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+/* ---- Top bar ------------------------------------------------------------ */
+
+.wd-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--hair-soft);
+}
+
+.wd-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.wd-wordmark {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+  color: var(--ink0);
+}
+
+.wd-brand-tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  padding: 0.22rem 0.55rem;
+}
+
+.wd-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.wd-run-context {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
+.wd-run-context b {
+  color: var(--ink1);
+  font-weight: 600;
+}
+
+/* ---- Sections & headings ------------------------------------------------ */
+
+.wd-block {
+  margin-top: 2.75rem;
+}
+
+.wd-section {
+  min-width: 0;
+}
+
+.wd-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.wd-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  margin: 0 0 0.35rem;
+}
+
+.wd-title {
+  font-family: var(--sans);
+  font-size: 1.12rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink0);
+  margin: 0;
+}
+
+.wd-subtitle {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--ink2);
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* ---- Grids -------------------------------------------------------------- */
+
+.wd-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.wd-split {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.wd-split--cov {
+  grid-template-columns: 1.7fr 1fr;
+}
+
+.wd-split--results {
+  grid-template-columns: 1fr 1fr;
+}
+
+.wd-split--flake {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 960px) {
+  .wd-split--cov,
+  .wd-split--results,
+  .wd-split--flake {
+    grid-template-columns: 1fr;
+  }
+  .wd-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .wd-run-context {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .wd-kpis {
+    grid-template-columns: 1fr;
+  }
+  .wd-shell {
+    padding: 1.75rem 1rem 3rem;
+  }
+}
+
+/* ---- Panels ------------------------------------------------------------- */
+
+.wd-panel {
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: var(--g1);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+/* ---- Selectable result rows -------------------------------------------- */
+
+.wd-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.wd-row-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.wd-row-btn:not(:first-child) {
+  border-top: 1px solid var(--hair-soft);
+}
+
+.wd-row-btn .sentinel-trow {
+  border-top: 0;
+  transition: background 0.15s ease;
+}
+
+.wd-row-btn:hover .sentinel-trow {
+  background: var(--g2);
+}
+
+.wd-row-btn[data-selected='true'] .sentinel-trow {
+  background: var(--g2);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.wd-row-btn:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: -2px;
+  border-radius: var(--r-sm);
+}
+
+/* ---- Flake board -------------------------------------------------------- */
+
+.wd-flake-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  column-gap: 0.9rem;
+  row-gap: 0.55rem;
+  padding: 0.9rem 1rem;
+}
+
+.wd-flake-item:not(:first-child) {
+  border-top: 1px solid var(--hair-soft);
+}
+
+.wd-flake-name {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wd-flake-rate {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink1);
+  font-variant-numeric: tabular-nums;
+}
+
+.wd-meter {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--g3);
+  overflow: hidden;
+}
+
+.wd-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.wd-meter-fill[data-status='QUARANTINED'] {
+  background: var(--quar);
+}
+.wd-meter-fill[data-status='FLAKY'] {
+  background: var(--flaky);
+}
+.wd-meter-fill[data-status='FAIL'] {
+  background: var(--fail);
+}
+
+.wd-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink2);
+}
+
+/* ---- Learning list ------------------------------------------------------ */
+
+.wd-learn-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.95rem 1rem;
+}
+
+.wd-learn-item:not(:first-child) {
+  border-top: 1px solid var(--hair-soft);
+}
+
+.wd-learn-play {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r);
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+.wd-learn-body {
+  min-width: 0;
+}
+
+.wd-learn-title {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  font-weight: 550;
+  color: var(--ink0);
+  margin: 0 0 0.2rem;
+}
+
+.wd-learn-meta {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+  color: var(--ink2);
+  margin: 0;
+}
+
+.wd-learn-meta span + span::before {
+  content: '·';
+  margin: 0 0.4rem;
+  color: var(--hair);
+}
+
+/* ---- Footer ------------------------------------------------------------- */
+
+.wd-footer {
+  margin-top: 3.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--hair-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+  color: var(--ink2);
+}
+
+.wd-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
