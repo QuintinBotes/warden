@@ -1,7 +1,7 @@
 {
-  "name": "@warden/agent",
+  "name": "@warden/observability",
   "version": "0.1.0",
-  "description": "Warden agent layer — LLM provider abstraction and the exploratory/generative/healer strategies",
+  "description": "Warden observability — MetricsEmitter over Prometheus pushgateway + Grafana dashboards",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,7 +14,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "monitoring"
   ],
   "scripts": {
     "build": "tsup",
@@ -22,9 +23,7 @@
   },
   "dependencies": {
     "@warden/core": "workspace:*",
-    "@anthropic-ai/sdk": "^0.65.0",
-    "@google/generative-ai": "^0.21.0",
-    "openai": "^4.77.0",
+    "prom-client": "^15.1.3",
     "zod": "^3.24.1"
   },
   "devDependencies": {
