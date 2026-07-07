@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+import { fixtureExecution } from '@warden/core/testing';
+import { computeGateDecision } from './gate-decision.js';
+
+describe('computeGateDecision', () => {
+  it('returns PASS when every result passed', () => {
+    const execution = fixtureExecution();
+
+    expect(computeGateDecision(execution)).toEqual({
+      decision: 'PASS',
+      reason: 'All tests passed',
+    });
+  });
+
+  it('returns BLOCK when any result failed', () => {
+    const execution = fixtureExecution({
+      results: [
+        { testCaseId: 'TC-1', status: 'PASS', duration: 10, retries: 0, flakeFlag: false },
+        { testCaseId: 'TC-2', status: 'FAIL', duration: 10, retries: 0, flakeFlag: false },
+      ],
+    });
+
+    const gate = computeGateDecision(execution);
+    expect(gate.decision).toBe('BLOCK');
+    expect(gate.reason).toContain('1');
+  });
+
+  it('returns WARN when a result is flaky but nothing failed', () => {
+    const execution = fixtureExecution({
+      results: [{ testCaseId: 'TC-1', status: 'FLAKY', duration: 10, retries: 2, flakeFlag: true }],
+    });
+
+    expect(computeGateDecision(execution).decision).toBe('WARN');
+  });
+});

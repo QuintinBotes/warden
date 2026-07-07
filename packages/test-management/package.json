@@ -1,0 +1,35 @@
+{
+  "name": "@warden/test-management",
+  "version": "0.1.0",
+  "description": "Warden test management — SQLite execution history, Git-YAML test cases, coverage matrix, flake quarantine",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@warden/core": "workspace:*",
+    "better-sqlite3": "^11.5.0",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/js-yaml": "^4.0.9",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3"
+  }
+}
