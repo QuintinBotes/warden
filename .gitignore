@@ -1,5 +1,31 @@
+# dependencies & build output
 node_modules/
 dist/
 .turbo/
+.next/
+out/
+*.tsbuildinfo
+
+# logs & os
 *.log
 .DS_Store
+
+# secrets & credentials — never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+credentials.json
+secrets/
+
+# local data & generated media
+*.sqlite
+*.sqlite3
+.warden/
+coverage/
+playwright-report/
+test-results/

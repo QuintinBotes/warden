@@ -54,12 +54,18 @@ If you need a new shared type or interface, add it to `@warden/core` (and keep c
 
 Warden is built in **contract-first waves** (see [the specs](docs/superpowers/specs/)): one wave freezes `@warden/core`, then later waves implement against it in parallel. Each work-stream owns a disjoint set of paths and has a uniform definition of done. You can contribute to any single package without touching the others.
 
-## Submitting changes
+## Pull request process
 
-1. Branch from `main`.
-2. Keep changes scoped to one package where possible.
-3. Ensure `pnpm -w build && pnpm -w test && pnpm -w typecheck && pnpm -w lint` are all green.
-4. Open a PR — Warden reviews its own PRs.
+Warden uses a **protected `main` branch with required maintainer approval** — every change lands through a reviewed pull request.
+
+1. **Discuss first** for anything non-trivial. Open an issue so the approach can be agreed before you build.
+2. **Branch and build.** Create a branch, keep changes scoped to as few packages as possible, and make `pnpm -w build && pnpm -w test && pnpm -w typecheck && pnpm -w lint` all green.
+3. **Open a PR** against `main` and fill in the template. CI (build/test/typecheck/lint) and the Warden self-test must pass.
+4. **Review & approval.** A code owner ([`.github/CODEOWNERS`](.github/CODEOWNERS)) must approve before merge. PRs are merged with **squash**, and the branch is deleted on merge.
+
+> **Note on forks.** Forking is currently disabled on this repository. If you'd like to contribute, open an issue to introduce yourself and request contributor access, or propose the change there first. This keeps the contribution surface small and reviewed while the project is early.
+
+Please also read the [Code of Conduct](CODE_OF_CONDUCT.md) and the [Security Policy](SECURITY.md).
 
 ## License
 

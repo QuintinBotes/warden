@@ -1,0 +1,7 @@
+# Code owners for Warden.
+# Every pull request requires review from an owner listed here before it can be merged
+# (enforced by branch protection: "Require review from Code Owners").
+#
+# The catch-all owns everything. Add finer-grained rules below it as the team grows.
+
+*       @QuintinBotes
