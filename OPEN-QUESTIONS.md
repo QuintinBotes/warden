@@ -9,10 +9,8 @@ Decisions that need you. Ordered by impact. None block using the platform today.
 
 **Recommendation:** review the repo, then make it public when ready (`gh repo edit QuintinBotes/warden --visibility public`), and I (or you) can enable the rest immediately.
 
-## 2. Branch protection (require your approval on every PR)
-Configured intent: require a PR, **1 approving review**, **CODEOWNERS review** (you own everything → every PR needs your approval), required status checks (CI + Warden Self-Test), no force-push/deletion, **admin bypass ON** (so you're never locked out).
-- On a **private personal** repo, GitHub may not enforce this (needs public or a paid plan). If my automated attempt failed, it's because of that — see the note in the final message.
-- To enable once public: it's a single `gh api` call; I left the exact payload in the morning summary. CODEOWNERS + the PR template are already in place and will take effect the moment protection is on.
+## 2. Branch protection — ENABLED ✅ (confirm it matches your intent)
+`main` is now protected: every PR requires **1 approving review**, **CODEOWNERS approval** (you own everything → every PR needs your sign-off), passing **CI + Warden QA** checks, no force-push/deletion, **admin bypass ON** (you can still merge your own work). Nothing to do — just confirm you're happy with it. To loosen/tighten later it's a single `gh api .../branches/main/protection` call.
 
 ## 3. Disallowing forks — confirm the contribution model
 You asked to disable forks. On a **private personal** repo this isn't a settable flag (and forks are already impossible without granted access). When you go public:
