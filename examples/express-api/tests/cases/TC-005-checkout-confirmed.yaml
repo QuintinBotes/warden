@@ -1,0 +1,16 @@
+id: TC-005
+title: Checkout confirms payment for a valid card
+type: api
+priority: P1
+tags:
+  - "@smoke"
+  - "@regression"
+  - "@api"
+  - "@apps/checkout"
+requirementIds:
+  - "ISSUE-201"
+automation:
+  framework: playwright
+  filePath: examples/express-api/tests/api/checkout.spec.ts
+  testName: "checkout > confirms a valid card"
+source: manual

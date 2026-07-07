@@ -1,0 +1,17 @@
+{
+  "name": "warden-example-express-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Warden example: a tiny Express JSON API (login, cart, checkout) with Playwright API tests and Warden test-case YAML.",
+  "scripts": {
+    "dev": "node src/server.js",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

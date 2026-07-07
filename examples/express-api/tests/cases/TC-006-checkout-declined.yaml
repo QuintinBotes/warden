@@ -1,0 +1,15 @@
+id: TC-006
+title: Checkout declines payment for an invalid card
+type: api
+priority: P1
+tags:
+  - "@regression"
+  - "@api"
+  - "@apps/checkout"
+requirementIds:
+  - "ISSUE-201"
+automation:
+  framework: playwright
+  filePath: examples/express-api/tests/api/checkout.spec.ts
+  testName: "checkout > declines an invalid card"
+source: manual

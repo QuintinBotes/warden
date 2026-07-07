@@ -1,0 +1,14 @@
+id: TC-004
+title: Cart module accepts a new item
+type: api
+priority: P3
+tags:
+  - "@regression"
+  - "@apps/cart"
+requirementIds:
+  - "ISSUE-150"
+automation:
+  framework: playwright
+  filePath: examples/monorepo/tests/e2e/cart.spec.ts
+  testName: "cart > adds an item"
+source: manual

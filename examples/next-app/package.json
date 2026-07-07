@@ -1,0 +1,14 @@
+{
+  "name": "warden-example-next-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Warden example: a minimal login + checkout web UI (plain Node http server) with role-based Playwright E2E tests and Warden test-case YAML.",
+  "scripts": {
+    "dev": "node src/server.js",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

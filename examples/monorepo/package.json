@@ -1,0 +1,15 @@
+{
+  "name": "warden-example-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Warden example: a tiny two-app monorepo (checkout + cart) demonstrating module-scoped test tags for Warden's selective testing.",
+  "scripts": {
+    "dev:checkout": "node apps/checkout/server.js",
+    "dev:cart": "node apps/cart/server.js",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

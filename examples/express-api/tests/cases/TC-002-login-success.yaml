@@ -1,0 +1,15 @@
+id: TC-002
+title: User can log in with valid credentials
+type: api
+priority: P1
+tags:
+  - "@smoke"
+  - "@api"
+  - "@apps/checkout"
+requirementIds:
+  - "ISSUE-101"
+automation:
+  framework: playwright
+  filePath: examples/express-api/tests/api/checkout.spec.ts
+  testName: "login > succeeds with valid credentials"
+source: manual

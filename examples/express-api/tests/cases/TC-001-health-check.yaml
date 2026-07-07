@@ -1,0 +1,13 @@
+id: TC-001
+title: Health endpoint reports service status
+type: api
+priority: P3
+tags:
+  - "@smoke"
+  - "@api"
+requirementIds: []
+automation:
+  framework: playwright
+  filePath: examples/express-api/tests/api/health.spec.ts
+  testName: "health > returns ok"
+source: manual

@@ -1,0 +1,14 @@
+id: TC-001
+title: User can sign in with valid credentials
+type: smoke
+priority: P1
+tags:
+  - "@smoke"
+  - "@apps/auth"
+requirementIds:
+  - "ISSUE-101"
+automation:
+  framework: playwright
+  filePath: examples/next-app/tests/e2e/login.spec.ts
+  testName: "login > user can sign in with valid credentials"
+source: manual

@@ -1,0 +1,15 @@
+id: TC-003
+title: Login is rejected with invalid credentials
+type: api
+priority: P2
+tags:
+  - "@regression"
+  - "@api"
+  - "@apps/checkout"
+requirementIds:
+  - "ISSUE-101"
+automation:
+  framework: playwright
+  filePath: examples/express-api/tests/api/checkout.spec.ts
+  testName: "login > rejects invalid credentials"
+source: manual

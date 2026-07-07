@@ -1,0 +1,14 @@
+id: TC-003
+title: Cart module lists items and a running total
+type: api
+priority: P2
+tags:
+  - "@smoke"
+  - "@apps/cart"
+requirementIds:
+  - "ISSUE-150"
+automation:
+  framework: playwright
+  filePath: examples/monorepo/tests/e2e/cart.spec.ts
+  testName: "cart > lists items and total"
+source: manual

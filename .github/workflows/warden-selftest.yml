@@ -1,0 +1,51 @@
+name: Warden Self-Test
+
+# Warden reviews its own pull requests (dogfood). The change-surface analysis is
+# keyless and always runs; the AI agent runs only if an ANTHROPIC_API_KEY secret is set.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  warden:
+    name: 🛡️ Warden QA
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm -w build
+
+      - name: Analyze change surface (keyless)
+        id: analyze
+        run: node packages/cli/dist/bin/warden.js analyze --base origin/main --head HEAD --output "$GITHUB_OUTPUT"
+
+      - name: Show change surface
+        run: |
+          echo "test_tags     = ${{ steps.analyze.outputs.test_tags }}"
+          echo "risk_score    = ${{ steps.analyze.outputs.risk_score }}"
+          echo "run_full_suite= ${{ steps.analyze.outputs.run_full_suite }}"
+
+      - name: Emit test plan
+        run: node packages/cli/dist/bin/warden.js plan --name "PR #${{ github.event.pull_request.number }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: AI exploratory agent (requires ANTHROPIC_API_KEY secret)
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        run: node packages/cli/dist/bin/warden.js agent --strategy generative --output warden-report.json

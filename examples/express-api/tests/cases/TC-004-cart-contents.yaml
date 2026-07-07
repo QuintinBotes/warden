@@ -1,0 +1,15 @@
+id: TC-004
+title: Cart endpoint returns items and a running total
+type: api
+priority: P3
+tags:
+  - "@regression"
+  - "@api"
+  - "@apps/checkout"
+requirementIds:
+  - "ISSUE-150"
+automation:
+  framework: playwright
+  filePath: examples/express-api/tests/api/checkout.spec.ts
+  testName: "cart > returns items and total"
+source: manual

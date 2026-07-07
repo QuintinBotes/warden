@@ -1,0 +1,14 @@
+id: TC-002
+title: Login shows an error for invalid credentials
+type: regression
+priority: P2
+tags:
+  - "@regression"
+  - "@apps/auth"
+requirementIds:
+  - "ISSUE-101"
+automation:
+  framework: playwright
+  filePath: examples/next-app/tests/e2e/login.spec.ts
+  testName: "login > shows an error for invalid credentials"
+source: manual
