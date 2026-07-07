@@ -15,6 +15,28 @@ conventions:
   isolation: worktree
   ownershipRule: "write only under ownsPaths; @warden/core changes are additive-only in WS2-00"
 
+# Same principle as V1: pick the model by reasoning load; Sonnet/Haiku only when fully
+# self-contained (embed contract + acceptance tests + core d.ts + fixtures in the dispatch prompt).
+modelPolicy:
+  effort: { opus: xhigh, sonnet: high, haiku: medium }
+  selfContainedDispatch:
+    - "Embed the contract (spec.md#anchor), acceptanceCriteria (tests first), core d.ts, ownsPaths, and fixtures."
+    - "A stream that cannot be made self-contained for Sonnet/Haiku is escalated to Opus."
+  models:
+    WS2-00: { model: opus,   why: "Additive contract extensions; must not break any V1 signature." }
+    WS2-10: { model: sonnet, why: "Providers mirror the v1 Anthropic pattern; self-contained (watch tool-format mapping)." }
+    WS2-11: { model: sonnet, why: "Stagehand engine mirrors the playwright engine + act/extract." }
+    WS2-12: { model: sonnet, why: "Prometheus emitter + Grafana JSON + compose — config-heavy, mechanical." }
+    WS2-13: { model: sonnet, why: "Issue-tracker API adapters — mechanical object mapping." }
+    WS2-14: { model: opus,   why: "Session-recording -> test synthesis is genuine reasoning." }
+    WS2-15: { model: sonnet, why: "k6 JSON -> CTRF + threshold gate." }
+    WS2-16: { model: sonnet, why: "ZAP JSON -> CTRF findings + severity mapping." }
+    WS2-17: { model: sonnet, why: "Appium session + Playwright project matrix." }
+    WS2-18: { model: opus,   why: "Translate Sentinel into tokens/components with a11y fidelity — design quality matters." }
+    WS2-20: { model: opus,   why: "The product's face: complex UI + live data + E2E replay viewer." }
+    WS2-21: { model: sonnet, why: "Data API over store/Prometheus — mechanical, self-contained." }
+    WS2-30: { model: sonnet, why: "Docs + deploy compose; pure docs may drop to haiku." }
+
 barriers:
   afterWave: "pnpm -w build && pnpm -w test && pnpm -w typecheck"
 
@@ -130,7 +152,8 @@ waves:
         contract: "spec.md#ws2-18--sentinel-design-system--wardendesign-system"
         acceptanceCriteria:
           - "Sentinel tokens exported as CSS variables + TS token object (status roles + base/ink/accent + type/space/radii)"
-          - "themes: sentinel-dark (default) + light + high-contrast swap via data-theme"
+          - "themes swap via data-theme: Signal (near-black, high-contrast) = DEFAULT, plus Watch (slate-teal dark) + Day (light)"
+          - "ReplayViewer primitive: HTML5 video player + screenshot gallery + trace link, driven by TestResult media paths"
           - "every status role passes WCAG AA on its surface in all themes"
           - "Warden portcullis logo as SVG at 16/24/32/full lockup"
           - "primitives: VerdictCard/StatusPill/CoverageMatrix/TestResultRow/TrendTile/ThemeToggle match the design artifact"
@@ -147,8 +170,9 @@ waves:
         contract: "spec.md#ws2-20--requirements-traceability-dashboard--appsdashboard"
         acceptanceCriteria:
           - "screens: Coverage Matrix, Execution history & trends, Flake board/quarantine, PR gate timeline, Requirement drill-down"
+          - "E2E replay: each test result opens a ReplayViewer (video + screenshot gallery + trace) from its media paths"
           - "reads live data via DashboardDataApi; filters by module/status; trends over time"
-          - "responsive; dark(default)/light/high-contrast; keyboard-navigable; matches Sentinel artifact"
+          - "responsive; Signal(default)/Watch/Day themes; keyboard-navigable; matches Sentinel artifact"
         testCmd: "pnpm --filter dashboard test"
       - id: WS2-21
         package: "@warden/dashboard-api"

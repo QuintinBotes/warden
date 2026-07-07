@@ -142,6 +142,9 @@ export const TestCaseSchema = z.object({
 export type TestCase = z.infer<typeof TestCaseSchema>;
 // ...Requirement, TestPlan, TestExecution, TestResult, CoverageStatus likewise.
 ```
+> **`TestResult` media (for dashboard replay):** carries `screenshotPath?`, `videoPath?`, `tracePath?`,
+> and a general `artifacts: { type: 'screenshot'|'video'|'trace'|'log'; path: string }[]`. The runner (WS-12)
+> populates these; the reporter surfaces them; the V2 dashboard (WS2-20) plays the video and shows the gallery.
 
 ### D.2 CTRF report schema
 `packages/core/src/ctrf.ts` — the CTRF JSON shape (blueprint Part VI) as Zod, plus `mergeCtrf(reports: CTRFReport[]): CTRFReport` signature (impl in WS-14, type here).
@@ -291,7 +294,7 @@ Each entry: **owns / depends on / contract / acceptance criteria / test cmd.** C
 - **Owns:** `packages/runner/**` (`engines/playwright.ts`, `engines/claude-chrome.ts`, `create-engine.ts`, `playwright-run.ts`, `api-run.ts`, `ctrf-adapter.ts`).
 - **Depends on:** `@warden/core`.
 - **Contract:** `createEngine(cfg): BrowserEngine` (returns Playwright or Claude-Chrome per `cfg.browser.engine`); `runPlaywright(opts): Promise<CTRFReport>` (shells Playwright with `--grep`, parses JSON → CTRF); `runApiTests(opts): Promise<CTRFReport>`. Both engines implement `BrowserSession` from D.5.
-- **Acceptance:** Playwright engine performs real role-based click/fill/goto/screenshot against a local fixture page; `claude-chrome` engine implements every `BrowserSession` method by delegating to the Claude-in-Chrome MCP tool surface (unit-tested against a **faked MCP client** — the interface, not a live browser) and documents the "requires extension + site permission, local-first" caveat in its module header; `runPlaywright` converts Playwright JSON to valid CTRF (validated by core's CTRF schema). CI-safe tests never require a real Chrome extension.
+- **Acceptance:** Playwright engine performs real role-based click/fill/goto/screenshot against a local fixture page; `claude-chrome` engine implements every `BrowserSession` method by delegating to the Claude-in-Chrome MCP tool surface (unit-tested against a **faked MCP client** — the interface, not a live browser) and documents the "requires extension + site permission, local-first" caveat in its module header; `runPlaywright` converts Playwright JSON to valid CTRF (validated by core's CTRF schema). Both engines **capture per-test media** — screenshot + video (+ Playwright trace) — write them under `artifactsDir`, and set `screenshotPath`/`videoPath`/`tracePath` on each `TestResult` so the V2 dashboard can replay the run. CI-safe tests never require a real Chrome extension.
 - **Test cmd:** `pnpm --filter @warden/runner test`
 
 ### WS-13 · `@warden/test-management` — Wave 1

@@ -7,7 +7,32 @@
    * ============================================================= */
 
   :root {
-    /* WATCH — dark, default */
+    /* SIGNAL — near-black, high-contrast · DEFAULT house theme */
+    --g0:#05090A; --g1:#0A1113; --g2:#10191B; --g3:#17262A;
+    --hair:#2E4247; --hair-soft:#1C2C30;
+    --ink0:#FFFFFF; --ink1:#D6DEDD; --ink2:#98A4A3;
+    --accent:#FFC24D; --accent-bright:#FFD57E; --accent-dim:#C79430;
+    --pass:#43D19A; --fail:#FF5B60; --flaky:#FFB04A;
+    --blocked:#AC9DF3; --skip:#8A9B9D; --quar:#F08466;
+    --pass-t:rgba(67,209,154,.16); --fail-t:rgba(255,91,96,.18);
+    --flaky-t:rgba(255,176,74,.16); --blocked-t:rgba(172,157,243,.18);
+    --skip-t:rgba(138,155,157,.18); --quar-t:rgba(240,132,102,.18);
+    --shadow:0 0 0 1px rgba(255,255,255,.04) inset, 0 20px 44px -24px #000;
+    --beacon:0 0 0 rgba(255,194,77,.0);
+
+    /* type */
+    --mono: ui-monospace,'SF Mono','JetBrains Mono','Roboto Mono',Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --fs-eyebrow:.72rem; --fs-body:.95rem; --fs-lead:1.12rem;
+    --step: clamp(2.1rem, 6.5vw, 4.4rem);
+
+    /* space + shape */
+    --sp:1rem; --r-sm:6px; --r:10px; --r-lg:16px; --maxw:1120px;
+    color-scheme: dark;
+  }
+
+  :root[data-sentinel="watch"] {
+    /* WATCH — slate-teal dark, warmer command center */
     --g0:#0B1417; --g1:#0F1E23; --g2:#16292F; --g3:#1D343A;
     --hair:#24393F; --hair-soft:#1A2B31;
     --ink0:#F0EADD; --ink1:#A6B2B1; --ink2:#6E7D7F;
@@ -18,16 +43,6 @@
     --flaky-t:rgba(224,138,44,.15); --blocked-t:rgba(139,123,216,.16);
     --skip-t:rgba(107,124,130,.16); --quar-t:rgba(194,98,75,.16);
     --shadow:0 1px 0 rgba(255,255,255,.02) inset, 0 18px 40px -24px rgba(0,0,0,.8);
-    --beacon:0 0 0 rgba(233,180,76,.0);
-
-    /* type */
-    --mono: ui-monospace,'SF Mono','JetBrains Mono','Roboto Mono',Menlo,Consolas,monospace;
-    --sans: system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-    --fs-eyebrow:.72rem; --fs-body:.95rem; --fs-lead:1.12rem;
-    --step: clamp(2.1rem, 6.5vw, 4.4rem);
-
-    /* space + shape */
-    --sp:1rem; --r-sm:6px; --r:10px; --r-lg:16px; --maxw:1120px;
     color-scheme: dark;
   }
 
@@ -351,9 +366,9 @@
         <span class="sub">Sentinel&nbsp;·&nbsp;Design System</span>
       </div>
       <div class="switch" role="group" aria-label="Theme">
-        <button data-theme-btn="watch"  aria-pressed="true">Watch</button>
+        <button data-theme-btn="signal" aria-pressed="true">Signal</button>
+        <button data-theme-btn="watch"  aria-pressed="false">Watch</button>
         <button data-theme-btn="day"    aria-pressed="false">Day</button>
-        <button data-theme-btn="signal" aria-pressed="false">Signal</button>
       </div>
     </div>
   </div>
@@ -641,7 +656,7 @@
       </div>
       <div class="themes">
         <div class="theme-card t-watch"><div class="tc-in">
-          <div class="tc-name">Watch — dark, default</div>
+          <div class="tc-name">Watch — dark</div>
           <div class="tc-desc">Night shift in the tower. Slate-teal ground, beacon gold.</div>
           <div class="mini-pills">
             <span class="mp" style="color:#43B98A;border-color:#43B98A55;background:#43b98a24">Pass</span>
@@ -657,7 +672,7 @@
             <span class="mp" style="color:#9C6015;border-color:#9C601555;background:#9c601518">Flaky</span></div>
         </div></div>
         <div class="theme-card t-signal"><div class="tc-in">
-          <div class="tc-name">Signal — high contrast</div>
+          <div class="tc-name">Signal — high contrast · default</div>
           <div class="tc-desc">Max legibility. Near-black, pure-white ink, boosted chroma.</div>
           <div class="mini-pills">
             <span class="mp" style="color:#43D19A;border-color:#43D19A66;background:#43d19a28">Pass</span>
@@ -690,13 +705,12 @@
         b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-btn') === theme));
       });
     }
-    // initialize from host: honor explicit data-theme, else OS preference
+    // Signal (near-black) is the default house theme. A light host still gets Day as a courtesy.
     function hostTheme() {
       var dt = root.getAttribute('data-theme');
       if (dt === 'light') return 'day';
-      if (dt === 'dark') return 'watch';
-      try { if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'day'; } catch (e) {}
-      return 'watch';
+      try { if (dt !== 'dark' && window.matchMedia('(prefers-color-scheme: light)').matches) return 'day'; } catch (e) {}
+      return 'signal';
     }
     apply(hostTheme());
 

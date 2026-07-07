@@ -18,6 +18,30 @@ conventions:
   ownershipRule: "write only under ownsPaths; @warden/core is read-only in waves 1-3"
   contractChangeRequests: docs/superpowers/specs/contract-change-requests.md
 
+# Choose the model per work-stream by REASONING LOAD, not size.
+# Opus for contract-defining and correctness-critical streams. Sonnet/Haiku ONLY when the
+# stream is fully self-contained — the dispatch prompt must embed everything the agent needs
+# so it never has to discover context across packages.
+modelPolicy:
+  effort: { opus: xhigh, sonnet: high, haiku: medium }
+  selfContainedDispatch:
+    - "Embed the work-stream's contract text (its spec.md#anchor) verbatim in the prompt."
+    - "Embed acceptanceCriteria as the tests to write FIRST (TDD)."
+    - "Attach the built @warden/core types (packages/core/dist/index.d.ts) so every signature is known."
+    - "State ownsPaths and forbid edits outside them."
+    - "Name the fixtures/fakes to use (from @warden/core/testing) so no sibling package is needed."
+    - "A Sonnet/Haiku stream that cannot be made self-contained is escalated to Opus, not shipped under-specified."
+  models:
+    WS-00: { model: opus,   why: "Contract surface — everything depends on it; must be exactly right." }
+    WS-10: { model: opus,   why: "Diff/risk/gate reasoning; correctness-critical pure logic." }
+    WS-11: { model: opus,   why: "Provider tool-mapping + 3 agent strategies + prompt design — hardest stream." }
+    WS-12: { model: opus,   why: "Two browser engines (incl. claude-chrome MCP) + CTRF + video/screenshot capture." }
+    WS-13: { model: sonnet, why: "SQLite CRUD + YAML parse + coverage/flake math — well-specified, self-contained." }
+    WS-14: { model: sonnet, why: "CTRF/Markdown/octokit payloads from exact templates — self-contained." }
+    WS-20: { model: sonnet, why: "Wires frozen wave-1 APIs behind commander — integration, self-contained." }
+    WS-21: { model: opus,   why: "CI orchestration + checks/annotations correctness across many edge cases." }
+    WS-30: { model: sonnet, why: "Example apps + dogfood CI; pure example scaffolds may drop to haiku." }
+
 barriers:
   afterWave: "pnpm -w build && pnpm -w test && pnpm -w typecheck"
 
@@ -95,6 +119,7 @@ waves:
           - "claude-chrome engine: implements every BrowserSession method via Claude-in-Chrome MCP tools (navigate/computer/read_page/find/form_input), tested against a FAKED mcp client"
           - "claude-chrome module header documents 'requires extension + site permission, local-first, not CI default'"
           - "runPlaywright converts Playwright JSON -> valid CTRF (core schema validates)"
+          - "captures per-test artifacts: screenshot + video (+ trace) via Playwright config (video 'on'/'retain-on-failure'); writes them under artifactsDir and records screenshotPath/videoPath/tracePath on each TestResult for dashboard replay"
           - "no unit test requires a real Chrome extension"
         testCmd: "pnpm --filter @warden/runner test"
       - id: WS-13
