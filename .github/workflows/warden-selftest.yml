@@ -44,7 +44,8 @@ jobs:
           echo "run_full_suite= ${{ steps.analyze.outputs.run_full_suite }}"
 
       - name: Emit test plan
-        run: node packages/cli/dist/bin/warden.js plan --name "PR #${{ github.event.pull_request.number }}" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          node packages/cli/dist/bin/warden.js plan --name "PR #${{ github.event.pull_request.number }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: AI exploratory agent (requires ANTHROPIC_API_KEY secret)
         if: ${{ env.ANTHROPIC_API_KEY != '' }}
