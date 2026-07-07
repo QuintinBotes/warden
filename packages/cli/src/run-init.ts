@@ -13,9 +13,20 @@ export interface RunInitResult {
   workflowPath: string;
 }
 
-const CONFIG_TEMPLATE = `import { defineConfig } from '@warden/core';
-
-export default defineConfig({
+const CONFIG_TEMPLATE = `/**
+ * Warden configuration. Every field is optional and has a sensible default, so you can
+ * delete anything you don't need. Full reference:
+ * https://github.com/QuintinBotes/warden/blob/main/docs/configuration.md
+ *
+ * This starter is import-free so it works immediately, even via \`npx warden\`. Once you've
+ * added @warden/cli as a dependency you can switch to the typed helper:
+ *
+ *   import { defineConfig } from '@warden/core';
+ *   export default defineConfig({ ... });
+ *
+ * @type {import('@warden/core').WardenConfigInput}
+ */
+export default {
   ai: {
     provider: 'anthropic',
     model: 'claude-sonnet-5',
@@ -42,7 +53,7 @@ export default defineConfig({
     blockOnCritical: true,
     blockOnPassRateBelowPercent: 90,
   },
-});
+};
 `;
 
 const WORKFLOW_TEMPLATE = `name: AI QA
@@ -115,7 +126,8 @@ jobs:
 `;
 
 /**
- * Scaffolds a starter `warden.config.ts` (built on `defineConfig`) and a sample tiered
+ * Scaffolds a starter `warden.config.ts` (import-free, so it loads even before deps are
+ * installed) and a sample tiered
  * `.github/workflows/ai-qa.yml` (smoke → analyze → selective/exploratory → gate, per blueprint
  * Part IV) into `opts.cwd` — the `create-warden-config` onboarding story.
  */
