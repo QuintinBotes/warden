@@ -33,6 +33,7 @@
 | 9 | **Sentinel design system** — tokens + components (the anti-slop identity) | `WS2-18` `@warden/design-system` | 1 |
 | 10 | **Requirements Traceability dashboard** — Next.js UI, the platform's face | `WS2-20` `apps/dashboard` | 2 |
 | 11 | **Docs site + one-command deploy** — Docusaurus + compose deployment | `WS2-30` docs/examples | 3 |
+| 12 | **Learning Content Studio** — turn tested flows into narrated learning videos + articles (opt-in boolean), embeddable in a learning platform | `WS2-19` `@warden/learning-studio` | 1 |
 
 Each maps to a `BrowserEngine`/`LLMProvider`/`Reporter`/plugin seam that **V1 already defined** — V2 is filling in the seams, which is exactly why the V1 abstractions exist.
 
@@ -43,7 +44,7 @@ Each maps to a `BrowserEngine`/`LLMProvider`/`Reporter`/plugin seam that **V1 al
 | Wave | Work-streams | Parallelism | Barrier |
 |------|--------------|-------------|---------|
 | **0** | `WS2-00 core-v2` (additive contract extensions) | 1 (solo) | core builds; **no V1 signature changed**; new exports frozen |
-| **1** | `WS2-10..18` (9 streams) | up to 9 agents parallel | each package builds + unit-tests green against core-v2 |
+| **1** | `WS2-10..19` (10 streams) | up to 10 agents parallel | each package builds + unit-tests green against core-v2 |
 | **2** | `WS2-20 dashboard`, `WS2-21 dashboard-api` | 2 agents parallel | dashboard renders live data in Sentinel themes |
 | **3** | `WS2-30 docs + examples + deploy` | 1–2 agents | one-command self-host stack; docs published |
 
@@ -84,9 +85,22 @@ export interface IntegrationAdapter {
 // Recorder seam (WS2-14)
 export interface SessionRecorder { record(url: string, opts): Promise<RecordedSession>; }
 export interface TestSynthesizer { synthesize(s: RecordedSession, provider: LLMProvider): Promise<GeneratedTest[]>; }
+
+// Learning content seam (WS2-19) — turn a tested flow into embeddable teaching material
+export interface LearningModule {
+  id: string; title: string; sourceExecutionId: string; flow: string;
+  script: string;                                  // AI-authored narration / steps
+  chapters: { title: string; atMs: number }[];
+  videoPath?: string; transcriptPath?: string; articlePath?: string;
+  embedId: string;                                 // stable id for embedding in the learning platform
+}
+export interface LearningContentGenerator {
+  // No-op unless cfg.learningContent.enabled. Consumes captured E2E media on the execution.
+  generate(execution: TestExecution, provider: LLMProvider, cfg: WardenConfig): Promise<LearningModule[]>;
+}
 ```
 
-Plus additive `WardenConfig` fields: `observability`, `dashboard`, `recorder`, `integrations`, `performance`, `security`, `mobile`, and provider config for `openai`/`gemini`/`ollama` (the V1 schema already reserved `ai.provider` values). **Acceptance:** all new symbols exported; every V1 test still green; `defineConfig` back-compatible.
+Plus additive `WardenConfig` fields: `observability`, `dashboard`, `recorder`, `integrations`, `performance`, `security`, `mobile`, `learningContent` (`{ enabled: false, format: 'both', voiceover: true, publishDir: 'learning/' }` — the opt-in boolean that turns on the Learning Content Studio), and provider config for `openai`/`gemini`/`ollama` (the V1 schema already reserved `ai.provider` values). **Acceptance:** all new symbols exported; every V1 test still green; `defineConfig` back-compatible.
 
 ---
 
@@ -150,12 +164,19 @@ Each: owns / depends / contract / acceptance. All depend only on `@warden/core` 
 
 ---
 
+### WS2-19 · Learning Content Studio — `@warden/learning-studio`
+- **Owns:** `packages/learning-studio/**`.
+- **Depends on:** `@warden/core` (v2), and consumes the E2E media captured by the runner (WS-12) + recorder (WS2-14).
+- **Contract:** implements `LearningContentGenerator`. When `cfg.learningContent.enabled`, for each meaningful tested flow it: (1) asks the provider to author a **narrated script + chapters + a written article** from the flow's steps and page text; (2) stitches the captured **video/screenshots** into an embeddable learning video (ffmpeg) with optional voiceover and burned-in captions; (3) writes video + transcript + article to `publishDir` and returns a `LearningModule` with a **stable `embedId`** so it can be embedded in the learning platform later. Fully **no-op when the boolean is off**.
+- **Acceptance:** disabled by default (boolean off → returns `[]`, writes nothing); when on, produces a `LearningModule` per flow with `embedId`, `videoPath`, `transcriptPath`, `articlePath`; transcript matches the authored script; `embedId` is deterministic for a given execution+flow (uses `contentId`); ffmpeg calls are injectable/mocked so unit tests need no real encoder; provider is faked in tests.
+- **Test:** `pnpm --filter @warden/learning-studio test`
+
 ## Part E — Wave-2 Work-Streams (the UI)
 
 ### WS2-20 · Requirements Traceability dashboard — `apps/dashboard`
 - **Owns:** `apps/dashboard/**` (Next.js app).
 - **Depends on:** `@warden/design-system` (WS2-18), `@warden/test-management`, `@warden/observability`, core-v2 `DashboardDataApi`.
-- **Contract:** implements the screens that make Warden legible: **Coverage Matrix** (requirement × test × last result, the Xray-killer view), **Execution history & trends**, **Flake board / quarantine**, **PR gate timeline**, **Requirement drill-down** (traceability chain Requirement→Test→Execution→Result), and **E2E Replay** — every failing/flaky test result opens a `ReplayViewer` that plays the captured **video**, shows the **screenshot gallery**, and links the Playwright **trace** (paths come straight off `TestResult`). All rendered in Sentinel themes (Signal default) with the theme toggle.
+- **Contract:** implements the screens that make Warden legible: **Coverage Matrix** (requirement × test × last result, the Xray-killer view), **Execution history & trends**, **Flake board / quarantine**, **PR gate timeline**, **Requirement drill-down** (traceability chain Requirement→Test→Execution→Result), **E2E Replay** — every failing/flaky test result opens a `ReplayViewer` that plays the captured **video**, shows the **screenshot gallery**, and links the Playwright **trace** (paths come straight off `TestResult`); and a **Learning** surface that lists generated `LearningModule`s with an embeddable player + copy-embed-code (for the future learning platform). All rendered in Sentinel themes (Signal default) with the theme toggle.
 - **Acceptance:** reads live data via `DashboardDataApi`; coverage matrix filters by module/status; trends chart pass-rate/flake/MTTR over time; test results open the E2E video/screenshot replay; fully responsive; Signal (default)/Watch/Day themes; keyboard-navigable; matches the Sentinel artifact.
 - **Test:** `pnpm --filter dashboard test` + Playwright E2E on the dashboard itself (dogfood).
 

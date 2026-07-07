@@ -33,7 +33,8 @@ modelPolicy:
     WS2-16: { model: sonnet, why: "ZAP JSON -> CTRF findings + severity mapping." }
     WS2-17: { model: sonnet, why: "Appium session + Playwright project matrix." }
     WS2-18: { model: opus,   why: "Translate Sentinel into tokens/components with a11y fidelity — design quality matters." }
-    WS2-20: { model: opus,   why: "The product's face: complex UI + live data + E2E replay viewer." }
+    WS2-19: { model: opus,   why: "Authoring narrated learning scripts + articles from tested flows is content-generation reasoning." }
+    WS2-20: { model: opus,   why: "The product's face: complex UI + live data + E2E replay + learning embeds." }
     WS2-21: { model: sonnet, why: "Data API over store/Prometheus — mechanical, self-contained." }
     WS2-30: { model: sonnet, why: "Docs + deploy compose; pure docs may drop to haiku." }
 
@@ -156,8 +157,21 @@ waves:
           - "ReplayViewer primitive: HTML5 video player + screenshot gallery + trace link, driven by TestResult media paths"
           - "every status role passes WCAG AA on its surface in all themes"
           - "Warden portcullis logo as SVG at 16/24/32/full lockup"
-          - "primitives: VerdictCard/StatusPill/CoverageMatrix/TestResultRow/TrendTile/ThemeToggle match the design artifact"
+          - "primitives: VerdictCard/StatusPill/CoverageMatrix/TestResultRow/TrendTile/ThemeToggle/ReplayViewer match the design artifact"
         testCmd: "pnpm --filter @warden/design-system test"
+      - id: WS2-19
+        package: "@warden/learning-studio"
+        wave: 1
+        dependsOn: [WS2-00]
+        ownsPaths: [packages/learning-studio/**]
+        contract: "spec.md#ws2-19--learning-content-studio--wardenlearning-studio"
+        acceptanceCriteria:
+          - "implements LearningContentGenerator; NO-OP when cfg.learningContent.enabled is false (returns [], writes nothing)"
+          - "when enabled: authors narrated script + chapters + article via the provider (faked in tests) from a tested flow"
+          - "stitches captured video/screenshots into an embeddable learning video via ffmpeg (injectable/mocked; no real encoder in tests)"
+          - "returns a LearningModule per flow with a deterministic embedId (contentId), videoPath, transcriptPath, articlePath"
+          - "transcript matches the authored script"
+        testCmd: "pnpm --filter @warden/learning-studio test"
 
   - wave: 2
     barrier: "dashboard renders live data in all Sentinel themes; E2E green"
@@ -171,6 +185,7 @@ waves:
         acceptanceCriteria:
           - "screens: Coverage Matrix, Execution history & trends, Flake board/quarantine, PR gate timeline, Requirement drill-down"
           - "E2E replay: each test result opens a ReplayViewer (video + screenshot gallery + trace) from its media paths"
+          - "Learning surface: lists generated LearningModules with an embeddable player + copy-embed-code"
           - "reads live data via DashboardDataApi; filters by module/status; trends over time"
           - "responsive; Signal(default)/Watch/Day themes; keyboard-navigable; matches Sentinel artifact"
         testCmd: "pnpm --filter dashboard test"
