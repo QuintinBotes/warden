@@ -1,0 +1,46 @@
+# Warden — one-command self-hosted stack.
+#
+#   1. Build the dashboard once:  pnpm --filter dashboard build
+#   2. Bring it up:               docker compose -f deploy/docker-compose.yml up -d
+#
+# Then open:
+#   Dashboard  http://localhost:3001
+#   Grafana    http://localhost:3000   (admin / $GRAFANA_PASSWORD, default "admin")
+#   Prometheus http://localhost:9090
+#   Pushgateway http://localhost:9091   (CI pushes metrics here)
+
+services:
+  dashboard:
+    image: nginx:alpine
+    ports: ['3001:80']
+    volumes:
+      - ../apps/dashboard/out:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+  pushgateway:
+    image: prom/pushgateway:latest
+    ports: ['9091:9091']
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ../packages/observability/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ['9090:9090']
+    depends_on: [pushgateway]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports: ['3000:3000']
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ../packages/observability/monitoring/grafana-dashboard.json:/var/lib/grafana/dashboards/warden.json:ro
+      - grafana-data:/var/lib/grafana
+    depends_on: [prometheus]
+    restart: unless-stopped
+
+volumes:
+  grafana-data:
