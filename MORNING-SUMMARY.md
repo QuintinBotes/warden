@@ -39,16 +39,11 @@
 - Description + topics set; **squash-only** merges + **auto-delete branches**; wiki off
 - Added **CODEOWNERS** (you own everything → every PR needs your approval), **SECURITY.md**, **CODE_OF_CONDUCT.md**, PR template, issue forms, and a **MIT `LICENSE`**
 - `.gitignore` hardened against secrets/keys/db files
-- **Branch protection** + **forks-off** + **secret scanning**: attempted, but a **private personal repo** can't enforce these on the free plan. They activate the moment you make the repo public (or on a paid plan). Exact command when ready:
+- **Branch protection on `main`: ENABLED ✅** — every PR now requires **1 approving review**, **CODEOWNERS approval** (you), and passing **CI + Warden QA** checks; no force-pushes or deletions. **Admin bypass is on** (`enforce_admins=false`) so you can still merge your own work and are never locked out.
+- **Forks-off** and **secret scanning + push protection**: still pending — a **private personal** repo can't set these on the free plan. They unlock the moment you make the repo public. When ready:
   ```bash
-  gh api -X PUT repos/QuintinBotes/warden/branches/main/protection \
-    -f 'required_status_checks[strict]=true' -f 'required_status_checks[contexts][]=Build · Test · Typecheck · Lint' \
-    -F 'enforce_admins=false' \
-    -F 'required_pull_request_reviews[required_approving_review_count]=1' \
-    -F 'required_pull_request_reviews[require_code_owner_reviews]=true' \
-    -F 'restrictions=' -F 'allow_force_pushes=false' -F 'allow_deletions=false'
+  gh api -X PATCH repos/QuintinBotes/warden -F allow_forking=false   # public repos only
   ```
-  (`enforce_admins=false` keeps you able to merge your own work.)
 
 ## Notes / partials (all in [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md))
 - The new providers/engines/runners are unit-tested with **injected fakes** (hermetic) — not yet exercised against live APIs/binaries.
