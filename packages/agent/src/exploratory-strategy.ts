@@ -7,7 +7,13 @@ import {
   type Tool,
 } from '@warden/core';
 import { EXPLORATORY_SYSTEM_PROMPT } from './prompts';
-import { asRecord, normalizeSeverity, normalizeSteps, summarizeChange } from './strategy-support';
+import {
+  asRecord,
+  normalizeSeverity,
+  normalizeSteps,
+  summarizeChange,
+  summarizeFixtures,
+} from './strategy-support';
 
 /** Tool the model calls to report a single bug it found while exploring. */
 const REPORT_FINDING_TOOL: Tool = {
@@ -57,16 +63,30 @@ export class ExploratoryStrategy implements AgentStrategy {
     const mobile = config.browser.mobileViewport;
     await browser.setViewport(mobile.width, mobile.height);
 
-    const prompt = [
+    const promptParts = [
       `Target URL: ${targetUrl}`,
       `Page title: ${page.title}`,
       `Visible text (truncated): ${page.text.slice(0, 2000)}`,
       '',
       'Change under test:',
       summarizeChange(input.changeSurface, input.diff),
+    ];
+
+    if (input.fixtures) {
+      promptParts.push(
+        '',
+        summarizeFixtures(input.fixtures),
+        '',
+        'Reference these real seeded record identifiers in your findings instead of guessing values ' +
+          'from the page.',
+      );
+    }
+
+    promptParts.push(
       '',
       'Explore the application and call report_finding for every issue you find.',
-    ].join('\n');
+    );
+    const prompt = promptParts.join('\n');
 
     const result = await provider.generateWithTools(prompt, [REPORT_FINDING_TOOL], {
       systemPrompt: EXPLORATORY_SYSTEM_PROMPT,

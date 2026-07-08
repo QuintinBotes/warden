@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { loadConfig as c12LoadConfig } from 'c12';
 import type { QAPlatformPlugin } from './plugin';
 import { ConfigError } from './errors';
+import { GridConfigSchema } from './grid';
 
 /**
  * The single Warden configuration surface (`warden.config.ts`). Every field has a
@@ -253,6 +254,75 @@ export const WardenConfigSchema = z.object({
       maxChecks: z.number().default(200),
     })
     .default({}),
+  // Test-data management: declarative, namespaced seed/teardown per Test Set. Opt-in
+  // (`enabled: false`) so zero-config repos are unaffected; `testcontainers` is additionally
+  // gated because it requires a Docker-compatible daemon in CI. No secrets live here —
+  // connection strings and tokens are read from the named env vars at runtime.
+  fixtures: z
+    .object({
+      enabled: z.boolean().default(false),
+      dir: z.string().default('tests/fixtures/'),
+      defaultBackend: z.enum(['sql', 'api', 'testcontainers']).default('sql'),
+      namespaceStrategy: z.enum(['per-run', 'per-shard']).default('per-run'),
+      sql: z
+        .object({
+          connectionEnvVar: z.string().default('WARDEN_FIXTURES_DB_URL'),
+        })
+        .default({}),
+      api: z
+        .object({
+          baseUrlEnvVar: z.string().default('WARDEN_FIXTURES_API_URL'),
+          authHeaderEnvVar: z.string().default('WARDEN_FIXTURES_API_TOKEN'),
+        })
+        .default({}),
+      testcontainers: z
+        .object({
+          enabled: z.boolean().default(false),
+          reuseAcrossShards: z.boolean().default(false),
+        })
+        .default({}),
+      teardown: z
+        .object({
+          onFailure: z.enum(['always', 'never', 'onSuccessOnly']).default('always'),
+          timeoutMs: z.number().int().positive().default(30000),
+        })
+        .default({}),
+    })
+    .default({}),
+  // API & contract testing: OpenAPI fuzzing (Schemathesis) + consumer-driven contract
+  // verification (Pact Broker). Opt-in (`enabled: false`), same posture as `performance`/`security`.
+  api: z
+    .object({
+      enabled: z.boolean().default(false),
+      schemathesis: z
+        .object({
+          enabled: z.boolean().default(false),
+          schemaUrl: z.string().optional(),
+          checks: z
+            .array(z.string())
+            .default([
+              'not_a_server_error',
+              'response_schema_conformance',
+              'status_code_conformance',
+            ]),
+          maxExamplesPerEndpoint: z.number().default(100),
+        })
+        .default({}),
+      pact: z
+        .object({
+          enabled: z.boolean().default(false),
+          role: z.enum(['provider', 'consumer']).default('provider'),
+          providerName: z.string().optional(),
+          brokerUrl: z.string().optional(),
+          publishVerificationResults: z.boolean().default(true),
+          // Pact consumer name -> the repo that owns it, for cross-repo drift advisories.
+          consumerRepoMap: z.record(z.string(), z.string()).default({}),
+        })
+        .default({}),
+    })
+    .default({}),
+  // Device-cloud grid & parallel sharding (additive; defaulted off, `local` needs no account).
+  grid: GridConfigSchema,
   plugins: z.array(z.custom<QAPlatformPlugin>()).default([]),
 });
 

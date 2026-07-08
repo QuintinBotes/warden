@@ -29,7 +29,7 @@ export interface ChangeSurface {
   riskReasons: RiskReason[];
 }
 
-export type TestTier = 'smoke' | 'selective' | 'fullRegression' | 'aiExploratory';
+export type TestTier = 'smoke' | 'selective' | 'fullRegression' | 'aiExploratory' | 'api';
 
 export interface GateDecision {
   decision: 'PASS' | 'WARN' | 'BLOCK';

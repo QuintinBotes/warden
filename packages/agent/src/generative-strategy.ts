@@ -1,6 +1,6 @@
 import type { AgentInput, AgentOutput, AgentStrategy, GeneratedFile } from '@warden/core';
 import { GENERATIVE_SYSTEM_PROMPT } from './prompts';
-import { featureName, summarizeChange } from './strategy-support';
+import { featureName, summarizeChange, summarizeFixtures } from './strategy-support';
 
 /**
  * Generative strategy — "write Playwright tests from the diff". Reads the change surface
@@ -14,14 +14,25 @@ export class GenerativeStrategy implements AgentStrategy {
     const { provider, config } = input;
     const feature = featureName(input.changeSurface, input.diff);
 
-    const prompt = [
+    const promptParts = [
       `Generate a Playwright E2E test for the "${feature}" feature.`,
       '',
       'Change under test:',
       summarizeChange(input.changeSurface, input.diff),
-      '',
-      `Output the file for tests/e2e/${feature}.spec.ts.`,
-    ].join('\n');
+    ];
+
+    if (input.fixtures) {
+      promptParts.push(
+        '',
+        summarizeFixtures(input.fixtures),
+        '',
+        'Use these seeded values instead of inventing literals: inline the concrete namespaced ' +
+          'value and add a trailing comment noting its fixture key (e.g. `// seeded: primaryCustomer`).',
+      );
+    }
+
+    promptParts.push('', `Output the file for tests/e2e/${feature}.spec.ts.`);
+    const prompt = promptParts.join('\n');
 
     const content = await provider.generateText(prompt, {
       systemPrompt: GENERATIVE_SYSTEM_PROMPT,

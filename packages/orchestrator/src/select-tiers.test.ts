@@ -31,4 +31,39 @@ describe('selectTiers', () => {
     const tiers = selectTiers(fixtureChangeSurface({ riskScore: 8, hasSharedChanges: true }), cfg);
     expect(tiers.filter((t) => t === 'fullRegression')).toHaveLength(1);
   });
+
+  it('adds the api tier when the diff touches API routes and config.api is enabled', () => {
+    const apiCfg = defineConfig({ api: { enabled: true } });
+    const tiers = selectTiers(
+      fixtureChangeSurface({ riskScore: 2, affectedApiRoutes: ['api/orders/route.ts'] }),
+      apiCfg,
+    );
+    expect(tiers).toContain('api');
+  });
+
+  it('does not add the api tier when config.api is disabled, even with affected API routes', () => {
+    const tiers = selectTiers(
+      fixtureChangeSurface({ riskScore: 2, affectedApiRoutes: ['api/orders/route.ts'] }),
+      cfg,
+    );
+    expect(tiers).not.toContain('api');
+  });
+
+  it('does not add the api tier when config.api is enabled but no API routes changed', () => {
+    const apiCfg = defineConfig({ api: { enabled: true } });
+    const tiers = selectTiers(
+      fixtureChangeSurface({ riskScore: 2, affectedApiRoutes: [] }),
+      apiCfg,
+    );
+    expect(tiers).not.toContain('api');
+  });
+
+  it('adds the api tier alongside the base tiers rather than replacing them', () => {
+    const apiCfg = defineConfig({ api: { enabled: true } });
+    const tiers = selectTiers(
+      fixtureChangeSurface({ riskScore: 2, affectedApiRoutes: ['api/orders/route.ts'] }),
+      apiCfg,
+    );
+    expect(tiers).toEqual(['smoke', 'selective', 'api']);
+  });
 });
