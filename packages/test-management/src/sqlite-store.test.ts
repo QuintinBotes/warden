@@ -76,6 +76,30 @@ describe('SqliteStore', () => {
     expect(store.getExecution('does-not-exist')).toBeUndefined();
   });
 
+  it('listExecutions returns executions chronologically, filtered by range and limit', () => {
+    const days = ['2024-01-01', '2024-01-05', '2024-01-10'];
+    days.forEach((d, i) =>
+      store.saveExecution(
+        makeExecution({ id: `EXEC-${i}`, startedAt: new Date(`${d}T00:00:00.000Z`) }),
+      ),
+    );
+
+    // all, oldest first
+    expect(store.listExecutions().map((e) => e.id)).toEqual(['EXEC-0', 'EXEC-1', 'EXEC-2']);
+
+    // date range excludes out-of-window executions
+    const inRange = store.listExecutions({
+      from: new Date('2024-01-03T00:00:00.000Z'),
+      to: new Date('2024-01-07T00:00:00.000Z'),
+    });
+    expect(inRange.map((e) => e.id)).toEqual(['EXEC-1']);
+
+    // limit caps the count; results are full, schema-valid executions
+    const limited = store.listExecutions({ limit: 2 });
+    expect(limited).toHaveLength(2);
+    expect(limited[0]?.results[0]?.status).toBe('PASS');
+  });
+
   it('getRecentExecutions returns the test case-s results across the most recent n executions, newest first', () => {
     store.saveExecution(
       makeExecution({

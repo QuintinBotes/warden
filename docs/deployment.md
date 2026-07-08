@@ -3,7 +3,7 @@
 Warden is designed to be **self-hostable with zero managed services**. There are two deployment modes, and most teams use both:
 
 1. **CI-embedded** (the default) — Warden runs inside your existing GitHub Actions pipeline. Nothing to host.
-2. **Self-hosted stack** — you additionally run the persistent dashboard and metrics stack (v2) to track trends over time.
+2. **Self-hosted stack** — you additionally run the persistent dashboard and metrics stack to track trends over time.
 
 ---
 
@@ -63,11 +63,9 @@ The Playwright container `mcr.microsoft.com/playwright:v1.52.0-noble` avoids per
 
 ---
 
-## Mode 2 — Self-hosted stack (v2)
+## Mode 2 — Self-hosted stack
 
 To keep trends, coverage history, and the requirements dashboard, run the self-hosted stack. It is a single `docker compose` command and uses only open-source images.
-
-> The dashboard and observability components ship in **v2**. The compose file below is the target deployment; track progress in the [v2 spec](superpowers/specs/2026-07-07-warden-v2-design.md).
 
 ### Components
 

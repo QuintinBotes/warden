@@ -16,12 +16,12 @@ export interface LLMProvider {
 
 | Provider | Status | Config |
 |----------|--------|--------|
-| **Anthropic (Claude)** | ✅ v1, default | `ai.provider: 'anthropic'` |
-| OpenAI | v2 | `ai.provider: 'openai'` |
-| Gemini | v2 | `ai.provider: 'gemini'` |
-| Ollama (local/self-hosted) | v2 | `ai.provider: 'ollama'` |
+| **Anthropic (Claude)** | Available, default | `ai.provider: 'anthropic'` |
+| OpenAI | Available | `ai.provider: 'openai'` |
+| Gemini | Available | `ai.provider: 'gemini'` |
+| Ollama (local/self-hosted) | Available | `ai.provider: 'ollama'` |
 
-In v1, selecting a non-Anthropic provider raises a clear `ProviderError` pointing you to v2. The interface is stable, so v2 providers are drop-in.
+Each cloud provider reads its own API key from the environment. Because every provider implements the same `LLMProvider` interface, switching is a one-line config change with no code changes anywhere else.
 
 ### Local models & fallback
 
@@ -43,9 +43,9 @@ Deterministic interactions and AI-driven ones live behind one `BrowserSession` i
 
 | Engine | Status | Best for |
 |--------|--------|----------|
-| **Playwright** | ✅ v1, default | Headless CI. Fast, deterministic, reproducible. |
-| **Claude-Chrome** | ✅ v1 | Local runs in your **real Chrome** via the Claude browser extension. |
-| Stagehand | v2 | Hybrid: Playwright for stable flows, AI for dynamic UIs. |
+| **Playwright** | Available, default | Headless CI. Fast, deterministic, reproducible. |
+| **Claude-Chrome** | Available | Local runs in your **real Chrome** via the Claude browser extension. |
+| Stagehand | Available | Hybrid: Playwright for stable flows, AI for dynamic UIs. |
 
 ### Playwright (CI default)
 

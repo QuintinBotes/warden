@@ -19,7 +19,7 @@ export default defineConfig({
 
 | Key | Type | Default | Notes |
 |-----|------|---------|-------|
-| `ai.provider` | `'anthropic' \| 'openai' \| 'gemini' \| 'ollama'` | `'anthropic'` | Only `anthropic` ships in v1; the rest arrive in v2. |
+| `ai.provider` | `'anthropic' \| 'openai' \| 'gemini' \| 'ollama'` | `'anthropic'` | All available; each cloud provider reads its own API key from the environment. |
 | `ai.model` | `string` | `'claude-sonnet-5'` | Override per repo; high-risk tiers can bump to Opus. |
 | `ai.fallbackProvider` | provider | — | Fall back (e.g. to local Ollama) if the primary key is missing. |
 | `ai.ollama.baseUrl` | `string` | `'http://localhost:11434'` | |

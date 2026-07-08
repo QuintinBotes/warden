@@ -18,7 +18,6 @@ Warden is an open-source, AI-native QA platform. It reads a pull request's diff,
 
 ## Reference
 
-- [Build specs](superpowers/specs/) — the V1 and V2 engineering specs that drive development
 - [Contributing](../CONTRIBUTING.md) — how the monorepo is organized and how to work in it
 
 ## The mental model

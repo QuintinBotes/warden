@@ -51,7 +51,7 @@ Warden is a pnpm + Turborepo monorepo of small, single-purpose packages that com
 
 ## The three agent strategies
 
-Warden ships three autonomous agents, each behind the same `AgentStrategy` interface:
+Warden ships three AI agents, each behind the same `AgentStrategy` interface:
 
 - **Exploratory** — given a diff and a running preview, it browses the app like an expert QA engineer looking for what breaks: edge cases, boundary values, mobile viewports. Produces structured findings with severity.
 - **Generative** — reads the diff and writes deterministic Playwright `.spec.ts` files, so tests are versioned alongside the code.
@@ -81,13 +81,9 @@ See [`@warden/core` schemas](../packages/core/src/schema.ts) for the exact shape
 
 Every seam is swappable:
 
-- **AI provider** — implement `LLMProvider` (Claude ships; OpenAI/Gemini/Ollama in v2).
-- **Browser engine** — implement `BrowserEngine` (Playwright + Claude-Chrome ship; Stagehand in v2).
+- **AI provider** — implement `LLMProvider` (Anthropic/Claude by default, with OpenAI, Gemini, and Ollama available).
+- **Browser engine** — implement `BrowserEngine` (Playwright, Claude-Chrome, and Stagehand available).
 - **Reporter** — implement `Reporter` for a new surface.
 - **Plugins** — Vite-style lifecycle hooks (`onPROpened`, `onTestExecutionComplete`, `onBugFound`, `onGateDecision`) plus provider/engine/reporter overrides.
 
 Swapping any of these is a config-level change, not a fork.
-
-## How the platform is built
-
-Development runs as a **contract-first swarm**: one wave freezes `@warden/core`, and later waves implement against it in parallel. The full plan lives in [the build specs](superpowers/specs/).
