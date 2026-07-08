@@ -4,7 +4,7 @@
 - **Date:** 2026-07-08
 - **Purpose:** Turn a competitive gap analysis into a prioritized, buildable roadmap that takes Warden from "impressive prototype" to a best-in-class AI-native QA platform.
 
-> **Sourcing note.** The competitive claims below are drawn from domain knowledge of the 2024–2026 QA tooling market (the same landscape Warden's original blueprint surveyed). An automated web-research verification pass was attempted but repeatedly failed on transient AI-provider `529` overloads; a cited backfill should be run against each claim before this is treated as externally verified. Nothing here contradicts Warden's shipped feature set — items Warden already has are explicitly excluded.
+> **Sourcing note.** A multi-agent adversarial web-research pass ran against this analysis. It hit heavy transient AI-provider `529` overloads (67 of 113 agents failed), so it is *partial*: **three gaps were independently verified 3-of-3 with primary sources** (device clouds §1.2, flaky analytics §1.4, self-healing posture §2.3 — cited inline). The remaining claims are from domain knowledge of the 2024–2026 QA market (the landscape Warden's blueprint surveyed) and still warrant a cited backfill when the provider is stable. One claim was **refuted** and has been corrected (see §2.3). Items Warden already ships are excluded.
 
 ## What Warden already has (baseline — not gaps)
 
@@ -25,8 +25,9 @@ Table stakes that nearly every serious competitor ships and Warden currently lac
 - **Effort:** Medium. Fits the existing engine/reporter/dashboard seams.
 
 ### 1.2 Real-device & cross-browser cloud grid + parallel sharding
-- **Who has it:** BrowserStack, Sauce Labs, LambdaTest (device clouds); Playwright `--shard` + Currents.dev (orchestration/parallelization/analytics).
-- **Why it matters:** "Does it pass on Safari/iOS/Android?" is a release-blocking question Warden can't answer at scale today (Appium/WebKit are only scaffolding, headless-only).
+- **Who has it:** BrowserStack (3,500+ real devices, 3,500+ browser-OS combinations, ~10× parallel speedup, Test Observability with auto failure-classification + flakiness detection), Sauce Labs (~7,500 real iOS/Android devices, ~1,700 emulators/simulators, native CI + Appium/Espresso/XCUITest), LambdaTest; Playwright `--shard` + Currents.dev for orchestration. **[verified 3-of-3]**
+- **Why it matters:** "Does it pass on Safari/iOS/Android?" is a release-blocking question Warden can't answer at scale today (Appium/WebKit are only scaffolding, headless-only). Real-device + cross-browser coverage at scale is table stakes for enterprise adoption.
+- **Sources:** [browserstack.com](https://www.browserstack.com), [saucelabs.com](https://saucelabs.com), [qa.tech — best AI testing tools 2026](https://qa.tech/blog/the-13-best-ai-testing-tools-in-2026).
 - **Warden design:** a `GridProvider` seam (local Playwright projects | BrowserStack | Sauce | LambdaTest) selected by config; a shard planner that fans the selected tier across N CI shards and merges the CTRF back (Warden already speaks CTRF, so merge is cheap). Real-device runs route through the grid provider's Appium/WebDriver endpoint.
 - **Effort:** Medium–High. The CTRF merge + matrix already exist; the grid adapters + shard planner are new.
 
@@ -37,8 +38,9 @@ Table stakes that nearly every serious competitor ships and Warden currently lac
 - **Effort:** Medium.
 
 ### 1.4 Deeper flaky-test intelligence
-- **Who has it:** Currents.dev, BuildPulse, Datadog CI Test Visibility, Trunk (auto-retry + quarantine + root-cause + trend analytics).
-- **Why it matters:** Warden quarantines flakes but doesn't yet do configurable auto-retry policy, root-cause attribution, or a real flake-trend history.
+- **Who has it:** Currents.dev computes a per-test **Flakiness Rate** (flaky results / selected results) and a derived **Flakiness Impact**, tracks flakiness-rate change across time periods, and drives triage via **"Currents Actions"** (pre/post-test hooks to skip/quarantine, dynamic tagging, owner/team assignment, expiring quarantines, an "Affected tests" view). Also BuildPulse, Datadog CI Test Visibility, Trunk. **[verified 3-of-3]**
+- **Why it matters:** Warden quarantines flakes but doesn't yet do quantified per-test flakiness scoring, configurable auto-retry policy, root-cause attribution, or a real flake-trend history — what teams expect once flake volume grows.
+- **Sources:** [Currents — what is a flaky test](https://currents.dev/posts/what-is-a-flaky-test-and-how-to-fix-it), [Currents docs — flaky tests](https://docs.currents.dev/dashboard/tests/flaky-tests), [Currents docs — Actions](https://docs.currents.dev/guides/currents-actions).
 - **Warden design:** extend `@warden/test-management`: a retry policy (`retries`, backoff, "retry only on known-flaky") in config; a flake root-cause classifier agent (timing / selector / data / network) tagging each flake; and a flake-trend view in the dashboard (rate over time, MTTR-to-de-flake, "top offenders"). Prometheus already carries the metrics.
 - **Effort:** Medium.
 
@@ -78,10 +80,11 @@ Where Warden can pull *ahead* by combining its AI loop with capabilities incumbe
 - **Warden design:** a first-class `CUJ` entity in `@warden/core` (name, steps, owning team, linked requirements + tests), a coverage rollup (CUJ health = worst of its tests), CUJ-scoped merge gating (block if a touched CUJ degrades), and a CUJ board in the dashboard. The exploratory agent takes a CUJ as its mission brief. This is a genuine product-level differentiator — most tools stop at test-level.
 - **Effort:** Medium–High.
 
-### 2.3 Self-healing at scale (proactive, not just per-failure)
-- **Who has it:** mabl, Testim, Functionize, testRigor auto-heal locators as the app changes.
-- **Why it matters:** Warden's healer fixes a test *after* it fails. Competitors heal *proactively* across the suite, cutting maintenance to near-zero — the headline AI-QA selling point.
-- **Warden design:** extend the healer into a suite-wide pass: when the change surface shows a UI change, pre-emptively re-resolve affected role/label locators against the new build and open a healing PR *before* the tests go red. Track a "heal rate" metric. Warden's role-based-locator convention makes this tractable.
+### 2.3 Self-healing at scale (a proactive posture, offered as an option)
+- **Who has it:** mabl's "Adaptive Auto-Healing" autonomously updates element locators and steps **inline on every run** using multiple AI models; Testim, Functionize, testRigor market similar continuous healing. **[verified 3-of-3 that this capability exists]**
+- **Why it matters — with an honest caveat:** competitors lead marketing with *continuous* healing, and it's what evaluators ask about. **But** the specific claim that continuous healing empirically *outperforms* an agent-based per-failure healer was **refuted (0-of-3)** in verification — Warden's healer (which reasons about regression-vs-maintenance before proposing a fix) is not demonstrably inferior, and is arguably more precise. So this is a **posture/expectation gap, not a quality gap.**
+- **Warden design:** offer an *optional* proactive pass alongside the existing healer: when the change surface shows a UI change, pre-emptively re-resolve affected role/label locators against the new build and open a healing PR *before* tests go red. Keep the reasoning healer as the default (it explains *why* it heals). Track a "heal rate" metric. Warden's role-based-locator convention makes the proactive pass tractable.
+- **Sources:** mabl Adaptive Auto-Healing (mabl.com); refutation recorded in the research pass (continuous-beats-reactive: 0/3).
 - **Effort:** Medium.
 
 ### 2.4 Non-GitHub SCM (GitLab / Bitbucket / Azure DevOps)
@@ -135,6 +138,6 @@ Each item above is scoped to Warden's existing seams (provider / engine / report
 
 ## Open follow-ups
 
-- Run the cited web-research backfill (per the sourcing note) to attach a source to each competitive claim.
+- Finish the cited web-research backfill: §1.2 (device clouds), §1.4 (flaky analytics), and §2.3 (self-healing) are verified with sources; the other ~9 dimensions failed on provider `529` overload — rerun the research when the provider is stable and attach a source to each remaining claim.
 - Decide the hosted-vs-self-hosted split for enterprise features (2.6) — what stays in the MIT core vs a hosted tier.
 - Confirm testomat.io is the chosen test-management source of truth before building 2.1 (vs Xray/Qase).
