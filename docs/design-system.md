@@ -39,4 +39,4 @@ Self-hosted **Fira Code** (mono — display, verdicts, data) paired with **Fira 
 
 ## Using it in code
 
-The tokens and components ship as `@warden/design-system` (v2): status color roles, the three themes (as `data-theme`), the portcullis logo as SVG, and the dashboard primitives — `VerdictCard`, `StatusPill`, `CoverageMatrix`, `TestResultRow`, `TrendTile`, `ThemeToggle`, and `ReplayViewer`.
+The tokens and components ship as `@warden/design-system`: status color roles, the three themes (as `data-theme`), the portcullis logo as SVG, and the dashboard primitives — `VerdictCard`, `StatusPill`, `CoverageMatrix`, `TestResultRow`, `TrendTile`, `ThemeToggle`, and `ReplayViewer`.

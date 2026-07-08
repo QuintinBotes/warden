@@ -19,31 +19,6 @@ import type {
  */
 const RECENT_HISTORY_LIMIT = 1000;
 
-/**
- * The minimal shape of the better-sqlite3 `Database` handle that `SqliteStore` wraps.
- * `SqliteStore` does not expose a way to list *all* execution ids (only per-test-case
- * history via `getRecentExecutions`), which `executions()`/`trends()` need in order to
- * filter by date range. Rather than duplicating storage logic here, we reach into the
- * store's underlying connection (TypeScript's `private` is compile-time only) and query
- * the `executions` table directly for matching ids, then hand each id back to the
- * store's own `getExecution` for validated reconstruction. This mirrors the table/column
- * names in `@warden/test-management`'s `sqlite-store.ts`.
- */
-interface RawStatementLike {
-  all(...params: unknown[]): unknown[];
-}
-interface RawDatabaseLike {
-  prepare(sql: string): RawStatementLike;
-}
-
-function rawDb(store: SqliteStore): RawDatabaseLike {
-  return (store as unknown as { db: RawDatabaseLike }).db;
-}
-
-interface ExecutionIdRow {
-  id: string;
-}
-
 /** Requirement ids follow a `REQ-<MODULE>-NNN` convention; matching is a case-insensitive substring check. */
 function matchesModule(requirement: Requirement, module: string): boolean {
   return requirement.id.toUpperCase().includes(module.toUpperCase());
@@ -137,18 +112,7 @@ export class SqliteDashboardApi implements DashboardDataApi {
   }
 
   async executions(range: DateRange): Promise<TestExecution[]> {
-    const rows = rawDb(this.store)
-      .prepare(
-        `SELECT id FROM executions WHERE startedAt >= ? AND startedAt <= ? ORDER BY startedAt ASC`,
-      )
-      .all(range.from.toISOString(), range.to.toISOString()) as ExecutionIdRow[];
-
-    const result: TestExecution[] = [];
-    for (const row of rows) {
-      const execution = this.store.getExecution(row.id);
-      if (execution) result.push(execution);
-    }
-    return result;
+    return this.store.listExecutions({ from: range.from, to: range.to });
   }
 
   async flakeBoard(): Promise<FlakeStat[]> {

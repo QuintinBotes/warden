@@ -69,7 +69,7 @@ export const tokens = {
       FAIL: '#E5484D',
       FLAKY: '#E08A2C',
       BLOCKED: '#8B7BD8',
-      SKIPPED: '#6B7C82',
+      SKIPPED: '#849599',
       QUARANTINED: '#C2624B',
     },
     day: {

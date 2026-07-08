@@ -93,13 +93,13 @@
   --fail: #e5484d;
   --flaky: #e08a2c;
   --blocked: #8b7bd8;
-  --skip: #6b7c82;
+  --skip: #849599;
   --quar: #c2624b;
   --pass-t: rgba(67, 185, 138, 0.14);
   --fail-t: rgba(229, 72, 77, 0.15);
   --flaky-t: rgba(224, 138, 44, 0.15);
   --blocked-t: rgba(139, 123, 216, 0.16);
-  --skip-t: rgba(107, 124, 130, 0.16);
+  --skip-t: rgba(132, 149, 153, 0.16);
   --quar-t: rgba(194, 98, 75, 0.16);
   --shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 18px 40px -24px rgba(0, 0, 0, 0.8);
   color-scheme: dark;

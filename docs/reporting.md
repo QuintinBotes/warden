@@ -4,7 +4,7 @@ Warden surfaces every run in four places at once, all derived from one canonical
 
 ## CTRF — one format for everything
 
-Warden emits [CTRF](https://ctrf.io) (Common Test Report Format), a universal JSON schema for test results. Whether tests ran under Playwright, an API check, or (in v2) k6 or ZAP, the output is one shape — queryable, mergeable, and portable.
+Warden emits [CTRF](https://ctrf.io) (Common Test Report Format), a universal JSON schema for test results. Whether tests ran under Playwright, an API check, or a k6 or OWASP ZAP job, the output is one shape — queryable, mergeable, and portable.
 
 ```json
 {
@@ -57,7 +57,7 @@ For failures that map to a file and line, Warden posts inline annotations in the
 
 ### 4. CTRF artifact
 
-The machine-readable report, uploaded as a build artifact and consumable by your own dashboards, BI, or the Warden dashboard (v2).
+The machine-readable report, uploaded as a build artifact and consumable by your own dashboards, BI, or the Warden dashboard.
 
 ## The merge gate
 
@@ -75,6 +75,6 @@ Thresholds are configurable under [`gates`](configuration.md#gates--the-merge-ga
 
 Tests that fail non-deterministically (a flake rate between 20% and 80%) are auto-quarantined after a configurable number of runs. Quarantined tests still run but **don't block the gate** — so flakiness never erodes trust in CI, and you keep the signal.
 
-## Trends (v2)
+## Trends
 
-With the [self-hosted stack](deployment.md#mode-2--self-hosted-stack-v2), each run also pushes metrics to Prometheus, feeding Grafana dashboards for pass rate, flake rate, MTTR, escaped-defect rate, suite duration, and coverage delta per PR.
+With the [self-hosted stack](deployment.md#mode-2--self-hosted-stack), each run also pushes metrics to Prometheus, feeding Grafana dashboards for pass rate, flake rate, MTTR, escaped-defect rate, suite duration, and coverage delta per PR.

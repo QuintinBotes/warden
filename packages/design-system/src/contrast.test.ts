@@ -35,12 +35,10 @@ describe('contrastRatio (pure WCAG)', () => {
 });
 
 describe('status colors clear WCAG AA against their theme ground', () => {
-  // The "loud" alarm statuses must be unmistakably legible: AA (>= 4.5:1)
-  // against the theme surface they render on (the near-black page in dark
-  // themes, the light card in Day). SKIPPED is an intentionally-muted neutral
-  // (a "no signal" grey) — like WCAG's inactive/disabled exemption it is held
-  // only to the 3:1 UI-component tier.
-  const LOUD: SentinelStatus[] = ['PASS', 'FAIL', 'FLAKY', 'BLOCKED', 'QUARANTINED'];
+  // Every status color must be legible: WCAG AA text contrast (>= 4.5:1) against
+  // the theme surface it renders on (the near-black page in dark themes, the light
+  // card in Day) — including the muted SKIPPED neutral.
+  const ALL: SentinelStatus[] = ['PASS', 'FAIL', 'FLAKY', 'BLOCKED', 'QUARANTINED', 'SKIPPED'];
 
   for (const theme of themes) {
     const status = tokens.statusColors[theme];
@@ -50,15 +48,11 @@ describe('status colors clear WCAG AA against their theme ground', () => {
       Math.max(contrastRatio(hex, g0), contrastRatio(hex, g1));
 
     describe(theme, () => {
-      for (const s of LOUD) {
+      for (const s of ALL) {
         it(`${s} meets AA (>= 4.5:1)`, () => {
           expect(groundContrast(status[s])).toBeGreaterThanOrEqual(4.5);
         });
       }
-
-      it('SKIPPED meets the 3:1 UI-component tier', () => {
-        expect(groundContrast(status.SKIPPED)).toBeGreaterThanOrEqual(3);
-      });
 
       it('accent gold is not reused as any status color', () => {
         const accent = tokens.accent[theme].toLowerCase();

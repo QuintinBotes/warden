@@ -159,6 +159,38 @@ export class SqliteStore {
     return results;
   }
 
+  /**
+   * List executions in chronological order (oldest first), optionally filtered by a
+   * `startedAt` date range and capped by `limit`. Each execution is reconstructed via
+   * {@link getExecution}, so every read stays schema-validated.
+   */
+  listExecutions(opts: { from?: Date; to?: Date; limit?: number } = {}): TestExecution[] {
+    const clauses: string[] = [];
+    const params: string[] = [];
+    if (opts.from) {
+      clauses.push('startedAt >= ?');
+      params.push(opts.from.toISOString());
+    }
+    if (opts.to) {
+      clauses.push('startedAt <= ?');
+      params.push(opts.to.toISOString());
+    }
+    const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+    const limit = opts.limit !== undefined ? ` LIMIT ${Math.max(0, Math.floor(opts.limit))}` : '';
+    const ids = (
+      this.db
+        .prepare(`SELECT id FROM executions ${where} ORDER BY startedAt ASC, id ASC${limit}`)
+        .all(...params) as { id: string }[]
+    ).map((row) => row.id);
+
+    const executions: TestExecution[] = [];
+    for (const id of ids) {
+      const execution = this.getExecution(id);
+      if (execution) executions.push(execution);
+    }
+    return executions;
+  }
+
   saveRequirement(r: Requirement): void {
     const validated = RequirementSchema.parse(r);
     this.db
