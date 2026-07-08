@@ -6,6 +6,7 @@ import {
   loadConfig,
   ProviderError,
   type CTRFReport,
+  type CujHealthReport,
   type FixtureCatalog,
   type FixtureCatalogRequest,
   type FailureContext,
@@ -21,6 +22,8 @@ import {
   type TestResult,
   type WardenConfig,
 } from '@warden/core';
+import { mergeGateDecisions } from '@warden/cuj';
+import { evaluateCujGateForRun, type CujGateRun } from './cuj-gate';
 import { runPlaywright, type RunPlaywrightOptions } from '@warden/runner';
 import { computeGateDecision, createReporters, type CreateReportersDeps } from '@warden/reporter';
 import { firePluginHooks } from '@warden/orchestrator';
@@ -127,6 +130,13 @@ export interface RunRunDeps {
   prNumber?: number;
   headSha?: string;
   repo?: ReportContext['repo'];
+  /**
+   * When present (and `cfg.cuj.enabled`), the CUJ-scoped gate runs: the change surface is
+   * intersected with the loaded CUJ defs, each touched journey's after-health is rolled up from
+   * this run's results and compared against the base ref, and the resulting `GateDecision` is
+   * merged worst-of into the final gate. Absent (the default), `runRun` behaves exactly as before.
+   */
+  cuj?: CujGateRun;
 }
 
 /** Return value of {@link runRun}. */
@@ -141,6 +151,8 @@ export interface RunRunResult {
   gate: GateDecision;
   /** Fixture teardown failures collected during cleanup (WARN-level; never blocks the gate). */
   fixtureTeardownErrors?: FixtureTeardownFailure[];
+  /** After-health of each touched CUJ, when the CUJ gate ran (for the reporter / board). */
+  cujReports?: CujHealthReport[];
 }
 
 /** Stable CTRF test identity — mirrors `ctrfToExecution` so ids line up. */
@@ -421,9 +433,19 @@ export async function runRun(opts: RunRunOptions, deps: RunRunDeps = {}): Promis
       }
     }
 
+    // Fold in the CUJ-scoped gate (worst-of): a change that degrades a journey it touches makes
+    // the gate stricter, never looser. Only runs when a `cuj` collaborator is injected.
+    let cujReports: CujHealthReport[] | undefined;
+    if (deps.cuj) {
+      const outcome = await evaluateCujGateForRun(execution.results, cfg, deps.cuj, logger);
+      cujReports = outcome.reports;
+      gate = mergeGateDecisions(gate, outcome.gate);
+    }
+
     await firePluginHooks(cfg.plugins, { hook: 'onGateDecision', decision: gate });
 
     result = { report: finalReport, execution, ctrfPath, gate };
+    if (cujReports !== undefined) result.cujReports = cujReports;
     return result;
   } finally {
     // Teardown is guaranteed: even when the test run threw or timed out, whatever seeded is torn

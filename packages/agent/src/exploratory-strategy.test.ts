@@ -1,9 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { defineConfig } from '@warden/core';
+import { CujSchema, defineConfig, type Cuj } from '@warden/core';
 import { fakeProvider, fakeBrowserSession } from '@warden/core/testing';
 import { ExploratoryStrategy } from './exploratory-strategy';
 
 const config = defineConfig();
+
+const missionCuj: Cuj = CujSchema.parse({
+  id: 'CUJ-checkout',
+  name: 'Guest checkout',
+  owningTeam: 'payments',
+  tier: 'tier1',
+  steps: [
+    { order: 2, name: 'Pay', module: '@apps/checkout', testIds: [] },
+    { order: 1, name: 'Add item to cart', module: '@apps/cart', testIds: [] },
+  ],
+});
 
 describe('ExploratoryStrategy', () => {
   it('has name "exploratory"', () => {
@@ -83,5 +94,49 @@ describe('ExploratoryStrategy', () => {
       name: 'BrowserError',
       code: 'E_BROWSER',
     });
+  });
+
+  it('prepends the CUJ mission brief and walks the journey steps when input.cuj is set', async () => {
+    const provider = fakeProvider({ text: 'done' });
+    const browser = fakeBrowserSession();
+
+    await new ExploratoryStrategy().run({
+      provider,
+      browser,
+      url: 'http://localhost:3000/checkout',
+      config,
+      cuj: missionCuj,
+    });
+
+    const prompt = provider.calls.find((c) => c.method === 'generateWithTools')!.prompt;
+    // the mission brief is in the captured prompt
+    expect(prompt).toContain('Mission brief: Guest checkout');
+    expect(prompt).toContain('payments');
+    // the session walked the journey's ordered steps (cart before pay)
+    const actIndexCart = browser.actions.findIndex((a) => a.includes('Add item to cart'));
+    const actIndexPay = browser.actions.findIndex((a) => a.includes('Pay'));
+    expect(actIndexCart).toBeGreaterThanOrEqual(0);
+    expect(actIndexPay).toBeGreaterThan(actIndexCart);
+  });
+
+  it('is byte-for-byte backward-compatible when input.cuj is absent', async () => {
+    const run = async (withCuj: boolean) => {
+      const provider = fakeProvider({ text: 'done' });
+      const browser = fakeBrowserSession();
+      await new ExploratoryStrategy().run({
+        provider,
+        browser,
+        url: 'http://localhost:3000/checkout',
+        config,
+        ...(withCuj ? { cuj: missionCuj } : {}),
+      });
+      const prompt = provider.calls.find((c) => c.method === 'generateWithTools')!.prompt;
+      return { prompt, actions: browser.actions };
+    };
+
+    const withoutCuj = await run(false);
+    // no mission brief, and no `act` step-walking calls leak into the default path
+    expect(withoutCuj.prompt).not.toContain('Mission brief');
+    expect(withoutCuj.actions.some((a) => a.startsWith('act'))).toBe(false);
   });
 });

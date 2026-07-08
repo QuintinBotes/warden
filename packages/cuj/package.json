@@ -1,7 +1,7 @@
 {
-  "name": "@warden/dashboard-api",
+  "name": "@warden/cuj",
   "version": "0.1.0",
-  "description": "Warden dashboard data API — DashboardDataApi over the SQLite store and metrics",
+  "description": "Warden Critical User Journey modeling — journey entity, health rollup, scoped gating",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -22,9 +22,7 @@
   },
   "dependencies": {
     "@warden/core": "workspace:*",
-    "@warden/cuj": "workspace:*",
-    "@warden/test-management": "workspace:*",
-    "zod": "^3.24.1"
+    "@warden/test-management": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.3.5",

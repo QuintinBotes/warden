@@ -1,7 +1,7 @@
 {
-  "name": "@warden/dashboard-api",
+  "name": "@warden/proactive-healer",
   "version": "0.1.0",
-  "description": "Warden dashboard data API — DashboardDataApi over the SQLite store and metrics",
+  "description": "Warden proactive self-healing — pre-emptive locator repair via draft PRs",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -21,10 +21,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@warden/agent": "workspace:*",
     "@warden/core": "workspace:*",
-    "@warden/cuj": "workspace:*",
-    "@warden/test-management": "workspace:*",
-    "zod": "^3.24.1"
+    "@warden/coverage-sync": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.3.5",

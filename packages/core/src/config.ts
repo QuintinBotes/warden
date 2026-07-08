@@ -3,6 +3,7 @@ import { loadConfig as c12LoadConfig } from 'c12';
 import type { QAPlatformPlugin } from './plugin';
 import { ConfigError } from './errors';
 import { GridConfigSchema } from './grid';
+import { CujTier } from './cuj';
 
 /**
  * The single Warden configuration surface (`warden.config.ts`). Every field has a
@@ -353,6 +354,118 @@ export const WardenConfigSchema = z.object({
       apiVersion: z.string().optional(),
       // Azure DevOps project name (owner/org comes from the repo path). Ignored by other hosts.
       project: z.string().optional(),
+    })
+    .default({}),
+  // Critical User Journey (CUJ) modeling (additive; defaulted off so zero-config repos are
+  // unaffected). The CUJ gate only fires for journeys a change actually *touches*, so adopting
+  // CUJs is incremental: a team can define one journey and gate only it. See
+  // docs/proposals/2026-07-08-cuj-modeling.md.
+  cuj: z
+    .object({
+      enabled: z.boolean().default(false),
+      dir: z.string().default('.warden/cuj/'), // where Cuj YAML defs live (loaded like tests/cases/)
+      gate: z
+        .object({
+          enabled: z.boolean().default(true), // the CUJ gate only runs when a CUJ is actually touched
+          blockOnBroken: z.boolean().default(true), // any touched CUJ that is BROKEN blocks the merge
+          blockTier1OnDegrade: z.boolean().default(true), // a tier-1 journey regressing (not just broken) blocks
+          warnTier2OnDegrade: z.boolean().default(true), // a tier-2 regression warns
+        })
+        .default({}),
+      signals: z
+        .object({
+          // fold non-functional signals into health when those tiers run
+          a11y: z.boolean().default(false),
+          perf: z.boolean().default(false),
+          visual: z.boolean().default(false),
+        })
+        .default({}),
+      exploratory: z
+        .object({
+          // feed the exploratory agent a touched CUJ at/above this tier
+          missionBriefTier: CujTier.default('tier1'),
+        })
+        .default({}),
+    })
+    .default({}),
+  // Proactive self-healing (additive; defaulted OFF). An optional pass that re-resolves the
+  // role/label locators used by a PR's affected tests against the preview build and opens a
+  // DRAFT healing PR for any that no longer resolve — before the tests go red. It never gates
+  // (its check-run is always neutral) and never replaces the reasoning `HealerStrategy`.
+  // Two-key activation: needs both `enabled: true` and a reachable `previewUrlTemplate`. See
+  // docs/proposals/2026-07-08-proactive-self-healing.md.
+  proactiveHealing: z
+    .object({
+      enabled: z.boolean().default(false),
+      // Extra module-path patterns (beyond a non-empty affectedComponents) that count as UI change.
+      uiPatterns: z.array(z.string()).default(['components/', 'pages/', 'app/']),
+      // Where to reach the PR's live preview build; `{sha}` / `{pr}` are substituted at launch.
+      previewUrlTemplate: z.string().optional(),
+      // Only touch locators used by tests tagged for the affected modules — never the whole suite.
+      scopeToAffectedTags: z.boolean().default(true),
+      // Skip a locator whose repair confidence is below this bar; it's left for the reactive healer.
+      minConfidence: z.enum(['low', 'medium', 'high']).default('medium'),
+      // Cap on locators checked per run, to bound preview-session cost on large PRs.
+      maxLocatorsPerRun: z.number().int().positive().default(200),
+    })
+    .default({}),
+  // Production-traffic recording (additive; defaulted OFF — strictly opt-in). Captures real,
+  // consenting, sampled user sessions, scrubs PII fail-closed BEFORE anything durable is written,
+  // clusters them into ranked candidate journeys, and hands the high-value clusters to the reused
+  // AiTestSynthesizer to propose tagged Playwright specs + candidate CUJs as a DRAFT PR. Nothing
+  // captures unless `enabled: true`; nothing auto-merges. See
+  // docs/proposals/2026-07-08-traffic-recording.md.
+  traffic: z
+    .object({
+      enabled: z.boolean().default(false), // strictly opt-in; nothing captures unless true
+      source: z.enum(['browser-sdk', 'reverse-proxy']).default('browser-sdk'),
+      sampleRate: z.number().min(0).max(1).default(0.01), // fraction of consenting sessions captured
+      consent: z
+        .object({
+          required: z.boolean().default(true), // capture requires an explicit consent signal
+          cookieName: z.string().default('warden_traffic_opt_in'),
+          honorDoNotTrack: z.boolean().default(true), // DNT / GPC suppresses capture regardless of cookie
+        })
+        .default({}),
+      pii: z
+        .object({
+          redactionToken: z.string().default('[REDACTED]'),
+          // Built-in rules (email, phone, PAN/luhn, SSN, JWT/bearer, uuid-in-url) always apply.
+          extraRules: z
+            .array(
+              z.object({
+                name: z.string(),
+                pattern: z.instanceof(RegExp),
+                applyTo: z.enum(['value', 'selectorName', 'url']),
+              }),
+            )
+            .default([]),
+          // Allowlist model: ONLY these selector-name labels pass through unredacted.
+          selectorAllowlist: z
+            .array(z.string())
+            .default(['Search', 'Category', 'Sort by', 'Quantity']),
+        })
+        .default({}),
+      retention: z
+        .object({
+          storeRawAfterScrub: z.boolean().default(false), // never persist unscrubbed capture
+          scrubbedTtlDays: z.number().int().positive().default(30), // retention sweep of the store
+        })
+        .default({}),
+      clustering: z
+        .object({
+          minSessions: z.number().int().nonnegative().default(5), // ignore clusters below this size
+          topClusters: z.number().int().positive().default(20), // synthesize at most this many, by weight
+          businessWeightByRoute: z.record(z.string(), z.number()).default({}), // e.g. { '/checkout/:id': 5 }
+        })
+        .default({}),
+      synthesis: z
+        .object({
+          minClusterFrequency: z.number().int().nonnegative().default(10), // must recur this often to synthesize
+          proposeCujs: z.boolean().default(true), // emit CandidateCUJ per cluster
+          outDir: z.string().default('tests/e2e/traffic/'), // where synthesized specs land in the draft PR
+        })
+        .default({}),
     })
     .default({}),
   // Device-cloud grid & parallel sharding (additive; defaulted off, `local` needs no account).

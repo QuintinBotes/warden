@@ -3,6 +3,7 @@ import type { BrowserSession } from './browser';
 import type { DiffFile, ChangeSurface } from './change-surface';
 import type { WardenConfig } from './config';
 import type { FixtureCatalog } from './data-fixtures';
+import type { Cuj } from './cuj';
 
 /**
  * Agent strategy abstraction. The three V1 strategies — exploratory (break it),
@@ -55,6 +56,8 @@ export interface AgentInput {
   config: WardenConfig;
   /** Run-scoped seeded data the exploratory/generative strategies should reference. */
   fixtures?: FixtureCatalog;
+  /** When set, the exploratory strategy treats this journey as its mission brief. */
+  cuj?: Cuj;
 }
 
 export interface AgentOutput {

@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@warden/core": "workspace:*",
+    "@warden/cuj": "workspace:*",
     "@anthropic-ai/sdk": "^0.65.0",
     "@google/generative-ai": "^0.21.0",
     "openai": "^4.77.0",
