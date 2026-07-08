@@ -365,6 +365,63 @@ async function main() {
       },
     ];
 
+    // ---- Cross-repo coverage sync (presentational copy) -------------------
+    // The coverage-sync workstream opens draft PRs in linked repos suggesting
+    // tests/docs to add, update, or remove when a source PR changes behavior
+    // (see docs/coverage-sync.md). These sample runs stand in for what the
+    // Warden GitHub App would surface — `self` targets suggest doc edits on the
+    // source PR itself; external targets get their own draft PR.
+    const coverageSync = [
+      {
+        id: 'cs-e2e-482',
+        sourcePr: 'service-checkout #482',
+        targetRepo: 'org/e2e-tests',
+        add: 2,
+        update: 1,
+        remove: 1,
+        kinds: { test: 3, doc: 1 },
+        draftPr: 'e2e-tests#12',
+        status: 'open',
+        at: '2h ago',
+      },
+      {
+        id: 'cs-self-482',
+        sourcePr: 'service-checkout #482',
+        targetRepo: 'self',
+        add: 0,
+        update: 2,
+        remove: 0,
+        kinds: { test: 0, doc: 2 },
+        draftPr: 'suggestions on PR',
+        status: 'open',
+        at: '2h ago',
+      },
+      {
+        id: 'cs-portal-310',
+        sourcePr: 'service-auth #310',
+        targetRepo: 'org/developer-portal',
+        add: 1,
+        update: 1,
+        remove: 0,
+        kinds: { test: 0, doc: 2 },
+        draftPr: 'developer-portal#57',
+        status: 'merged',
+        at: '1d ago',
+      },
+      {
+        id: 'cs-e2e-204',
+        sourcePr: 'service-billing #204',
+        targetRepo: 'org/e2e-tests',
+        add: 1,
+        update: 0,
+        remove: 2,
+        kinds: { test: 2, doc: 1 },
+        draftPr: 'e2e-tests#9',
+        status: 'open',
+        at: '3d ago',
+      },
+    ];
+
     const snapshot = {
       generatedAt: new Date().toISOString(),
       run: {
@@ -382,6 +439,7 @@ async function main() {
       defaultSelectedId,
       flake: flakeBoard,
       learning,
+      coverageSync,
     };
 
     mkdirSync(OUT_DIR, { recursive: true });

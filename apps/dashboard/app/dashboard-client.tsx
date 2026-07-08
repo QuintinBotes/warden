@@ -68,6 +68,19 @@ interface Learning {
   embedId: string;
 }
 
+interface CoverageSyncRun {
+  id: string;
+  sourcePr: string;
+  targetRepo: string;
+  add: number;
+  update: number;
+  remove: number;
+  kinds: { test: number; doc: number };
+  draftPr: string;
+  status: 'open' | 'merged';
+  at: string;
+}
+
 export interface DashboardData {
   generatedAt: string;
   run: {
@@ -85,6 +98,7 @@ export interface DashboardData {
   defaultSelectedId: string | null;
   flake: FlakeRow[];
   learning: Learning[];
+  coverageSync: CoverageSyncRun[];
 }
 
 // ---------------------------------------------------------------------------
@@ -302,6 +316,54 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           </div>
         </section>
       </div>
+
+      {/* Coverage sync */}
+      <section className="wd-block wd-section">
+        <SectionHead
+          eyebrow="Coverage sync"
+          title="Coverage Sync"
+          subtitle={`${data.coverageSync.length} draft PRs across linked repos`}
+        />
+        <div className="wd-panel">
+          {data.coverageSync.length === 0 ? (
+            <p className="wd-empty">No linked repos need tests or docs right now.</p>
+          ) : (
+            data.coverageSync.map((s) => {
+              const target = s.targetRepo === 'self' ? 'this repo' : s.targetRepo;
+              return (
+                <div className="wd-sync-item" key={s.id}>
+                  <span className="wd-sync-route">
+                    <span className="wd-sync-src">{s.sourcePr}</span>
+                    <span className="wd-sync-arrow" aria-hidden="true">
+                      →
+                    </span>
+                    <span className="wd-sync-target">{target}</span>
+                  </span>
+                  <span className="wd-sync-pills">
+                    <span className="wd-sync-pill wd-sync-pill--add">+{s.add} add</span>
+                    <span className="wd-sync-pill wd-sync-pill--update">~{s.update} update</span>
+                    <span className="wd-sync-pill wd-sync-pill--remove">−{s.remove} remove</span>
+                  </span>
+                  <span className="wd-sync-kinds">
+                    {s.kinds.test} test · {s.kinds.doc} doc
+                  </span>
+                  <a className="wd-sync-chip" href="#" aria-label={`Open draft PR: ${s.draftPr}`}>
+                    {s.draftPr}
+                  </a>
+                  <span
+                    className={`wd-sync-status wd-sync-status--${s.status}`}
+                    data-status={s.status}
+                  >
+                    <span className="wd-sync-status-dot" aria-hidden="true" />
+                    {s.status}
+                  </span>
+                  <span className="wd-sync-at">{s.at}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
 
       {/* Footer */}
       <footer className="wd-footer">
