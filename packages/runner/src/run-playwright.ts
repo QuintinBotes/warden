@@ -19,17 +19,31 @@ export interface RunPlaywrightOptions {
   toolVersion?: string;
   /** Extra environment variables for the child process. */
   env?: Record<string, string>;
+  /**
+   * Playwright `--shard` slice for this lane, e.g. `'3/8'` (from a grid `ShardAssignment`). Fans
+   * the tier across N CI shards. Optional — omit for an unsharded run.
+   */
+  shard?: string;
+  /**
+   * Remote grid connect endpoint (a provider Playwright connect URL). Surfaced to the Playwright
+   * config via `PLAYWRIGHT_CONNECT_WS_ENDPOINT` so a desktop lane drives the grid instead of a
+   * local browser. Optional — omit for a local run.
+   */
+  connectUrl?: string;
 }
 
 function shellPlaywright(opts: RunPlaywrightOptions): Promise<CTRFReport> {
   const args = ['playwright', 'test', '--reporter=json'];
   if (opts.grep) args.push('--grep', opts.grep);
   if (opts.configPath) args.push('--config', opts.configPath);
+  if (opts.shard) args.push('--shard', opts.shard);
+
+  const gridEnv = opts.connectUrl ? { PLAYWRIGHT_CONNECT_WS_ENDPOINT: opts.connectUrl } : {};
 
   return new Promise<string>((resolve, reject) => {
     const child = spawn('npx', args, {
       cwd: opts.cwd,
-      env: { ...process.env, ...opts.env },
+      env: { ...process.env, ...gridEnv, ...opts.env },
     });
     let stdout = '';
     let stderr = '';

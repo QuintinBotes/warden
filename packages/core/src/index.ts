@@ -21,3 +21,6 @@ export * from './v2';
 export * from './coverage-sync';
 export * from './visual';
 export * from './flake-intelligence';
+export * from './data-fixtures';
+export * from './api-contracts';
+export * from './grid';
