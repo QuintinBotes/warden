@@ -17,6 +17,22 @@ services:
       - ../apps/dashboard/out:/usr/share/nginx/html:ro
     restart: unless-stopped
 
+  # Cross-repo coverage sync — the GitHub App webhook server.
+  # Register a GitHub App first and fill deploy/.env (see deploy/.env.example).
+  github-app:
+    build:
+      context: ..
+      dockerfile: packages/github-app/Dockerfile
+    ports: ['3002:3000']
+    environment:
+      - PORT=3000
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - GITHUB_WEBHOOK_PATH=${GITHUB_WEBHOOK_PATH:-/api/github/webhooks}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    restart: unless-stopped
+
   pushgateway:
     image: prom/pushgateway:latest
     ports: ['9091:9091']

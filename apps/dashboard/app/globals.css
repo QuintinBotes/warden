@@ -344,6 +344,161 @@ body {
   color: var(--hair);
 }
 
+/* ---- Coverage sync ------------------------------------------------------ */
+
+.wd-sync-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.9rem;
+  padding: 0.95rem 1rem;
+}
+
+.wd-sync-item:not(:first-child) {
+  border-top: 1px solid var(--hair-soft);
+}
+
+.wd-sync-route {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1 1 15rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink0);
+}
+
+.wd-sync-src {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wd-sync-arrow {
+  flex: 0 0 auto;
+  color: var(--ink2);
+}
+
+.wd-sync-target {
+  flex: 0 0 auto;
+  color: var(--ink1);
+}
+
+.wd-sync-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.wd-sync-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+  padding: 0.24rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.wd-sync-pill--add {
+  color: var(--pass);
+  background: color-mix(in srgb, var(--pass) 14%, transparent);
+  border-color: color-mix(in srgb, var(--pass) 30%, transparent);
+}
+
+.wd-sync-pill--update {
+  color: var(--flaky);
+  background: color-mix(in srgb, var(--flaky) 14%, transparent);
+  border-color: color-mix(in srgb, var(--flaky) 30%, transparent);
+}
+
+.wd-sync-pill--remove {
+  color: var(--quar);
+  background: color-mix(in srgb, var(--quar) 14%, transparent);
+  border-color: color-mix(in srgb, var(--quar) 30%, transparent);
+}
+
+.wd-sync-kinds {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
+.wd-sync-chip {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink1);
+  text-decoration: none;
+  padding: 0.24rem 0.55rem;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background: var(--g2);
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.wd-sync-chip:hover {
+  color: var(--ink0);
+  border-color: var(--accent);
+}
+
+.wd-sync-chip:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+.wd-sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.26rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1;
+  margin-left: auto;
+}
+
+.wd-sync-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.wd-sync-status--open {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.wd-sync-status--merged {
+  color: var(--pass);
+  background: color-mix(in srgb, var(--pass) 14%, transparent);
+  border-color: color-mix(in srgb, var(--pass) 30%, transparent);
+}
+
+.wd-sync-at {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
 /* ---- Footer ------------------------------------------------------------- */
 
 .wd-footer {

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-07T22:30:15.602Z",
+  "generatedAt": "2026-07-08T17:42:57.308Z",
   "run": {
     "trigger": "PR #42",
     "environment": "staging",
@@ -12,13 +12,7 @@
       "label": "Pass rate",
       "value": "66.7%",
       "tone": "pass",
-      "points": [
-        83.3,
-        83.3,
-        50,
-        83.3,
-        66.7
-      ],
+      "points": [83.3, 83.3, 50, 83.3, 66.7],
       "delta": "▼ 16.6 pts",
       "trend": "down"
     },
@@ -26,13 +20,7 @@
       "label": "Flake rate",
       "value": "16.7%",
       "tone": "flaky",
-      "points": [
-        0,
-        0,
-        16.7,
-        0,
-        16.7
-      ],
+      "points": [0, 0, 16.7, 0, 16.7],
       "delta": "▲ 16.7 pts",
       "trend": "down"
     },
@@ -40,13 +28,7 @@
       "label": "MTTR",
       "value": "1.4s",
       "tone": "neutral",
-      "points": [
-        1800,
-        1800,
-        1375,
-        1800,
-        1375
-      ],
+      "points": [1800, 1800, 1375, 1800, 1375],
       "delta": "▼ 0.4s",
       "trend": "up"
     },
@@ -54,13 +36,7 @@
       "label": "Coverage",
       "value": "85.7%",
       "tone": "pass",
-      "points": [
-        85.7,
-        85.7,
-        85.7,
-        85.7,
-        85.7
-      ],
+      "points": [85.7, 85.7, 85.7, 85.7, 85.7],
       "delta": "no change",
       "trend": "flat"
     }
@@ -91,21 +67,12 @@
       }
     ]
   },
-  "coverageColumns": [
-    "Jun 28",
-    "Jun 30",
-    "Jul 2",
-    "Jul 4",
-    "Jul 6"
-  ],
+  "coverageColumns": ["Jun 28", "Jun 30", "Jul 2", "Jul 4", "Jul 6"],
   "coverageRows": [
     {
       "requirementId": "REQ-AUTH-001",
       "title": "Users can log in with valid credentials",
-      "tests": [
-        "TC-AUTH-001",
-        "TC-AUTH-002"
-      ],
+      "tests": ["TC-AUTH-001", "TC-AUTH-002"],
       "cells": [
         {
           "col": "Jun 28",
@@ -133,9 +100,7 @@
     {
       "requirementId": "REQ-AUTH-002",
       "title": "Users can log out",
-      "tests": [
-        "TC-AUTH-003"
-      ],
+      "tests": ["TC-AUTH-003"],
       "cells": [
         {
           "col": "Jun 28",
@@ -163,9 +128,7 @@
     {
       "requirementId": "REQ-CHECKOUT-001",
       "title": "Users can complete checkout with a saved card",
-      "tests": [
-        "TC-CHECKOUT-001"
-      ],
+      "tests": ["TC-CHECKOUT-001"],
       "cells": [
         {
           "col": "Jun 28",
@@ -193,9 +156,7 @@
     {
       "requirementId": "REQ-CHECKOUT-002",
       "title": "Discount codes apply correctly at checkout",
-      "tests": [
-        "TC-CHECKOUT-002"
-      ],
+      "tests": ["TC-CHECKOUT-002"],
       "cells": [
         {
           "col": "Jun 28",
@@ -223,10 +184,7 @@
     {
       "requirementId": "REQ-SEARCH-001",
       "title": "Search returns relevant results",
-      "tests": [
-        "TC-SEARCH-001",
-        "TC-SEARCH-002"
-      ],
+      "tests": ["TC-SEARCH-001", "TC-SEARCH-002"],
       "cells": [
         {
           "col": "Jun 28",
@@ -257,10 +215,7 @@
       "id": "TC-CHECKOUT-002",
       "name": "checkout › apply discount code",
       "durationMs": 1800,
-      "tags": [
-        "checkout",
-        "e2e"
-      ],
+      "tags": ["checkout", "e2e"],
       "status": "FAIL",
       "replay": {
         "errorMessage": "Discount not applied",
@@ -275,10 +230,7 @@
       "id": "TC-AUTH-002",
       "name": "auth › post-login redirect",
       "durationMs": 950,
-      "tags": [
-        "auth",
-        "e2e"
-      ],
+      "tags": ["auth", "e2e"],
       "status": "FLAKY",
       "replay": {
         "errorMessage": "Timed out waiting for redirect",
@@ -293,10 +245,7 @@
       "id": "TC-CHECKOUT-001",
       "name": "checkout › pay with saved card",
       "durationMs": 2100,
-      "tags": [
-        "checkout",
-        "e2e"
-      ],
+      "tags": ["checkout", "e2e"],
       "status": "PASS",
       "replay": null
     },
@@ -304,10 +253,7 @@
       "id": "TC-AUTH-001",
       "name": "auth › valid credentials sign-in",
       "durationMs": 800,
-      "tags": [
-        "auth",
-        "e2e"
-      ],
+      "tags": ["auth", "e2e"],
       "status": "PASS",
       "replay": null
     },
@@ -315,10 +261,7 @@
       "id": "TC-SEARCH-001",
       "name": "search › relevant results",
       "durationMs": 600,
-      "tags": [
-        "search",
-        "e2e"
-      ],
+      "tags": ["search", "e2e"],
       "status": "PASS",
       "replay": null
     },
@@ -326,10 +269,7 @@
       "id": "TC-AUTH-003",
       "name": "auth › logout clears session",
       "durationMs": 400,
-      "tags": [
-        "auth",
-        "e2e"
-      ],
+      "tags": ["auth", "e2e"],
       "status": "PASS",
       "replay": null
     }
@@ -363,6 +303,68 @@
       "title": "Why the discount-code check fails at checkout",
       "durationLabel": "6:38",
       "embedId": "wardn-checkout-002"
+    }
+  ],
+  "coverageSync": [
+    {
+      "id": "cs-e2e-482",
+      "sourcePr": "service-checkout #482",
+      "targetRepo": "org/e2e-tests",
+      "add": 2,
+      "update": 1,
+      "remove": 1,
+      "kinds": {
+        "test": 3,
+        "doc": 1
+      },
+      "draftPr": "e2e-tests#12",
+      "status": "open",
+      "at": "2h ago"
+    },
+    {
+      "id": "cs-self-482",
+      "sourcePr": "service-checkout #482",
+      "targetRepo": "self",
+      "add": 0,
+      "update": 2,
+      "remove": 0,
+      "kinds": {
+        "test": 0,
+        "doc": 2
+      },
+      "draftPr": "suggestions on PR",
+      "status": "open",
+      "at": "2h ago"
+    },
+    {
+      "id": "cs-portal-310",
+      "sourcePr": "service-auth #310",
+      "targetRepo": "org/developer-portal",
+      "add": 1,
+      "update": 1,
+      "remove": 0,
+      "kinds": {
+        "test": 0,
+        "doc": 2
+      },
+      "draftPr": "developer-portal#57",
+      "status": "merged",
+      "at": "1d ago"
+    },
+    {
+      "id": "cs-e2e-204",
+      "sourcePr": "service-billing #204",
+      "targetRepo": "org/e2e-tests",
+      "add": 1,
+      "update": 0,
+      "remove": 2,
+      "kinds": {
+        "test": 2,
+        "doc": 1
+      },
+      "draftPr": "e2e-tests#9",
+      "status": "open",
+      "at": "3d ago"
     }
   ]
 }
