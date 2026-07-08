@@ -4,22 +4,23 @@ Warden is an open-source, AI-native QA platform. It reads a pull request's diff,
 
 ## Start here
 
-| Guide | What it covers |
-|-------|----------------|
-| [Getting Started](getting-started.md) | Install the Action, add a config, open your first PR — in ~10 minutes |
-| [Architecture](architecture.md) | How the pieces fit: orchestrator, agents, runner, store, reporters |
-| [Configuration](configuration.md) | Every `warden.config.ts` option, with defaults |
-| [CLI Reference](cli.md) | `warden analyze / run / agent / report / plan / init` |
-| [GitHub Action](github-action.md) | Action inputs, outputs, and the tiered CI workflow |
-| [AI Providers & Browser Engines](providers-and-engines.md) | Claude, the provider seam, Playwright vs. Claude-Chrome |
-| [Reporting](reporting.md) | CTRF, the four GitHub surfaces, and E2E replay media |
-| [Cross-Repo Coverage Sync](coverage-sync.md) | Keep tests & docs in sync across repos via the GitHub App |
-| [Deployment & Self-Hosting](deployment.md) | Running Warden in CI and self-hosting the full stack |
-| [Design System](design-system.md) | "Sentinel" — the visual language of the dashboard |
+| Guide                                                      | What it covers                                                        |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| [Getting Started](getting-started.md)                      | Install the Action, add a config, open your first PR — in ~10 minutes |
+| [Architecture](architecture.md)                            | How the pieces fit: orchestrator, agents, runner, store, reporters    |
+| [Configuration](configuration.md)                          | Every `warden.config.ts` option, with defaults                        |
+| [CLI Reference](cli.md)                                    | `warden analyze / run / agent / report / plan / init`                 |
+| [GitHub Action](github-action.md)                          | Action inputs, outputs, and the tiered CI workflow                    |
+| [AI Providers & Browser Engines](providers-and-engines.md) | Claude, the provider seam, Playwright vs. Claude-Chrome               |
+| [Reporting](reporting.md)                                  | CTRF, the four GitHub surfaces, and E2E replay media                  |
+| [Cross-Repo Coverage Sync](coverage-sync.md)               | Keep tests & docs in sync across repos via the GitHub App             |
+| [Deployment & Self-Hosting](deployment.md)                 | Running Warden in CI and self-hosting the full stack                  |
+| [Design System](design-system.md)                          | "Sentinel" — the visual language of the dashboard                     |
 
 ## Reference
 
 - [Contributing](../CONTRIBUTING.md) — how the monorepo is organized and how to work in it
+- [Proposals & roadmap](proposals/) — design RFCs and the "Warden Next" capability roadmap
 
 ## The mental model
 

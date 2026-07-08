@@ -6,7 +6,7 @@
 
 ## Summary
 
-Today Warden reacts to a pull request by *running* the tests that already exist. This proposal
+Today Warden reacts to a pull request by _running_ the tests that already exist. This proposal
 closes the loop: when a PR opens in one GitHub repository, Warden also inspects the **other**
 repositories linked to it — a shared test repo, a paired test repo, a docs site, or a dependent
 service — and proposes the tests and documentation that should be **added, updated, or removed** to
@@ -25,7 +25,7 @@ service's own repo — a central `e2e-tests` repository, a developer portal, an 
 service changes, those other repositories silently drift: a new endpoint ships untested and
 undocumented, a changed contract breaks a consumer's tests, a deleted feature leaves dead tests and
 stale docs behind. Warden already understands what a diff changes and what is covered; extending
-that understanding *across repositories* turns "did the tests pass?" into "is the whole system —
+that understanding _across repositories_ turns "did the tests pass?" into "is the whole system —
 tests and docs — still consistent with this change?"
 
 ## Goals
@@ -44,7 +44,7 @@ tests and docs — still consistent with this change?"
 - Non-GitHub hosts (GitLab/Bitbucket). GitHub only.
 - Auto-merging any suggestion.
 - Replacing the CI-embedded Action for in-repo runs; this App is additive and cross-repo.
-- Semantic guarantees about *dependent-service* impact beyond what the declared links + heuristics
+- Semantic guarantees about _dependent-service_ impact beyond what the declared links + heuristics
   and the LLM can infer (see Risks).
 
 ## Architecture
@@ -53,7 +53,7 @@ Two new packages plus small, additive extensions to four existing ones.
 
 ### New
 
-- **`@warden/github-app`** *(hosted service)* — an org-installed GitHub App. A small webhook server
+- **`@warden/github-app`** _(hosted service)_ — an org-installed GitHub App. A small webhook server
   (`@octokit/app` + `@octokit/webhooks`) that receives `pull_request` events, mints scoped
   installation tokens, runs the pipeline, and opens PRs / posts checks. Self-hostable; runs from the
   existing `deploy/` compose. Owns wiring only — no analysis logic of its own.
@@ -75,14 +75,14 @@ Two new packages plus small, additive extensions to four existing ones.
 
 ### Units in `@warden/coverage-sync`
 
-| Unit | Does | Depends on |
-|------|------|-----------|
-| `LinkResolver` | `(sourceRepo, config) → RepoLinks` — resolves testRepos / docRepos / dependents from the source repo's `warden.config` or an org manifest. | core |
-| `TestInventoryReader` | `(RepoRef, FileAccess) → TestInventory` — YAML cases + a spec-file index for a target repo. | test-management, injected FileAccess |
-| `DocInventoryReader` | `(RepoRef, FileAccess) → DocInventory` — markdown/MDX + OpenAPI/JSON-schema index for a target repo. | injected FileAccess |
-| `CoverageGapAnalyzer` | `(ChangeSurface, TestInventory, DocInventory) → CoverageGaps { uncovered, changed, orphaned }` for tests and docs. | orchestrator types |
-| `CoverageRecommender` | `(CoverageGaps, DiffFile[], LLMProvider) → Recommendation[]` — the add/update/remove engine. | agent, provider |
-| `SuggestionPublisher` | `(Recommendation[], targets, sourcePr, GitHubAccess) → draft PRs + self-suggestions + a source-PR check`. | injected GitHubAccess |
+| Unit                  | Does                                                                                                                                       | Depends on                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
+| `LinkResolver`        | `(sourceRepo, config) → RepoLinks` — resolves testRepos / docRepos / dependents from the source repo's `warden.config` or an org manifest. | core                                 |
+| `TestInventoryReader` | `(RepoRef, FileAccess) → TestInventory` — YAML cases + a spec-file index for a target repo.                                                | test-management, injected FileAccess |
+| `DocInventoryReader`  | `(RepoRef, FileAccess) → DocInventory` — markdown/MDX + OpenAPI/JSON-schema index for a target repo.                                       | injected FileAccess                  |
+| `CoverageGapAnalyzer` | `(ChangeSurface, TestInventory, DocInventory) → CoverageGaps { uncovered, changed, orphaned }` for tests and docs.                         | orchestrator types                   |
+| `CoverageRecommender` | `(CoverageGaps, DiffFile[], LLMProvider) → Recommendation[]` — the add/update/remove engine.                                               | agent, provider                      |
+| `SuggestionPublisher` | `(Recommendation[], targets, sourcePr, GitHubAccess) → draft PRs + self-suggestions + a source-PR check`.                                  | injected GitHubAccess                |
 
 `FileAccess` and `GitHubAccess` are minimal injected interfaces (contents read, branch/commit/PR
 create, check-run create). The real implementations live in `@warden/github-app`; tests inject fakes.
@@ -136,29 +136,31 @@ type RecommendationAction = 'add' | 'update' | 'remove';
 interface Recommendation {
   kind: RecommendationKind;
   action: RecommendationAction;
-  targetRepo: RepoRef;          // may be `self`
-  path: string;                 // file to add / edit / delete
-  reason: string;               // tied to the change that motivated it
-  requirementIds?: string[];    // traceability
-  content?: string;             // full file for `add`
-  patch?: string;               // unified diff for `update` / `remove`
+  targetRepo: RepoRef; // may be `self`
+  path: string; // file to add / edit / delete
+  reason: string; // tied to the change that motivated it
+  requirementIds?: string[]; // traceability
+  content?: string; // full file for `add`
+  patch?: string; // unified diff for `update` / `remove`
 }
 ```
 
 ### How each action is decided
 
 **Tests**
+
 - `add` — a new user-facing surface in the diff (route, component, flow) with no covering test → the generative strategy writes a new, tagged spec.
-- `update` — changed behavior where an existing test asserts the *old* behavior → healer-style reasoning, run proactively against the diff (not a failure), proposes a minimal patch.
+- `update` — changed behavior where an existing test asserts the _old_ behavior → healer-style reasoning, run proactively against the diff (not a failure), proposes a minimal patch.
 - `remove` — a deleted route/component/feature whose tests reference it (by tag / requirement link / imported symbol) → propose the deletion as a diff.
 
 **Docs**
+
 - `add` — a new endpoint / config option / public signature that no doc mentions → draft the doc/section (and, for an OpenAPI target, the schema entry).
 - `update` — changed behavior/signature/config a doc still describes the old way → propose the edit.
 - `remove` — a removed feature still documented → propose the deletion.
 
 Every recommendation carries a `reason` and, where possible, the `requirementIds` it traces to, so a
-reviewer sees *why* each change is suggested.
+reviewer sees _why_ each change is suggested.
 
 ## Safety & error handling
 
@@ -202,4 +204,7 @@ Fully hermetic, matching the rest of Warden:
   systems are future work.
 - **Hosting** — the App is a running service (unlike the zero-infra Action). It ships in `deploy/`
   but self-hosting + the GitHub App registration are new operational steps.
+
+```
+
 ```
