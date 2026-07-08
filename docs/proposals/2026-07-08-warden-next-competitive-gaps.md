@@ -53,7 +53,7 @@ Table stakes that nearly every serious competitor ships and Warden currently lac
 
 ### 1.6 API & contract-testing depth
 - **Who has it:** Pact (consumer-driven contracts), Schemathesis (OpenAPI property-based fuzzing), Postman/Newman, Karate.
-- **Why it matters:** In a microservice org (the Mews context), contract drift between services is the top integration risk — and it's exactly what the cross-repo `dependents` links imply Warden should catch.
+- **Why it matters:** In a microservice org, contract drift between services is the top integration risk — and it's exactly what the cross-repo `dependents` links imply Warden should catch.
 - **Warden design:** an `api` tier in the runner — Schemathesis for OpenAPI fuzzing (the blueprint already referenced it) and a Pact broker adapter so a provider PR verifies consumer contracts. Wire contract results into the merge gate and into cross-repo `dependents` impact.
 - **Effort:** Medium.
 
@@ -69,16 +69,16 @@ Table stakes that nearly every serious competitor ships and Warden currently lac
 
 Where Warden can pull *ahead* by combining its AI loop with capabilities incumbents treat as separate silos.
 
-### 2.1 testomat.io integration — test-spec source of truth (the Mews ask)
-- **What it is:** testomat.io is a test-management layer that imports tests from code (Playwright, Cypress, CodeceptJS; JS/TS or Gherkin), reads them **source-code-first** (rename a test in code → it updates automatically), keeps **two-way sync with Jira** (an AI Jira plugin; changes reflect both ways), maintains a BDD/Gherkin **Steps Database**, and serves as living documentation / the single source of truth for specs. **[verified]**
-- **Why it matters:** Jan & Peter want testomat.io as the spec source of truth internally. If Warden's generative agent writes tests and its coverage-sync suggests changes, those must reconcile with testomat.io rather than fight it.
-- **Warden design:** a `TestManagementSync` seam with a `testomatio` adapter (sibling to the Linear/Jira requirement sync): pull the canonical spec catalog from testomat.io into Warden's coverage matrix; when the generative agent or coverage-sync proposes a test, register/update it in testomat.io (respecting its IDs) so the two stay in lockstep. Bi-directional, ID-stable.
-- **Effort:** Medium. Reuses the existing integration-adapter pattern.
+### 2.1 Test-management integration — external spec source of truth
+- **What it is:** Many teams keep their tests/specs in a dedicated **test-management** system as the single source of truth, and want automation to reconcile with it rather than fight it. **testomat.io** is the closest fit (imports tests from code — Playwright/Cypress/CodeceptJS, JS/TS or Gherkin — reads them **source-code-first** so a rename in code updates automatically, keeps **two-way Jira sync**, and maintains a BDD/Gherkin **Steps Database**). The same need is served by **Qase**, **TestRail**, **Xray** (Jira-native; Warden's Requirement→Test→Execution model is already Xray-inspired), **Zephyr Scale/Squad**, and **Allure TestOps**. **[verified — testomat.io]**
+- **Why it matters:** if Warden's generative agent writes tests and coverage-sync proposes changes, they must round-trip with the team's system of record (IDs, statuses, coverage) instead of drifting from it.
+- **Warden design:** a **`TestManagementSync`** seam (sibling to the existing Linear/Jira/GitHub-Projects requirement sync in `@warden/integrations`), with adapters: `testomatio`, `qase`, `testrail`, `xray`, `zephyr`, `allure-testops`. Each: pull the canonical spec catalog into Warden's coverage matrix; when the generative agent or coverage-sync proposes/updates a test, register it back respecting the tool's stable IDs; push execution results. Bi-directional and ID-stable; `config.testManagement.source` selects the adapter.
+- **Effort:** Medium (testomat.io first; the rest are per-adapter). Reuses the existing integration-adapter pattern.
 - **Sources:** [testomat.io](https://testomat.io/), [automated-tests synchronization](https://testomat.io/features/automated-tests-synchronization/), [Gherkin syntax support](https://testomat.io/features/gherkin-syntax-support/), [Playwright docs](https://docs.testomat.io/tutorials/playwright/).
 
 ### 2.2 Critical User Journey (CUJ) modeling
-- **What it is:** A CUJ is a named, highest-business-value path through the product (sign-up → checkout → confirmation), typically spanning multiple microservices/APIs. It's a core Google-SRE construct: **SLOs are defined on CUJs** (journey completion rate, latency, drop-off), and teams gate releases + synthetic monitoring on CUJ health. Notably, **Mercari** keeps user-journey SLOs current via E2E tests in a *microservices* architecture — very close to the Mews setup. **[verified]**
-- **Why it matters:** Peter's "connect this to CUJ would be golden." A CUJ layer lets the merge gate answer "is *checkout* safe?" not just "did tests pass?" — and focuses the AI exploratory agent on what actually matters. Almost no QA *tool* models CUJs as first-class (they live in SRE/observability today), so this is both a gap to fill and a lead to take.
+- **What it is:** A CUJ is a named, highest-business-value path through the product (sign-up → checkout → confirmation), typically spanning multiple microservices/APIs. It's a core Google-SRE construct: **SLOs are defined on CUJs** (journey completion rate, latency, drop-off), and teams gate releases + synthetic monitoring on CUJ health. Notably, **Mercari** keeps user-journey SLOs current via E2E tests in a *microservices* architecture. **[verified]**
+- **Why it matters:** a CUJ layer lets the merge gate answer "is *checkout* safe?" not just "did tests pass?" — and focuses the AI exploratory agent on what actually matters. Almost no QA *tool* models CUJs as first-class (they live in SRE/observability today), so this is both a gap to fill and a lead to take.
 - **Warden design:** a first-class `CUJ` entity in `@warden/core` (name, steps, owning team, linked requirements + tests), a coverage rollup (CUJ health = worst of its tests), CUJ-scoped merge gating (block if a touched CUJ degrades), and a CUJ board in the dashboard. The exploratory agent takes a CUJ as its mission brief. This is a genuine product-level differentiator — most tools stop at test-level.
 - **Sources:** [Google Cloud — how to design good SLOs](https://cloud.google.com/blog/products/devops-sre/how-to-design-good-slos-according-to-google-sres), [Splunk — monitoring critical user journeys](https://www.splunk.com/en_us/blog/observability/monitoring-critical-user-journeys.html), [Mercari — user-journey SLOs with E2E in microservices](https://engineering.mercari.com/en/blog/entry/20241204-keeping-user-journey-slos-up-to-date-with-e2e-testing-in-a-microservices-architecture/).
 - **Effort:** Medium–High.
@@ -104,7 +104,7 @@ Where Warden can pull *ahead* by combining its AI loop with capabilities incumbe
 
 ### 2.6 Enterprise readiness
 - **Who has it:** mabl, Testim, BrowserStack, Sauce — SSO/SAML/SCIM, RBAC, audit logs, SOC 2.
-- **Why it matters:** Required to sell to / run inside an org like Mews. Warden's hosted dashboard + GitHub App have no auth model yet.
+- **Why it matters:** Required to sell to / run inside most enterprises. Warden's hosted dashboard + GitHub App have no auth model yet.
 - **Warden design:** for the hosted surfaces (dashboard + App) — SSO/OIDC login, role-based access (viewer/maintainer/admin), an audit log of gate overrides + suggestion merges, tenant isolation, and a documented data-handling/retention posture (a prerequisite for 2.5). Keep the self-hosted OSS core auth-optional.
 - **Effort:** High.
 
@@ -124,7 +124,7 @@ Where Warden can pull *ahead* by combining its AI loop with capabilities incumbe
 ## Where Warden can genuinely LEAD (not just catch up)
 
 1. **Closed-loop test maintenance as the product.** Generative + healer + cross-repo coverage-sync already form a loop most tools don't have: propose → run → heal → re-propose. Doubling down (proactive healing 2.3, coverage-sync, CUJ-aware) makes "your suite maintains itself" Warden's headline — few OSS tools do closed-loop curation.
-2. **Cross-repo / microservice coverage sync.** Warden's GitHub App suggesting tests *and docs* across linked repos is genuinely novel — incumbents are overwhelmingly single-repo. This is the Mews pain point (isolated test repos) turned into a feature.
+2. **Cross-repo / microservice coverage sync.** Warden's GitHub App suggesting tests *and docs* across linked repos is genuinely novel — incumbents are overwhelmingly single-repo. This turns the common "isolated test repos" pain point into a feature.
 3. **Open-source, self-hostable, provider-agnostic.** Every strong incumbent (mabl/Testim/Applitools/BrowserStack) is closed SaaS with per-seat pricing and your data on their cloud. MIT + self-host + swap-any-model is a real moat for privacy-sensitive orgs.
 4. **CUJ-centric, requirement-traceable merge gating.** Tying the gate to *business journeys* + requirements (2.2 + the existing Xray model) answers "is this feature safe to ship?" — a level above the test-pass gates most CI tools offer.
 5. **Docs kept in sync with code.** The coverage-sync App already proposes doc changes alongside tests — almost no QA tool touches documentation. "Your tests *and* your docs stay current" is unique.
@@ -134,7 +134,7 @@ Where Warden can pull *ahead* by combining its AI loop with capabilities incumbe
 ## Suggested sequencing
 
 1. **Credibility sprint (Tier 1):** visual regression (1.1), notifications (1.5), a11y+perf (1.7), flaky depth (1.4) — highest ratio of adoption-impact to effort.
-2. **Mews-aligned differentiators:** testomat.io sync (2.1), CUJ modeling (2.2), contract testing (1.6), non-GitHub SCM (2.4) — directly answers the Slack thread.
+2. **High-leverage differentiators:** test-management sync (2.1), CUJ modeling (2.2), contract testing (1.6), non-GitHub SCM (2.4) — the biggest capability + integration gaps.
 3. **Moat features:** proactive self-healing (2.3), production-traffic recording (2.5), grid/sharding (1.2), enterprise readiness (2.6).
 
 Each item above is scoped to Warden's existing seams (provider / engine / reporter / plugin / integration-adapter / VcsProvider) and can become its own spec → plan → build cycle.
