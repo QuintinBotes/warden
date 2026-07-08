@@ -24,3 +24,5 @@ export * from './flake-intelligence';
 export * from './data-fixtures';
 export * from './api-contracts';
 export * from './grid';
+export * from './test-management-sync';
+export * from './vcs';

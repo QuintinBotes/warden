@@ -12,6 +12,8 @@ export {
 } from './github-job-summary-reporter.js';
 export { PrCommentReporter } from './pr-comment-reporter.js';
 export { CheckRunReporter } from './check-run-reporter.js';
+export { VcsCommentReporter, repoRefFromContext } from './vcs-comment-reporter.js';
+export { VcsCheckReporter } from './vcs-check-reporter.js';
 export { createReporters, type CreateReportersDeps } from './create-reporters.js';
 export { aggregate, mergeCtrf } from './aggregate.js';
 export type {

@@ -24,3 +24,9 @@ export {
 
 export { ctrfToExecution, type CtrfToExecutionOptions } from './ctrf-execution';
 export { createFetchOctokit, type FetchOctokitOptions } from './github-client';
+export {
+  createVcsProviderFromEnv,
+  resolveVcsRepoRef,
+  resolveVcsHeadSha,
+  type EnvLike,
+} from './vcs-client';

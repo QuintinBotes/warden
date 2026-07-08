@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { defineConfig, WardenError } from '@warden/core';
+import { createFakeVcsProvider } from '@warden/core/testing';
 import { createReporters } from './create-reporters.js';
 
 function mockOctokit() {
@@ -38,6 +39,39 @@ describe('createReporters', () => {
     expect(reporters.map((r) => r.name).sort()).toEqual(
       ['check-run', 'ctrf', 'github-job-summary', 'pr-comment'].sort(),
     );
+  });
+
+  it('selects the Vcs reporters when deps.vcs is provided (no octokit needed)', () => {
+    const cfg = defineConfig({
+      reporting: {
+        ctrf: false,
+        githubJobSummary: false,
+        prComment: true,
+        checkRunAnnotations: true,
+      },
+    });
+
+    const reporters = createReporters(cfg, { vcs: createFakeVcsProvider({ host: 'gitlab' }) });
+
+    expect(reporters.map((r) => r.name).sort()).toEqual(['vcs-check', 'vcs-comment']);
+  });
+
+  it('prefers Vcs reporters over the Octokit ones when both deps are present', () => {
+    const cfg = defineConfig({
+      reporting: {
+        ctrf: false,
+        githubJobSummary: false,
+        prComment: true,
+        checkRunAnnotations: true,
+      },
+    });
+
+    const reporters = createReporters(cfg, {
+      vcs: createFakeVcsProvider(),
+      octokit: mockOctokit(),
+    });
+
+    expect(reporters.map((r) => r.name).sort()).toEqual(['vcs-check', 'vcs-comment']);
   });
 
   it('throws when prComment is enabled without an octokit', () => {
