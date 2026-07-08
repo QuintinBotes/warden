@@ -4,7 +4,7 @@
 - **Date:** 2026-07-08
 - **Purpose:** Turn a competitive gap analysis into a prioritized, buildable roadmap that takes Warden from "impressive prototype" to a best-in-class AI-native QA platform.
 
-> **Sourcing note.** A multi-agent adversarial web-research pass ran against this analysis. It hit heavy transient AI-provider `529` overloads (67 of 113 agents failed), so it is *partial*: **three gaps were independently verified 3-of-3 with primary sources** (device clouds §1.2, flaky analytics §1.4, self-healing posture §2.3 — cited inline). The remaining claims are from domain knowledge of the 2024–2026 QA market (the landscape Warden's blueprint surveyed) and still warrant a cited backfill when the provider is stable. One claim was **refuted** and has been corrected (see §2.3). Items Warden already ships are excluded.
+> **Sourcing note.** This analysis was checked against the web in two passes. (1) A multi-agent *adversarial* pass hit heavy transient AI-provider `529` overloads (67 of 113 agents failed) but still verified **three gaps 3-of-3 with primary sources** — device clouds §1.2, flaky analytics §1.4, and self-healing *posture* §2.3 — and **refuted** one claim, now corrected (§2.3). (2) A follow-up *sequential* search pass added primary sources for visual regression §1.1, testomat.io §2.1, and CUJ modeling §2.2. **Six of the twelve dimensions now carry inline sources; the rest are from domain knowledge** of the 2024–2026 QA market and warrant a cited backfill when the provider is stable. Items Warden already ships are excluded.
 
 ## What Warden already has (baseline — not gaps)
 
@@ -19,8 +19,9 @@ That is already broader than most single products. The gaps below are about **de
 Table stakes that nearly every serious competitor ships and Warden currently lacks. Without these, evaluators bounce.
 
 ### 1.1 Visual regression / snapshot testing
-- **Who has it:** Applitools (Visual AI "Eyes"), Percy (BrowserStack), Playwright's built-in `toHaveScreenshot`, mabl, Testim.
-- **Why it matters:** A huge class of real bugs is visual (layout breaks, overflow, contrast, z-index) and invisible to functional assertions. It's one of the first things a QA lead asks about.
+- **Who has it:** Applitools (Visual AI "Eyes" — a model trained on billions of screens that judges *structure* to cut false positives, plus the Ultrafast Grid for hundreds of browser/resolution combos), Percy (DOM-snapshot on real BrowserStack browsers), Playwright's native `toHaveScreenshot()` (free/OSS, the usual starting point), Chromatic, BackstopJS, mabl, Testim. **[verified]**
+- **Why it matters:** A huge class of real bugs is visual (layout breaks, overflow, contrast, z-index) and invisible to functional assertions. It's one of the first things a QA lead asks about. Warden's AI-diff mode idea below mirrors Applitools' key advantage — structure-aware diffing to suppress noise.
+- **Sources:** [Sauce Labs — best visual testing tools 2026](https://saucelabs.com/resources/blog/comparing-the-20-best-visual-testing-tools-of-2026), [Percy vs Applitools vs Chromatic](https://crosscheck.cloud/blogs/percy-vs-applitools-vs-chromatic-visual-regression-testing/).
 - **Warden design:** a `@warden/visual` package — a `VisualEngine` seam with (a) a deterministic pixel/DOM-snapshot baseline (Playwright screenshots + a stored baseline per module/theme) and (b) an optional AI-diff mode (Claude judges "meaningful vs noise" to cut false positives — the differentiator over pure-pixel tools). Baselines versioned in Git; diffs surfaced in the PR comment + dashboard replay, with an "approve baseline" action. New status role `VISUAL_DIFF`.
 - **Effort:** Medium. Fits the existing engine/reporter/dashboard seams.
 
@@ -69,15 +70,17 @@ Table stakes that nearly every serious competitor ships and Warden currently lac
 Where Warden can pull *ahead* by combining its AI loop with capabilities incumbents treat as separate silos.
 
 ### 2.1 testomat.io integration — test-spec source of truth (the Mews ask)
-- **What it is:** testomat.io is a test-management layer that imports tests from code (Playwright, BDD/Gherkin, etc.), keeps a two-way sync with the codebase and Jira, and serves as living documentation / the single source of truth for specs.
+- **What it is:** testomat.io is a test-management layer that imports tests from code (Playwright, Cypress, CodeceptJS; JS/TS or Gherkin), reads them **source-code-first** (rename a test in code → it updates automatically), keeps **two-way sync with Jira** (an AI Jira plugin; changes reflect both ways), maintains a BDD/Gherkin **Steps Database**, and serves as living documentation / the single source of truth for specs. **[verified]**
 - **Why it matters:** Jan & Peter want testomat.io as the spec source of truth internally. If Warden's generative agent writes tests and its coverage-sync suggests changes, those must reconcile with testomat.io rather than fight it.
 - **Warden design:** a `TestManagementSync` seam with a `testomatio` adapter (sibling to the Linear/Jira requirement sync): pull the canonical spec catalog from testomat.io into Warden's coverage matrix; when the generative agent or coverage-sync proposes a test, register/update it in testomat.io (respecting its IDs) so the two stay in lockstep. Bi-directional, ID-stable.
 - **Effort:** Medium. Reuses the existing integration-adapter pattern.
+- **Sources:** [testomat.io](https://testomat.io/), [automated-tests synchronization](https://testomat.io/features/automated-tests-synchronization/), [Gherkin syntax support](https://testomat.io/features/gherkin-syntax-support/), [Playwright docs](https://docs.testomat.io/tutorials/playwright/).
 
 ### 2.2 Critical User Journey (CUJ) modeling
-- **What it is:** A CUJ is a named, business-critical path (sign-up → checkout → confirmation). SRE/observability practice gates releases on CUJ health; QA tools increasingly model journeys as first-class, above individual tests.
-- **Why it matters:** Peter's "connect this to CUJ would be golden." A CUJ layer lets the merge gate answer "is *checkout* safe?" not just "did tests pass?" — and focuses the AI exploratory agent on what actually matters.
+- **What it is:** A CUJ is a named, highest-business-value path through the product (sign-up → checkout → confirmation), typically spanning multiple microservices/APIs. It's a core Google-SRE construct: **SLOs are defined on CUJs** (journey completion rate, latency, drop-off), and teams gate releases + synthetic monitoring on CUJ health. Notably, **Mercari** keeps user-journey SLOs current via E2E tests in a *microservices* architecture — very close to the Mews setup. **[verified]**
+- **Why it matters:** Peter's "connect this to CUJ would be golden." A CUJ layer lets the merge gate answer "is *checkout* safe?" not just "did tests pass?" — and focuses the AI exploratory agent on what actually matters. Almost no QA *tool* models CUJs as first-class (they live in SRE/observability today), so this is both a gap to fill and a lead to take.
 - **Warden design:** a first-class `CUJ` entity in `@warden/core` (name, steps, owning team, linked requirements + tests), a coverage rollup (CUJ health = worst of its tests), CUJ-scoped merge gating (block if a touched CUJ degrades), and a CUJ board in the dashboard. The exploratory agent takes a CUJ as its mission brief. This is a genuine product-level differentiator — most tools stop at test-level.
+- **Sources:** [Google Cloud — how to design good SLOs](https://cloud.google.com/blog/products/devops-sre/how-to-design-good-slos-according-to-google-sres), [Splunk — monitoring critical user journeys](https://www.splunk.com/en_us/blog/observability/monitoring-critical-user-journeys.html), [Mercari — user-journey SLOs with E2E in microservices](https://engineering.mercari.com/en/blog/entry/20241204-keeping-user-journey-slos-up-to-date-with-e2e-testing-in-a-microservices-architecture/).
 - **Effort:** Medium–High.
 
 ### 2.3 Self-healing at scale (a proactive posture, offered as an option)
@@ -138,6 +141,6 @@ Each item above is scoped to Warden's existing seams (provider / engine / report
 
 ## Open follow-ups
 
-- Finish the cited web-research backfill: §1.2 (device clouds), §1.4 (flaky analytics), and §2.3 (self-healing) are verified with sources; the other ~9 dimensions failed on provider `529` overload — rerun the research when the provider is stable and attach a source to each remaining claim.
+- Finish the cited web-research backfill: §1.1 (visual), §1.2 (device clouds), §1.4 (flaky analytics), §2.1 (testomat.io), §2.2 (CUJ), and §2.3 (self-healing) now carry sources; the remaining ~6 dimensions (test-data mgmt, contract/API depth, a11y/perf, enterprise readiness, non-GitHub SCM, prod-traffic recording) still rely on domain knowledge — attach a source to each when the provider is stable.
 - Decide the hosted-vs-self-hosted split for enterprise features (2.6) — what stays in the MIT core vs a hosted tier.
 - Confirm testomat.io is the chosen test-management source of truth before building 2.1 (vs Xray/Qase).
