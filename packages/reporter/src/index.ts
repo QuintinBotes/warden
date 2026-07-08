@@ -1,5 +1,9 @@
 export { executionToCtrf, type ExecutionToCtrfOptions } from './ctrf.js';
 export { renderPrReport, type RenderPrReportExtras } from './pr-report.js';
+export {
+  renderVisualFindingsTable,
+  renderVisualRegressionSection,
+} from './visual-comment-reporter.js';
 export { computeGateDecision } from './gate-decision.js';
 export { CtrfReporter } from './ctrf-reporter.js';
 export {

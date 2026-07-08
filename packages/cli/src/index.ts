@@ -15,6 +15,12 @@ export {
 } from './run-report';
 export { runPlan, type RunPlanOptions } from './run-plan';
 export { runInit, type RunInitOptions, type RunInitResult } from './run-init';
+export {
+  runVisualApprove,
+  type RunVisualApproveOptions,
+  type RunVisualApproveDeps,
+  type RunVisualApproveResult,
+} from './run-visual';
 
 export { ctrfToExecution, type CtrfToExecutionOptions } from './ctrf-execution';
 export { createFetchOctokit, type FetchOctokitOptions } from './github-client';

@@ -9,3 +9,4 @@ export { selectTiers } from './select-tiers';
 export { evaluateExitCriteria } from './evaluate-exit-criteria';
 export { dispatchAgents } from './dispatch-agents';
 export { analyzeChangeSurface, parseNameStatus } from './analyze-change-surface';
+export { firePluginHooks, type PluginHookOutcome } from './fire-plugin-hooks';

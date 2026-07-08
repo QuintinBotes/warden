@@ -88,4 +88,72 @@ describe('renderPrReport', () => {
 
     expect(markdown).toContain('42');
   });
+
+  it('omits the Visual Regression section when no visualFindings are passed', () => {
+    const markdown = renderPrReport(fixtureExecution(), { decision: 'PASS', reason: 'all good' });
+
+    expect(markdown).not.toContain('Visual Regression');
+  });
+
+  it('renders the Visual Regression section with triptych links', () => {
+    const markdown = renderPrReport(
+      fixtureExecution(),
+      { decision: 'WARN', reason: 'visual diffs' },
+      {
+        visualFindings: [
+          {
+            module: 'apps/checkout',
+            viewport: 'desktop',
+            theme: 'light',
+            severity: 'HIGH',
+            changedRatio: 0.25,
+            rationale: 'CTA clipped below the fold',
+            baselinePath: 'artifacts/checkout-baseline.png',
+            candidatePath: 'artifacts/checkout-candidate.png',
+            diffPath: 'artifacts/checkout-diff.png',
+          },
+        ],
+      },
+    );
+
+    expect(markdown).toContain('## Visual Regression');
+    expect(markdown).toContain('apps/checkout');
+    expect(markdown).toContain('25.00%');
+    expect(markdown).toContain('[baseline](artifacts/checkout-baseline.png)');
+    expect(markdown).toContain('[candidate](artifacts/checkout-candidate.png)');
+    expect(markdown).toContain('[diff](artifacts/checkout-diff.png)');
+    expect(markdown).toContain('CTA clipped below the fold');
+  });
+
+  it('renders an empty-state line when visualFindings is an empty array', () => {
+    const markdown = renderPrReport(
+      fixtureExecution(),
+      { decision: 'PASS', reason: 'all good' },
+      { visualFindings: [] },
+    );
+
+    expect(markdown).toContain('## Visual Regression');
+    expect(markdown.toLowerCase()).toContain('no visual regressions');
+  });
+
+  it('escapes pipe characters in visual finding text', () => {
+    const markdown = renderPrReport(
+      fixtureExecution(),
+      { decision: 'WARN', reason: 'visual diffs' },
+      {
+        visualFindings: [
+          {
+            module: 'apps/a|b',
+            viewport: 'desktop',
+            theme: 'dark',
+            severity: 'MEDIUM',
+            changedRatio: 0.05,
+            candidatePath: 'artifacts/c.png',
+          },
+        ],
+      },
+    );
+
+    expect(markdown).toContain('apps/a\\|b');
+  });
 });
