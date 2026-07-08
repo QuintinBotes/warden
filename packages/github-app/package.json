@@ -1,0 +1,38 @@
+{
+  "name": "@warden/github-app",
+  "version": "0.1.0",
+  "description": "Warden GitHub App — cross-repo coverage sync on pull requests",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@octokit/app": "^15.1.1",
+    "@octokit/rest": "^21.0.2",
+    "@octokit/webhooks": "^13.4.1",
+    "@warden/agent": "workspace:*",
+    "@warden/core": "workspace:*",
+    "@warden/coverage-sync": "workspace:*",
+    "@warden/orchestrator": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3"
+  }
+}

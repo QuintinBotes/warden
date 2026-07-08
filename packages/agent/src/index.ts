@@ -51,3 +51,11 @@ export {
   GENERATIVE_SYSTEM_PROMPT,
   HEALER_SYSTEM_PROMPT,
 } from './prompts';
+
+// Cross-repo coverage sync — the add/update/remove recommendation engine
+export {
+  createCoverageRecommender,
+  COVERAGE_TEST_SYSTEM_PROMPT,
+  COVERAGE_DOC_SYSTEM_PROMPT,
+  type CoverageGapInput,
+} from './coverage-recommender';
