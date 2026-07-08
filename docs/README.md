@@ -13,6 +13,7 @@ Warden is an open-source, AI-native QA platform. It reads a pull request's diff,
 | [GitHub Action](github-action.md) | Action inputs, outputs, and the tiered CI workflow |
 | [AI Providers & Browser Engines](providers-and-engines.md) | Claude, the provider seam, Playwright vs. Claude-Chrome |
 | [Reporting](reporting.md) | CTRF, the four GitHub surfaces, and E2E replay media |
+| [Cross-Repo Coverage Sync](coverage-sync.md) | Keep tests & docs in sync across repos via the GitHub App |
 | [Deployment & Self-Hosting](deployment.md) | Running Warden in CI and self-hosting the full stack |
 | [Design System](design-system.md) | "Sentinel" — the visual language of the dashboard |
 
