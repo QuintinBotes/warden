@@ -5,10 +5,14 @@ import {
   type GateDecision,
   type ReportContext,
   type TestExecution,
+  type VcsProvider,
+  type VcsRepoRef,
   type WardenConfig,
 } from '@warden/core';
 import {
   PrCommentReporter,
+  VcsCheckReporter,
+  VcsCommentReporter,
   aggregate,
   computeGateDecision,
   type OctokitIssuesClient,
@@ -33,6 +37,13 @@ export interface RunReportDeps {
   octokit?: OctokitIssuesClient;
   /** Required: the `{ owner, repo }` the PR comment is posted to. */
   repo?: NonNullable<ReportContext['repo']>;
+  /**
+   * A configured multi-SCM `VcsProvider` (non-GitHub hosts). When present, the comment — and,
+   * when `headSha` is known, the status — route through the provider instead of `octokit`.
+   */
+  vcs?: VcsProvider;
+  /** The host-agnostic repo ref used with `deps.vcs`. Required when `deps.vcs` is set. */
+  repoRef?: VcsRepoRef;
   /** Injected in tests instead of `@warden/reporter`'s `aggregate`. */
   aggregate?: (reportsDir: string) => Promise<CTRFReport>;
   headSha?: string;
@@ -63,6 +74,34 @@ export async function runReport(
     triggerType: 'pr',
   });
   const gate = computeGateDecision(execution);
+
+  // Multi-SCM path: route the comment (and status, when `headSha` is known) through the
+  // configured `VcsProvider`. Used for non-GitHub hosts; GitHub keeps the direct octokit path.
+  if (deps.vcs) {
+    if (!deps.repoRef) {
+      throw new WardenError(
+        'runReport requires deps.repoRef when deps.vcs is set.',
+        'CLI_MISSING_REPO',
+      );
+    }
+    const ctx: ReportContext = {
+      config: cfg,
+      artifactsDir: opts.artifactsDir ?? opts.reports,
+      prNumber: opts.pr,
+      repo: {
+        owner: deps.repoRef.owner,
+        repo: deps.repoRef.repo,
+        host: deps.repoRef.host,
+        ...(deps.repoRef.project ? { project: deps.repoRef.project } : {}),
+      },
+      ...(deps.headSha !== undefined && { headSha: deps.headSha }),
+    };
+    await new VcsCommentReporter(deps.vcs).report(execution, ctx);
+    if (deps.headSha !== undefined) {
+      await new VcsCheckReporter(deps.vcs).report(execution, ctx);
+    }
+    return { report, execution, gate };
+  }
 
   if (!deps.octokit) {
     throw new WardenError(

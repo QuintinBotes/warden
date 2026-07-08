@@ -2,8 +2,8 @@ import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { WardenError } from '@warden/core';
-import { fixtureExecution } from '@warden/core/testing';
+import { WardenError, type VcsRepoRef } from '@warden/core';
+import { createFakeVcsProvider, fixtureExecution } from '@warden/core/testing';
 import { executionToCtrf } from '@warden/reporter';
 import { runReport } from './run-report';
 
@@ -99,6 +99,39 @@ describe('runReport', () => {
 
     expect(aggregateSpy).toHaveBeenCalledWith('/does/not/matter');
     expect(result.report).toEqual(customReport);
+  });
+
+  it('routes the comment and status through an injected VcsProvider (non-GitHub host)', async () => {
+    const vcs = createFakeVcsProvider({ host: 'gitlab' });
+    const repoRef: VcsRepoRef = { host: 'gitlab', owner: 'group', repo: 'checkout' };
+
+    const result = await runReport(
+      { reports: reportsDir, pr: 77 },
+      { vcs, repoRef, headSha: 'sha-77' },
+    );
+
+    expect(result.gate.decision).toBe('PASS');
+    expect(vcs.comments).toHaveLength(1);
+    expect(vcs.comments[0]).toMatchObject({ repo: { host: 'gitlab' }, prNumber: 77 });
+    expect(vcs.comments[0]!.body).toContain('Warden QA Report');
+    expect(vcs.statuses).toHaveLength(1);
+    expect(vcs.statuses[0]).toMatchObject({ headSha: 'sha-77', status: { context: 'warden-qa' } });
+  });
+
+  it('skips the status when no headSha is available on the VcsProvider path', async () => {
+    const vcs = createFakeVcsProvider();
+    const repoRef: VcsRepoRef = { host: 'bitbucket', owner: 'team', repo: 'checkout' };
+
+    await runReport({ reports: reportsDir, pr: 5 }, { vcs, repoRef });
+
+    expect(vcs.comments).toHaveLength(1);
+    expect(vcs.statuses).toHaveLength(0);
+  });
+
+  it('throws a WardenError when deps.vcs is set without a repoRef', async () => {
+    await expect(
+      runReport({ reports: reportsDir, pr: 1 }, { vcs: createFakeVcsProvider() }),
+    ).rejects.toThrow(WardenError);
   });
 
   it('throws a WardenError when no octokit is injected', async () => {
