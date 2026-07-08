@@ -1,15 +1,41 @@
 import Database from 'better-sqlite3';
+import { z } from 'zod';
 import {
+  FlakeRootCause,
   RequirementSchema,
   TestExecutionSchema,
   TestPlanSchema,
   TestResultSchema,
   WardenError,
+  type FlakeClassification,
   type Requirement,
   type TestExecution,
   type TestPlan,
   type TestResult,
 } from '@warden/core';
+
+/** Storage row shape for a flake classification (dates serialised as ISO strings). */
+const FlakeClassificationRowSchema = z.object({
+  testCaseId: z.string(),
+  rootCause: FlakeRootCause,
+  confidence: z.number(),
+  explanation: z.string(),
+  classifiedAt: z.string(),
+});
+
+/** Storage row shape for a quarantine-state transition. */
+const QuarantineEventRowSchema = z.object({
+  testCaseId: z.string(),
+  event: z.enum(['quarantined', 'cleared']),
+  at: z.string(),
+});
+
+/** A single quarantine-state transition, as returned by {@link SqliteStore.listQuarantineEvents}. */
+export interface QuarantineEvent {
+  testCaseId: string;
+  event: 'quarantined' | 'cleared';
+  at: Date;
+}
 
 interface ExecutionRow {
   id: string;
@@ -71,6 +97,21 @@ export class SqliteStore {
         id TEXT PRIMARY KEY,
         data TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS flake_classifications (
+        testCaseId TEXT PRIMARY KEY,
+        data TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS flake_quarantine_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        testCaseId TEXT NOT NULL,
+        event TEXT NOT NULL,
+        at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_quarantine_events_testcase
+        ON flake_quarantine_events (testCaseId);
     `);
   }
 
@@ -221,6 +262,77 @@ export class SqliteStore {
       ResultRow | undefined;
     if (!row) return undefined;
     return TestPlanSchema.parse(JSON.parse(row.data));
+  }
+
+  /** Upserts the latest root-cause classification for a test case. */
+  saveFlakeClassification(c: FlakeClassification): void {
+    const row = FlakeClassificationRowSchema.parse({
+      testCaseId: c.testCaseId,
+      rootCause: c.rootCause,
+      confidence: c.confidence,
+      explanation: c.explanation,
+      classifiedAt: c.classifiedAt.toISOString(),
+    });
+    this.db
+      .prepare(
+        `INSERT INTO flake_classifications (testCaseId, data) VALUES (@testCaseId, @data)
+         ON CONFLICT(testCaseId) DO UPDATE SET data = excluded.data`,
+      )
+      .run({ testCaseId: row.testCaseId, data: JSON.stringify(row) });
+  }
+
+  /** The latest classification for `testCaseId`, or `undefined` if none has been recorded. */
+  getFlakeClassification(testCaseId: string): FlakeClassification | undefined {
+    const row = this.db
+      .prepare(`SELECT data FROM flake_classifications WHERE testCaseId = ?`)
+      .get(testCaseId) as ResultRow | undefined;
+    if (!row) return undefined;
+    const parsed = FlakeClassificationRowSchema.parse(JSON.parse(row.data));
+    return {
+      testCaseId: parsed.testCaseId,
+      rootCause: parsed.rootCause,
+      confidence: parsed.confidence,
+      explanation: parsed.explanation,
+      classifiedAt: new Date(parsed.classifiedAt),
+    };
+  }
+
+  /** Appends one quarantine-state transition (append-only history; never updated in place). */
+  recordQuarantineEvent(e: QuarantineEvent): void {
+    const row = QuarantineEventRowSchema.parse({
+      testCaseId: e.testCaseId,
+      event: e.event,
+      at: e.at.toISOString(),
+    });
+    this.db
+      .prepare(
+        `INSERT INTO flake_quarantine_events (testCaseId, event, at)
+         VALUES (@testCaseId, @event, @at)`,
+      )
+      .run(row);
+  }
+
+  /** Quarantine events in chronological order, optionally filtered to one `testCaseId`. */
+  listQuarantineEvents(testCaseId?: string): QuarantineEvent[] {
+    const rows = (
+      testCaseId !== undefined
+        ? this.db
+            .prepare(
+              `SELECT testCaseId, event, at FROM flake_quarantine_events
+               WHERE testCaseId = ? ORDER BY at ASC, id ASC`,
+            )
+            .all(testCaseId)
+        : this.db
+            .prepare(
+              `SELECT testCaseId, event, at FROM flake_quarantine_events
+               ORDER BY at ASC, id ASC`,
+            )
+            .all()
+    ) as unknown[];
+    return rows.map((raw) => {
+      const parsed = QuarantineEventRowSchema.parse(raw);
+      return { testCaseId: parsed.testCaseId, event: parsed.event, at: new Date(parsed.at) };
+    });
   }
 
   close(): void {

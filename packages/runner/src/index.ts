@@ -48,3 +48,35 @@ export {
 } from './mobile/appium';
 
 export { expandMatrix, type RunMatrixConfig, type MatrixBrowser } from './matrix';
+
+// --- Work-stream A: accessibility + performance budgets ---
+
+export {
+  resolveChangedRoutes,
+  type RouteMapping,
+  type ResolveChangedRoutesResult,
+} from './routes/resolve-changed-routes';
+
+export {
+  axeResultsToCtrf,
+  evaluateA11yGate,
+  runAxeAudit,
+  type AxeNode,
+  type AxeViolation,
+  type AxeRouteResult,
+  type A11yGateConfig,
+  type RunAxeOptions,
+  type RunAxeResult,
+} from './a11y/axe';
+
+export {
+  lighthouseResultsToCtrf,
+  evaluatePerfBudgetGate,
+  runLighthouseAudit,
+  type PerfMetric,
+  type LighthouseReport,
+  type LighthouseRouteResult,
+  type PerfBudgetConfig,
+  type RunLighthouseOptions,
+  type RunLighthouseResult,
+} from './perf/lighthouse';

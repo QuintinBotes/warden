@@ -50,7 +50,11 @@ export {
   EXPLORATORY_SYSTEM_PROMPT,
   GENERATIVE_SYSTEM_PROMPT,
   HEALER_SYSTEM_PROMPT,
+  FLAKE_CLASSIFIER_SYSTEM_PROMPT,
 } from './prompts';
+
+// Flake root-cause classifier
+export { createFlakeClassifier, heuristicRootCause } from './flake-classifier';
 
 // Cross-repo coverage sync — the add/update/remove recommendation engine
 export {

@@ -29,6 +29,12 @@ export interface CtrfToExecutionOptions {
   triggerRef?: string;
   /** Defaults to `'ci'`. */
   environment?: string;
+  /**
+   * Retry/flake metadata keyed by test identity (`filePath::name`, else bare name) — the same
+   * identity used to derive `testCaseId`. When present for a test, its `retries`/`flakeFlag` are
+   * stamped from here (instead of the hardcoded `0`/`false`), and a flaky pass becomes `FLAKY`.
+   */
+  retryMeta?: Map<string, { retries: number; flakeFlag: boolean }>;
 }
 
 /**
@@ -43,12 +49,13 @@ export function ctrfToExecution(
 ): TestExecution {
   const results: TestResult[] = report.results.tests.map((test) => {
     const identity = test.filePath ? `${test.filePath}::${test.name}` : test.name;
+    const meta = opts.retryMeta?.get(identity);
     const result: TestResult = {
       testCaseId: contentId('TC', identity),
-      status: CTRF_STATUS_MAP[test.status],
+      status: meta?.flakeFlag ? 'FLAKY' : CTRF_STATUS_MAP[test.status],
       duration: test.duration,
-      retries: 0,
-      flakeFlag: false,
+      retries: meta?.retries ?? 0,
+      flakeFlag: meta?.flakeFlag ?? false,
       artifacts: [],
     };
     if (test.message !== undefined) {
