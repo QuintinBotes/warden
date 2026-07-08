@@ -174,6 +174,27 @@ export const WardenConfigSchema = z.object({
       dependents: z.array(z.string()).default([]),
     })
     .default({}),
+  // Visual regression: opt-in, defaulted-off (like the other V2 features).
+  visual: z
+    .object({
+      enabled: z.boolean().default(false),
+      mode: z.enum(['pixel', 'ai']).default('pixel'),
+      baselinesDir: z.string().default('tests/visual/baselines/'),
+      viewports: z
+        .array(z.object({ name: z.string(), width: z.number(), height: z.number() }))
+        .default([
+          { name: 'desktop', width: 1280, height: 720 },
+          { name: 'mobile', width: 375, height: 667 },
+        ]),
+      themes: z.array(z.enum(['light', 'dark'])).default(['light']),
+      noiseThreshold: z.number().default(0.001),
+      antiAliasTolerance: z.number().default(0.1),
+      gate: z.enum(['block', 'warn', 'off']).default('warn'),
+      onNewBaseline: z.enum(['neutral', 'block']).default('neutral'),
+      mask: z.array(z.string()).default([]),
+      maxChecks: z.number().default(200),
+    })
+    .default({}),
   plugins: z.array(z.custom<QAPlatformPlugin>()).default([]),
 });
 

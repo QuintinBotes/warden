@@ -16,6 +16,8 @@
  * reached in a real Action, never in unit tests.
  */
 import { posix as path } from 'node:path';
+import type { PullRequest } from '@warden/core';
+import { firePluginHooks } from '@warden/orchestrator';
 import { defaultExec, defaultFs, resolveCore, resolveOctokit } from './defaults.js';
 import { loadPrEvent, resolveRepo } from './event.js';
 import type { PrContext } from './event.js';
@@ -67,6 +69,16 @@ export async function run(deps: ActionDeps = {}): Promise<RunResult> {
       skipped: true,
     };
   }
+  const pluginPr: PullRequest = {
+    number: pr.number,
+    title: pr.title,
+    url: pr.url,
+    headSha: pr.headSha,
+    baseSha: pr.baseSha,
+    ...(pr.author !== undefined && { author: pr.author }),
+  };
+  await firePluginHooks(deps.plugins ?? [], { hook: 'onPROpened', pr: pluginPr });
+
   const repo = resolveRepo(pr, env);
 
   const cwd = env.GITHUB_WORKSPACE || process.cwd();

@@ -9,6 +9,7 @@ import {
   runPlan,
   runReport,
   runRun,
+  runVisualApprove,
 } from '../index';
 
 const program = new Command();
@@ -119,6 +120,30 @@ report
         { octokit, repo: { owner, repo: repoName }, headSha: process.env.GITHUB_SHA },
       );
       process.stdout.write(`gate: ${result.gate.decision} — ${result.gate.reason}\n`);
+    } catch (err) {
+      fail(err);
+    }
+  });
+
+const visual = program.command('visual').description('Visual regression commands');
+
+visual
+  .command('approve')
+  .description('Approve (promote) a pending visual baseline for a module')
+  .argument('<module>', 'module whose baseline is approved (e.g. apps/checkout)')
+  .option('--viewport <name>', 'viewport name', 'desktop')
+  .option('--theme <theme>', 'theme (light | dark)', 'light')
+  .option('--by <who>', 'who is approving (audit trail)')
+  .action(async (module: string, opts: { viewport: string; theme: string; by?: string }) => {
+    try {
+      const result = await runVisualApprove({
+        module,
+        viewport: opts.viewport,
+        theme: opts.theme === 'dark' ? 'dark' : 'light',
+        by: opts.by,
+      });
+      const committed = result.committed ? ' (committed)' : '';
+      process.stdout.write(`approved visual baseline: ${result.baseline.path}${committed}\n`);
     } catch (err) {
       fail(err);
     }

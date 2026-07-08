@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { PullRequest, QAPlatformPlugin } from '@warden/core';
 import { run } from './run.js';
 import type {
   ActionsCoreLike,
@@ -282,5 +283,60 @@ describe('run', () => {
     expect(result.skipped).toBe(true);
     expect(octo.comments).toHaveLength(0);
     expect(octo.checks).toHaveLength(0);
+  });
+
+  it('fires onPROpened once at startup, from the PR event payload, on every configured plugin', async () => {
+    const { exec } = fakeExec(BLOCK_REPORT, '7', 'false');
+    const seen: PullRequest[] = [];
+    const plugin: QAPlatformPlugin = {
+      name: 'recorder',
+      async onPROpened(pr) {
+        seen.push(pr);
+      },
+    };
+
+    await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: { GITHUB_REPOSITORY: 'acme/shop' },
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+      plugins: [plugin],
+    });
+
+    expect(seen).toEqual([
+      {
+        number: 123,
+        title: 'Payment retry',
+        url: 'https://github.com/acme/shop/pull/123',
+        headSha: 'head-sha-123',
+        baseSha: 'base-sha-000',
+        author: 'octocat',
+      },
+    ]);
+  });
+
+  it('does not fire onPROpened when the event is not a pull request', async () => {
+    const { exec } = fakeExec(BLOCK_REPORT);
+    const seen: PullRequest[] = [];
+    const plugin: QAPlatformPlugin = {
+      name: 'recorder',
+      async onPROpened(pr) {
+        seen.push(pr);
+      },
+    };
+
+    await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: {},
+      eventPath: '/event.json',
+      fs: fakeFs({ ref: 'refs/heads/main' }),
+      plugins: [plugin],
+    });
+
+    expect(seen).toHaveLength(0);
   });
 });

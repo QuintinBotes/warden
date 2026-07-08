@@ -1,10 +1,19 @@
-import type { ExploratoryFinding, GateDecision, Requirement, TestExecution } from '@warden/core';
+import type {
+  ExploratoryFinding,
+  GateDecision,
+  Requirement,
+  TestExecution,
+  VisualFinding,
+} from '@warden/core';
+import { renderVisualRegressionSection } from './visual-comment-reporter.js';
 
 /** Extra, optional context {@link renderPrReport} can weave into the Markdown. */
 export interface RenderPrReportExtras {
   riskScore?: number;
   findings?: ExploratoryFinding[];
   requirements?: Requirement[];
+  /** Visual regressions from `@warden/visual`; when present, a Visual Regression section renders. */
+  visualFindings?: VisualFinding[];
 }
 
 const GATE_EMOJI: Record<GateDecision['decision'], string> = {
@@ -56,6 +65,11 @@ export function renderPrReport(
     }
   }
   lines.push('');
+
+  if (extras.visualFindings !== undefined) {
+    lines.push(renderVisualRegressionSection(extras.visualFindings));
+    lines.push('');
+  }
 
   lines.push('## Coverage');
   lines.push('');

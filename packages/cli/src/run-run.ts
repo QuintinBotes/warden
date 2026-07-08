@@ -3,13 +3,15 @@ import path from 'node:path';
 import {
   loadConfig,
   type CTRFReport,
+  type GateDecision,
   type ReportContext,
   type Reporter,
   type TestExecution,
   type WardenConfig,
 } from '@warden/core';
 import { runPlaywright, type RunPlaywrightOptions } from '@warden/runner';
-import { createReporters, type CreateReportersDeps } from '@warden/reporter';
+import { computeGateDecision, createReporters, type CreateReportersDeps } from '@warden/reporter';
+import { firePluginHooks } from '@warden/orchestrator';
 import { ctrfToExecution } from './ctrf-execution';
 
 /** Options for {@link runRun}. */
@@ -45,6 +47,8 @@ export interface RunRunResult {
   execution: TestExecution;
   /** Where the CTRF report was written on disk. */
   ctrfPath: string;
+  /** The gate decision derived from `execution` and handed to `cfg.plugins` via `onGateDecision`. */
+  gate: GateDecision;
 }
 
 /**
@@ -68,6 +72,12 @@ export async function runRun(opts: RunRunOptions, deps: RunRunDeps = {}): Promis
     triggerType: 'manual',
   });
 
+  await firePluginHooks(cfg.plugins, {
+    hook: 'onTestExecutionComplete',
+    execution,
+    results: execution.results,
+  });
+
   const reporters = deps.reporters ?? createReporters(cfg, deps.reporterDeps);
   const ctx: ReportContext = {
     config: cfg,
@@ -81,5 +91,8 @@ export async function runRun(opts: RunRunOptions, deps: RunRunDeps = {}): Promis
     await reporter.report(execution, ctx);
   }
 
-  return { report, execution, ctrfPath };
+  const gate = computeGateDecision(execution);
+  await firePluginHooks(cfg.plugins, { hook: 'onGateDecision', decision: gate });
+
+  return { report, execution, ctrfPath, gate };
 }

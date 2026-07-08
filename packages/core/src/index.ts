@@ -19,3 +19,4 @@ export * from './config';
 export * from './logger';
 export * from './v2';
 export * from './coverage-sync';
+export * from './visual';

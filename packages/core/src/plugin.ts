@@ -35,3 +35,15 @@ export interface QAPlatformPlugin {
   overrideBrowserEngine?: () => BrowserEngine;
   overrideReporter?: () => Reporter;
 }
+
+/**
+ * One firing of a QAPlatformPlugin lifecycle hook, as dispatched by the orchestrator.
+ * A discriminated union so a dispatcher can route to the right optional method on every
+ * configured plugin without per-hook boilerplate at the call site.
+ */
+export type PluginHookEvent =
+  | { hook: 'onPROpened'; pr: PullRequest }
+  | { hook: 'onTestExecutionStart'; execution: TestExecution }
+  | { hook: 'onTestExecutionComplete'; execution: TestExecution; results: TestResult[] }
+  | { hook: 'onBugFound'; bug: ExploratoryFinding }
+  | { hook: 'onGateDecision'; decision: GateDecision };

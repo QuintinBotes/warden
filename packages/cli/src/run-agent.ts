@@ -16,6 +16,7 @@ import {
 import { fakeProvider } from '@warden/core/testing';
 import { createProvider, createStrategy } from '@warden/agent';
 import { createEngine, type EngineDeps } from '@warden/runner';
+import { firePluginHooks } from '@warden/orchestrator';
 
 /** Options for {@link runAgent}. */
 export interface RunAgentOptions {
@@ -98,6 +99,11 @@ export async function runAgent(
 
   try {
     const result = await strategyImpl.run(input);
+
+    for (const finding of result.findings) {
+      await firePluginHooks(cfg.plugins, { hook: 'onBugFound', bug: finding });
+    }
+
     await fs.mkdir(path.dirname(opts.output), { recursive: true });
     await fs.writeFile(opts.output, JSON.stringify(result, null, 2), 'utf-8');
     return result;
