@@ -1,15 +1,12 @@
 {
-  "name": "@warden/cli",
+  "name": "@warden/vcs",
   "version": "0.1.0",
-  "description": "Warden CLI — analyze, run, agent, report, plan, and init commands",
+  "description": "Warden multi-SCM — VcsProvider adapters for GitHub, GitLab, Bitbucket, and Azure DevOps",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "warden": "./dist/bin/warden.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -25,15 +22,7 @@
   },
   "dependencies": {
     "@warden/core": "workspace:*",
-    "@warden/orchestrator": "workspace:*",
-    "@warden/agent": "workspace:*",
-    "@warden/runner": "workspace:*",
-    "@warden/test-management": "workspace:*",
-    "@warden/reporter": "workspace:*",
-    "@warden/visual": "workspace:*",
-    "@warden/vcs": "workspace:*",
-    "commander": "^12.1.0",
-    "zod": "^3.24.1"
+    "@warden/coverage-sync": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.3.5",

@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import type { StrategyName } from '@warden/core';
+import { loadConfig, type StrategyName } from '@warden/core';
 import {
   createFetchOctokit,
+  createVcsProviderFromEnv,
+  resolveVcsHeadSha,
+  resolveVcsRepoRef,
   runAgent,
   runAnalyze,
   runInit,
@@ -105,6 +108,22 @@ report
   .option('--artifacts-dir <dir>', 'directory recorded in the ReportContext')
   .action(async (opts: { reports: string; pr: number; artifactsDir?: string }) => {
     try {
+      const cfg = await loadConfig();
+
+      // Non-GitHub hosts route through the configured VcsProvider; GitHub keeps the
+      // existing direct octokit path so nothing changes for current users.
+      if (cfg.vcs.provider !== 'github') {
+        const vcs = createVcsProviderFromEnv(cfg, process.env);
+        const repoRef = resolveVcsRepoRef(cfg, process.env);
+        const headSha = resolveVcsHeadSha(cfg, process.env);
+        const result = await runReport(
+          { reports: opts.reports, pr: opts.pr, artifactsDir: opts.artifactsDir },
+          { config: cfg, vcs, repoRef, ...(headSha !== undefined && { headSha }) },
+        );
+        process.stdout.write(`gate: ${result.gate.decision} — ${result.gate.reason}\n`);
+        return;
+      }
+
       const token = process.env.GITHUB_TOKEN;
       if (!token) {
         throw new Error('GITHUB_TOKEN is required to post the PR comment');
@@ -117,7 +136,7 @@ report
       const octokit = createFetchOctokit({ token });
       const result = await runReport(
         { reports: opts.reports, pr: opts.pr, artifactsDir: opts.artifactsDir },
-        { octokit, repo: { owner, repo: repoName }, headSha: process.env.GITHUB_SHA },
+        { config: cfg, octokit, repo: { owner, repo: repoName }, headSha: process.env.GITHUB_SHA },
       );
       process.stdout.write(`gate: ${result.gate.decision} — ${result.gate.reason}\n`);
     } catch (err) {

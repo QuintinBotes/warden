@@ -104,6 +104,22 @@ export const WardenConfigSchema = z.object({
       testCasesDir: z.string().default('tests/cases/'),
       generatedTestsDir: z.string().default('tests/e2e/generated/'),
       commitGeneratedTests: z.boolean().default(true),
+      // External test-management sync (additive). `source: 'none'` is a clean no-op, so every
+      // existing config stays valid. Secrets (API tokens) are injected into the factory from the
+      // environment — never read from this file. See docs/proposals/2026-07-08-test-management-sync.md.
+      sync: z
+        .object({
+          source: z
+            .enum(['none', 'testomatio', 'qase', 'testrail', 'xray', 'zephyr', 'allure-testops'])
+            .default('none'),
+          project: z.string().optional(),
+          apiUrl: z.string().optional(),
+          pullCatalog: z.boolean().default(true),
+          registerProposed: z.boolean().default(true),
+          pushResults: z.boolean().default(true),
+          sourceCodeFirst: z.boolean().default(true),
+        })
+        .default({}),
     })
     .default({}),
   // ── V2 (additive; all optional with defaults, so V1 configs stay valid) ──────────
@@ -319,6 +335,24 @@ export const WardenConfigSchema = z.object({
           consumerRepoMap: z.record(z.string(), z.string()).default({}),
         })
         .default({}),
+    })
+    .default({}),
+  // Multi-SCM host selection (additive). Drives which `VcsProvider` adapter `@warden/vcs`
+  // constructs for the reporting/gating/coverage-sync surfaces. Defaults preserve today's
+  // GitHub-only behavior exactly (`provider: 'github'`). Tokens are NEVER stored here —
+  // `createVcsProviderFromEnv` reads the host-specific CI secret at runtime. See
+  // docs/proposals/2026-07-08-multi-scm.md.
+  vcs: z
+    .object({
+      // Which host this repo is hosted on. Drives which VcsProvider adapter is constructed.
+      provider: z.enum(['github', 'gitlab', 'bitbucket', 'azure-devops']).default('github'),
+      // Override for self-hosted/on-prem instances (GHES, GitLab self-managed, Bitbucket
+      // Server, Azure DevOps Server). Defaults to each host's public API base URL.
+      baseUrl: z.string().optional(),
+      // Azure DevOps REST api-version pin (e.g. '7.1'). Ignored by other hosts.
+      apiVersion: z.string().optional(),
+      // Azure DevOps project name (owner/org comes from the repo path). Ignored by other hosts.
+      project: z.string().optional(),
     })
     .default({}),
   // Device-cloud grid & parallel sharding (additive; defaulted off, `local` needs no account).
