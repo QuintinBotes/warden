@@ -78,6 +78,9 @@ importers:
       '@warden/core':
         specifier: workspace:*
         version: link:../core
+      '@warden/cuj':
+        specifier: workspace:*
+        version: link:../cuj
       openai:
         specifier: ^4.77.0
         version: 4.104.0(ws@8.21.0)(zod@3.25.76)
@@ -100,6 +103,9 @@ importers:
       '@warden/core':
         specifier: workspace:*
         version: link:../core
+      '@warden/cuj':
+        specifier: workspace:*
+        version: link:../cuj
       '@warden/orchestrator':
         specifier: workspace:*
         version: link:../orchestrator
@@ -173,11 +179,30 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
+  packages/cuj:
+    dependencies:
+      '@warden/core':
+        specifier: workspace:*
+        version: link:../core
+      '@warden/test-management':
+        specifier: workspace:*
+        version: link:../test-management
+    devDependencies:
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   packages/dashboard-api:
     dependencies:
       '@warden/core':
         specifier: workspace:*
         version: link:../core
+      '@warden/cuj':
+        specifier: workspace:*
+        version: link:../cuj
       '@warden/test-management':
         specifier: workspace:*
         version: link:../test-management
@@ -406,6 +431,25 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
+  packages/proactive-healer:
+    dependencies:
+      '@warden/agent':
+        specifier: workspace:*
+        version: link:../agent
+      '@warden/core':
+        specifier: workspace:*
+        version: link:../core
+      '@warden/coverage-sync':
+        specifier: workspace:*
+        version: link:../coverage-sync
+    devDependencies:
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   packages/recorder:
     dependencies:
       '@warden/core':
@@ -490,6 +534,25 @@ importers:
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  packages/traffic:
+    dependencies:
+      '@warden/agent':
+        specifier: workspace:*
+        version: link:../agent
+      '@warden/core':
+        specifier: workspace:*
+        version: link:../core
+      '@warden/coverage-sync':
+        specifier: workspace:*
+        version: link:../coverage-sync
+    devDependencies:
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(typescript@5.9.3)

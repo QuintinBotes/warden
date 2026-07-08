@@ -6,6 +6,7 @@ import {
   type ExploratoryFinding,
   type Tool,
 } from '@warden/core';
+import { renderCujMissionBrief } from '@warden/cuj';
 import { EXPLORATORY_SYSTEM_PROMPT } from './prompts';
 import {
   asRecord,
@@ -63,14 +64,28 @@ export class ExploratoryStrategy implements AgentStrategy {
     const mobile = config.browser.mobileViewport;
     await browser.setViewport(mobile.width, mobile.height);
 
-    const promptParts = [
+    // Additive: when a CUJ is supplied as the mission brief, walk its ordered steps so the
+    // model explores the journey that matters rather than a bare URL. Behaviour is unchanged
+    // when `input.cuj` is absent.
+    if (input.cuj) {
+      const orderedSteps = [...input.cuj.steps].sort((a, b) => a.order - b.order);
+      for (const step of orderedSteps) {
+        await browser.act(`CUJ step ${step.order}: ${step.name}`);
+      }
+    }
+
+    const promptParts: string[] = [];
+    if (input.cuj) {
+      promptParts.push(renderCujMissionBrief(input.cuj), '');
+    }
+    promptParts.push(
       `Target URL: ${targetUrl}`,
       `Page title: ${page.title}`,
       `Visible text (truncated): ${page.text.slice(0, 2000)}`,
       '',
       'Change under test:',
       summarizeChange(input.changeSurface, input.diff),
-    ];
+    );
 
     if (input.fixtures) {
       promptParts.push(

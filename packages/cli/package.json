@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@warden/core": "workspace:*",
+    "@warden/cuj": "workspace:*",
     "@warden/orchestrator": "workspace:*",
     "@warden/agent": "workspace:*",
     "@warden/runner": "workspace:*",

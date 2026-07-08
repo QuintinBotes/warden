@@ -30,6 +30,37 @@ describe('defineConfig', () => {
     // @ts-expect-error — 'bard' is not a valid provider
     expect(() => defineConfig({ ai: { provider: 'bard' } })).toThrow();
   });
+
+  it('defaults the additive cuj block to OFF while filling gate/signal defaults', () => {
+    const cfg = defineConfig({});
+    expect(cfg.cuj.enabled).toBe(false); // opt-in feature defaults OFF
+    expect(cfg.cuj.dir).toBe('.warden/cuj/');
+    expect(cfg.cuj.gate.enabled).toBe(true); // gate only fires for touched CUJs
+    expect(cfg.cuj.gate.blockOnBroken).toBe(true);
+    expect(cfg.cuj.gate.blockTier1OnDegrade).toBe(true);
+    expect(cfg.cuj.gate.warnTier2OnDegrade).toBe(true);
+    expect(cfg.cuj.signals).toEqual({ a11y: false, perf: false, visual: false });
+    expect(cfg.cuj.exploratory.missionBriefTier).toBe('tier1');
+  });
+
+  it('defaults the additive traffic block to OFF while filling scrub/retention/clustering defaults', () => {
+    const cfg = defineConfig({});
+    expect(cfg.traffic.enabled).toBe(false); // opt-in feature defaults OFF
+    expect(cfg.traffic.source).toBe('browser-sdk');
+    expect(cfg.traffic.sampleRate).toBe(0.01);
+    expect(cfg.traffic.consent.required).toBe(true);
+    expect(cfg.traffic.consent.honorDoNotTrack).toBe(true);
+    expect(cfg.traffic.pii.redactionToken).toBe('[REDACTED]');
+    expect(cfg.traffic.pii.extraRules).toEqual([]);
+    expect(cfg.traffic.pii.selectorAllowlist).toContain('Search');
+    expect(cfg.traffic.retention.storeRawAfterScrub).toBe(false); // never persist unscrubbed capture
+    expect(cfg.traffic.retention.scrubbedTtlDays).toBe(30);
+    expect(cfg.traffic.clustering.minSessions).toBe(5);
+    expect(cfg.traffic.clustering.topClusters).toBe(20);
+    expect(cfg.traffic.synthesis.minClusterFrequency).toBe(10);
+    expect(cfg.traffic.synthesis.proposeCujs).toBe(true);
+    expect(cfg.traffic.synthesis.outDir).toBe('tests/e2e/traffic/');
+  });
 });
 
 describe('loadConfig', () => {
