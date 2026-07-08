@@ -1,4 +1,4 @@
-import type { ChangeSurface, DiffFile, Severity } from '@warden/core';
+import type { ChangeSurface, DiffFile, FixtureCatalog, Severity } from '@warden/core';
 
 /** Narrows an unknown value (typically a tool-call input) to a string-keyed record. */
 export function asRecord(value: unknown): Record<string, unknown> {
@@ -67,4 +67,38 @@ export function summarizeChange(changeSurface?: ChangeSurface, diff?: DiffFile[]
     }
   }
   return lines.length > 0 ? lines.join('\n') : 'No structured change information was provided.';
+}
+
+/** Default cap (characters) for the fixture-catalog summary so it never blows the prompt budget. */
+export const FIXTURE_SUMMARY_CAP = 2000;
+
+/**
+ * Renders a run-scoped {@link FixtureCatalog} as a compact, prompt-ready block: the run namespace
+ * plus one line per seeded record (entity, declared key, example field values). Bounded by
+ * {@link FIXTURE_SUMMARY_CAP} characters so a large catalog cannot overrun the model context.
+ * Depends only on the `@warden/core` type — the agent never imports the `@warden/fixtures` runtime.
+ */
+export function summarizeFixtures(catalog: FixtureCatalog, maxChars = FIXTURE_SUMMARY_CAP): string {
+  const header =
+    `Seeded fixtures for this run (namespace ${catalog.namespace}). These records already exist in ` +
+    'the target environment — prefer them over invented literals:';
+  const lines = [header];
+  let omitted = 0;
+  for (let i = 0; i < catalog.records.length; i++) {
+    const record = catalog.records[i];
+    if (!record) continue;
+    const fields = Object.entries(record.fields)
+      .map(([key, value]) => `${key}=${value === null ? 'null' : String(value)}`)
+      .join(', ');
+    const line = `- ${record.entity}.${record.key}: ${fields}`;
+    if ([...lines, line].join('\n').length > maxChars) {
+      omitted = catalog.records.length - i;
+      break;
+    }
+    lines.push(line);
+  }
+  if (omitted > 0)
+    lines.push(`… (${omitted} more record(s) omitted to stay within the prompt budget)`);
+  const summary = lines.join('\n');
+  return summary.length > maxChars ? summary.slice(0, maxChars) : summary;
 }

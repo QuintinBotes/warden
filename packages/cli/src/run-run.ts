@@ -6,6 +6,8 @@ import {
   loadConfig,
   ProviderError,
   type CTRFReport,
+  type FixtureCatalog,
+  type FixtureCatalogRequest,
   type FailureContext,
   type FlakeClassification,
   type FlakeClassifier,
@@ -51,6 +53,33 @@ const OFFLINE_PROVIDER: LLMProvider = {
   },
 };
 
+/** A single fixture teardown failure, collected (never thrown) so it can't mask the test result. */
+export interface FixtureTeardownFailure {
+  fixtureId: string;
+  message: string;
+}
+
+/** The teardown outcome the injected fixture orchestrator reports. */
+export interface FixtureTeardownOutcome {
+  errors: FixtureTeardownFailure[];
+}
+
+/**
+ * The subset of `@warden/fixtures`' `FixtureOrchestrator` that {@link runRun} drives. Kept
+ * structural (and referencing only `@warden/core` types) so the CLI takes no build-time dependency
+ * on `@warden/fixtures`: a real orchestrator is injected by the caller, a fake by the tests.
+ */
+export interface RunFixtures {
+  seed(request: FixtureCatalogRequest): Promise<FixtureCatalog>;
+  teardown(): Promise<FixtureTeardownOutcome>;
+}
+
+/** Injected fixture run: the orchestrator plus the resolved request (namespace + test tags). */
+export interface FixtureRun {
+  orchestrator: RunFixtures;
+  request: FixtureCatalogRequest;
+}
+
 /** Options for {@link runRun}. */
 export interface RunRunOptions {
   /** Playwright `--grep` filter (e.g. a tier tag like `@smoke`). */
@@ -89,6 +118,12 @@ export interface RunRunDeps {
   now?: () => Date;
   /** Where storage-degradation warnings go. Defaults to a console logger. */
   logger?: Logger;
+  /**
+   * When present, fixtures are seeded before the tier runs and torn down after (in a `finally`, so
+   * a test failure/timeout still triggers cleanup). Absent (the default), `runRun` behaves exactly
+   * as before — no seeding, no teardown.
+   */
+  fixtures?: FixtureRun;
   prNumber?: number;
   headSha?: string;
   repo?: ReportContext['repo'];
@@ -104,6 +139,8 @@ export interface RunRunResult {
   ctrfPath: string;
   /** The gate decision derived from `execution` and handed to `cfg.plugins` via `onGateDecision`. */
   gate: GateDecision;
+  /** Fixture teardown failures collected during cleanup (WARN-level; never blocks the gate). */
+  fixtureTeardownErrors?: FixtureTeardownFailure[];
 }
 
 /** Stable CTRF test identity — mirrors `ctrfToExecution` so ids line up. */
@@ -308,67 +345,98 @@ export async function runRun(opts: RunRunOptions, deps: RunRunDeps = {}): Promis
   const cwd = opts.cwd ?? process.cwd();
   const cfg = deps.config ?? (await loadConfig(cwd));
   const runTests = deps.runTests ?? ((runOpts: RunPlaywrightOptions) => runPlaywright(runOpts));
+  const logger = deps.logger ?? createLogger();
+  const fixtures = deps.fixtures;
 
-  const firstReport = await runTests({ grep: opts.grep, cwd });
-  const firstFailures = collectFirstFailures(firstReport);
+  let result: RunRunResult | undefined;
+  try {
+    // Seed run-scoped, namespaced fixtures before the tier runs (when injected). The resolved
+    // catalog is written to the artifacts dir so the tier's spec files can import it by key.
+    if (fixtures) {
+      const catalog = await fixtures.orchestrator.seed(fixtures.request);
+      await fs.mkdir(opts.artifactsDir, { recursive: true });
+      await fs.writeFile(
+        path.join(opts.artifactsDir, 'fixture-catalog.json'),
+        JSON.stringify({ namespace: catalog.namespace, records: catalog.records }, null, 2),
+        'utf-8',
+      );
+    }
 
-  let finalReport = firstReport;
-  let retryMeta: Map<string, { retries: number; flakeFlag: boolean }> | undefined;
-  if (deps.store && cfg.flake.retry.enabled) {
-    const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
-    const attempts = await runRetryRounds(firstReport, cfg, deps.store, runTests, cwd, sleep);
-    if (attempts.length > 1) {
-      const reconciliation = reconcileRetries(attempts);
-      finalReport = reconciliation.report;
-      retryMeta = reconciliation.meta;
+    const firstReport = await runTests({ grep: opts.grep, cwd });
+    const firstFailures = collectFirstFailures(firstReport);
+
+    let finalReport = firstReport;
+    let retryMeta: Map<string, { retries: number; flakeFlag: boolean }> | undefined;
+    if (deps.store && cfg.flake.retry.enabled) {
+      const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+      const attempts = await runRetryRounds(firstReport, cfg, deps.store, runTests, cwd, sleep);
+      if (attempts.length > 1) {
+        const reconciliation = reconcileRetries(attempts);
+        finalReport = reconciliation.report;
+        retryMeta = reconciliation.meta;
+      }
+    }
+
+    await fs.mkdir(opts.artifactsDir, { recursive: true });
+    const ctrfPath = path.join(opts.artifactsDir, 'ctrf-report.json');
+    await fs.writeFile(ctrfPath, JSON.stringify(finalReport, null, 2), 'utf-8');
+
+    const execution = ctrfToExecution(finalReport, {
+      triggerRef: opts.grep ?? 'all',
+      triggerType: 'manual',
+      ...(retryMeta !== undefined && { retryMeta }),
+    });
+
+    await firePluginHooks(cfg.plugins, {
+      hook: 'onTestExecutionComplete',
+      execution,
+      results: execution.results,
+    });
+
+    const reporters = deps.reporters ?? createReporters(cfg, deps.reporterDeps);
+    const ctx: ReportContext = {
+      config: cfg,
+      artifactsDir: opts.artifactsDir,
+      ...(deps.prNumber !== undefined && { prNumber: deps.prNumber }),
+      ...(deps.headSha !== undefined && { headSha: deps.headSha }),
+      ...(deps.repo !== undefined && { repo: deps.repo }),
+    };
+
+    for (const reporter of reporters) {
+      await reporter.report(execution, ctx);
+    }
+
+    let gate = computeGateDecision(execution);
+
+    if (deps.store) {
+      const newlyQuarantined = await reconcileFlakeState(execution, cfg, deps, firstFailures);
+      if (
+        newlyQuarantined > cfg.flake.gate.warnOnNewlyQuarantinedAbove &&
+        gate.decision !== 'BLOCK'
+      ) {
+        gate = {
+          decision: 'WARN',
+          reason: `${newlyQuarantined} test(s) newly quarantined this run`,
+        };
+      }
+    }
+
+    await firePluginHooks(cfg.plugins, { hook: 'onGateDecision', decision: gate });
+
+    result = { report: finalReport, execution, ctrfPath, gate };
+    return result;
+  } finally {
+    // Teardown is guaranteed: even when the test run threw or timed out, whatever seeded is torn
+    // down. Teardown errors are surfaced as a WARN (never thrown, never a gate block).
+    if (fixtures) {
+      const teardownReport = await fixtures.orchestrator.teardown();
+      if (teardownReport.errors.length > 0) {
+        logger.warn(
+          `Fixture teardown reported ${teardownReport.errors.length} error(s): ` +
+            teardownReport.errors.map((e) => `${e.fixtureId}: ${e.message}`).join('; '),
+        );
+        if (result) result.fixtureTeardownErrors = teardownReport.errors;
+      }
     }
   }
-
-  await fs.mkdir(opts.artifactsDir, { recursive: true });
-  const ctrfPath = path.join(opts.artifactsDir, 'ctrf-report.json');
-  await fs.writeFile(ctrfPath, JSON.stringify(finalReport, null, 2), 'utf-8');
-
-  const execution = ctrfToExecution(finalReport, {
-    triggerRef: opts.grep ?? 'all',
-    triggerType: 'manual',
-    ...(retryMeta !== undefined && { retryMeta }),
-  });
-
-  await firePluginHooks(cfg.plugins, {
-    hook: 'onTestExecutionComplete',
-    execution,
-    results: execution.results,
-  });
-
-  const reporters = deps.reporters ?? createReporters(cfg, deps.reporterDeps);
-  const ctx: ReportContext = {
-    config: cfg,
-    artifactsDir: opts.artifactsDir,
-    ...(deps.prNumber !== undefined && { prNumber: deps.prNumber }),
-    ...(deps.headSha !== undefined && { headSha: deps.headSha }),
-    ...(deps.repo !== undefined && { repo: deps.repo }),
-  };
-
-  for (const reporter of reporters) {
-    await reporter.report(execution, ctx);
-  }
-
-  let gate = computeGateDecision(execution);
-
-  if (deps.store) {
-    const newlyQuarantined = await reconcileFlakeState(execution, cfg, deps, firstFailures);
-    if (
-      newlyQuarantined > cfg.flake.gate.warnOnNewlyQuarantinedAbove &&
-      gate.decision !== 'BLOCK'
-    ) {
-      gate = {
-        decision: 'WARN',
-        reason: `${newlyQuarantined} test(s) newly quarantined this run`,
-      };
-    }
-  }
-
-  await firePluginHooks(cfg.plugins, { hook: 'onGateDecision', decision: gate });
-
-  return { report: finalReport, execution, ctrfPath, gate };
 }

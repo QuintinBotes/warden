@@ -47,6 +47,12 @@ export {
   type WebdriverElementLike,
 } from './mobile/appium';
 
+export {
+  createGridWebdriver,
+  toW3CCapabilities,
+  type GridWebdriverHttp,
+} from './mobile/grid-webdriver';
+
 export { expandMatrix, type RunMatrixConfig, type MatrixBrowser } from './matrix';
 
 // --- Work-stream A: accessibility + performance budgets ---
@@ -80,3 +86,23 @@ export {
   type RunLighthouseOptions,
   type RunLighthouseResult,
 } from './perf/lighthouse';
+
+// --- Work-stream 2: API & contract testing (Schemathesis + Pact) ---
+
+export {
+  schemathesisJsonToCtrf,
+  evaluateSchemathesisGate,
+  runSchemathesis,
+  type RunSchemathesisOptions,
+  type RunSchemathesisResult,
+} from './api/schemathesis';
+
+export {
+  compareResponses,
+  verifyContracts,
+  pactVerificationToCtrf,
+  evaluatePactGate,
+  runPactVerification,
+  type RunPactVerificationOptions,
+  type RunPactVerificationResult,
+} from './api/pact';
