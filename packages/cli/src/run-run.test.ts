@@ -2,7 +2,13 @@ import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { defineConfig, type CTRFReport } from '@warden/core';
+import {
+  defineConfig,
+  type CTRFReport,
+  type GateDecision,
+  type QAPlatformPlugin,
+  type TestExecution,
+} from '@warden/core';
 import { fakeReporter } from '@warden/core/testing';
 import { runRun } from './run-run';
 
@@ -94,5 +100,35 @@ describe('runRun', () => {
 
     const files = await fs.readdir(nested);
     expect(files).toContain('ctrf-report.json');
+  });
+
+  it('fires onTestExecutionComplete and onGateDecision on every configured plugin', async () => {
+    const report = fixtureCtrf();
+    const executions: { execution: TestExecution; results: unknown }[] = [];
+    const decisions: GateDecision[] = [];
+    const plugin: QAPlatformPlugin = {
+      name: 'recorder',
+      async onTestExecutionComplete(execution, results) {
+        executions.push({ execution, results });
+      },
+      async onGateDecision(decision) {
+        decisions.push(decision);
+      },
+    };
+
+    const result = await runRun(
+      { artifactsDir },
+      {
+        config: defineConfig({ plugins: [plugin] }),
+        runTests: async () => report,
+        reporters: [],
+      },
+    );
+
+    expect(executions).toHaveLength(1);
+    expect(executions[0]?.execution.results).toHaveLength(2);
+    expect(decisions).toEqual([result.gate]);
+    expect(result.gate.decision).toBe('BLOCK');
+    expect(result.gate.reason).toContain('1 test(s) failed');
   });
 });

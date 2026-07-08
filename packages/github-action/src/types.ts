@@ -1,3 +1,5 @@
+import type { QAPlatformPlugin } from '@warden/core';
+
 /**
  * Injection seams for the Warden GitHub Action.
  *
@@ -101,6 +103,11 @@ export interface ActionDeps {
   env?: NodeJS.ProcessEnv;
   eventPath?: string;
   fs?: FsLike;
+  /**
+   * `QAPlatformPlugin`s to notify via `firePluginHooks` (e.g. the first-party
+   * `@warden/notifications` channels). Defaults to `[]` — no plugins fire when omitted.
+   */
+  plugins?: QAPlatformPlugin[];
 }
 
 /** The decision half of a {@link import('@warden/core').GateDecision}. */

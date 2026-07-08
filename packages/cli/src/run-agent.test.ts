@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { defineConfig } from '@warden/core';
+import { defineConfig, type ExploratoryFinding, type QAPlatformPlugin } from '@warden/core';
 import { fakeBrowserSession, fakeProvider } from '@warden/core/testing';
 import { runAgent } from './run-agent';
 
@@ -85,5 +85,38 @@ describe('runAgent', () => {
     expect(result.generatedFiles).toHaveLength(1);
     const written = JSON.parse(await fs.readFile(outputFile, 'utf-8'));
     expect(written.generatedFiles).toEqual(result.generatedFiles);
+  });
+
+  it('fires onBugFound on every configured plugin, once per finding', async () => {
+    const browser = fakeBrowserSession({ page: { url: '/', title: 'Home', text: 'Welcome' } });
+    const provider = fakeProvider({
+      toolCalls: [
+        {
+          name: 'report_finding',
+          input: {
+            title: 'Payment fails for Visa 4242',
+            severity: 'CRITICAL',
+            steps: ['Add to cart', 'Checkout'],
+            expected: 'Payment confirmed',
+            actual: 'Error processing payment',
+          },
+        },
+      ],
+    });
+    const seen: ExploratoryFinding[] = [];
+    const plugin: QAPlatformPlugin = {
+      name: 'recorder',
+      async onBugFound(bug) {
+        seen.push(bug);
+      },
+    };
+
+    const result = await runAgent(
+      { strategy: 'exploratory', url: 'https://example.test', output: outputFile, cwd: dir },
+      { config: defineConfig({ plugins: [plugin] }), browser, provider },
+    );
+
+    expect(result.findings).toHaveLength(1);
+    expect(seen).toEqual(result.findings);
   });
 });

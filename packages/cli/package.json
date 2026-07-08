@@ -30,6 +30,7 @@
     "@warden/runner": "workspace:*",
     "@warden/test-management": "workspace:*",
     "@warden/reporter": "workspace:*",
+    "@warden/visual": "workspace:*",
     "commander": "^12.1.0",
     "zod": "^3.24.1"
   },
