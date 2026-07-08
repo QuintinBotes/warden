@@ -25,6 +25,12 @@ export interface ToolCallResult {
   raw: unknown;
 }
 
+/** A single image input for multimodal generation. */
+export interface ImagePart {
+  mimeType: 'image/png' | 'image/jpeg' | 'image/webp';
+  dataBase64: string;
+}
+
 export interface LLMProvider {
   name: string;
   generateText(prompt: string, options?: GenerateOptions): Promise<string>;
@@ -34,6 +40,13 @@ export interface LLMProvider {
     options?: GenerateOptions,
   ): Promise<ToolCallResult>;
   streamText?(prompt: string): AsyncIterable<string>;
+  /** Multimodal generation. Optional — providers without vision omit it, and the
+   *  visual judge falls back to the pixel floor when it is absent. */
+  generateWithImages?(
+    prompt: string,
+    images: ImagePart[],
+    options?: GenerateOptions,
+  ): Promise<string>;
 }
 
 /** A provider is constructed from the resolved `ai` config block. */
