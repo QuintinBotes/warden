@@ -156,6 +156,24 @@ export const WardenConfigSchema = z.object({
       publishDir: z.string().default('learning/'),
     })
     .default({}),
+  // Cross-repo coverage sync: which repos hold this repo's tests/docs, and who depends on it.
+  links: z
+    .object({
+      testRepos: z
+        .array(
+          z.object({
+            repo: z.string(),
+            pathPrefix: z.string().optional(),
+            mapping: z.enum(['by-tag', 'by-path']).optional(),
+          }),
+        )
+        .default([]),
+      docRepos: z
+        .array(z.object({ repo: z.string(), pathPrefix: z.string().optional() }))
+        .default([]),
+      dependents: z.array(z.string()).default([]),
+    })
+    .default({}),
   plugins: z.array(z.custom<QAPlatformPlugin>()).default([]),
 });
 
