@@ -233,4 +233,107 @@ describe('SqliteDashboardApi', () => {
       }
     });
   });
+
+  describe('flake intelligence', () => {
+    it('flakeBoardDetailed adds impact, classification, and mttr to the flaky test case', async () => {
+      store.saveFlakeClassification({
+        testCaseId: 'TC-AUTH-002',
+        rootCause: 'timing',
+        confidence: 0.7,
+        explanation: 'timeout waiting for redirect',
+        classifiedAt: ANCHOR,
+      });
+      store.recordQuarantineEvent({
+        testCaseId: 'TC-AUTH-002',
+        event: 'quarantined',
+        at: new Date(ANCHOR.getTime() - 8 * 24 * 60 * 60 * 1000),
+      });
+      store.recordQuarantineEvent({
+        testCaseId: 'TC-AUTH-002',
+        event: 'cleared',
+        at: new Date(ANCHOR.getTime() - 6 * 24 * 60 * 60 * 1000),
+      });
+
+      const board = await api.flakeBoardDetailed();
+      const authTwo = board.find((e) => e.testCaseId === 'TC-AUTH-002');
+
+      expect(authTwo).toBeDefined();
+      expect(authTwo?.quarantined).toBe(true);
+      expect(authTwo?.flakeRate).toBeCloseTo(0.4);
+      expect(authTwo?.rootCause).toBe('timing');
+      expect(authTwo?.mttrHours).toBe(48);
+      expect(authTwo?.impact.testCaseId).toBe('TC-AUTH-002');
+
+      // A stable, unclassified test case has an impact but no rootCause/mttr.
+      const authOne = board.find((e) => e.testCaseId === 'TC-AUTH-001');
+      expect(authOne?.rootCause).toBeUndefined();
+      expect(authOne?.mttrHours).toBeUndefined();
+      expect(authOne?.impact).toBeDefined();
+    });
+
+    it('topOffenders ranks by CI minutes lost, most costly first', async () => {
+      // Give TC-AUTH-001 a costly retry history so it becomes the top offender.
+      store.saveExecution({
+        id: 'EXEC-EXTRA',
+        testPlanId: 'PLAN-NIGHTLY',
+        triggerType: 'pr',
+        triggerRef: 'refs/pull/99',
+        environment: 'staging',
+        startedAt: ANCHOR,
+        completedAt: new Date(ANCHOR.getTime() + 60000),
+        results: [
+          {
+            testCaseId: 'TC-AUTH-001',
+            status: 'FLAKY',
+            duration: 120000,
+            retries: 2,
+            flakeFlag: true,
+            artifacts: [],
+          },
+        ],
+      });
+
+      const top = await api.topOffenders(1);
+      expect(top).toHaveLength(1);
+      expect(top[0]?.testCaseId).toBe('TC-AUTH-001');
+      // 2 retries * 120000ms / 60000 = 4 CI minutes lost
+      expect(top[0]?.impact.ciMinutesLost).toBe(4);
+    });
+
+    it('flakeTrend buckets by day with flake rate and quarantine-event counts', async () => {
+      const dayMs = 24 * 60 * 60 * 1000;
+      // Episode spanning two seeded execution days.
+      store.recordQuarantineEvent({
+        testCaseId: 'TC-AUTH-002',
+        event: 'quarantined',
+        at: new Date(ANCHOR.getTime() - 5 * dayMs), // 2026-07-02
+      });
+      store.recordQuarantineEvent({
+        testCaseId: 'TC-AUTH-002',
+        event: 'cleared',
+        at: new Date(ANCHOR.getTime() - 1 * dayMs), // 2026-07-06
+      });
+
+      const points = await api.flakeTrend({
+        from: new Date(ANCHOR.getTime() - 30 * dayMs),
+        to: ANCHOR,
+      });
+      // Five seeded executions on five distinct days.
+      expect(points).toHaveLength(5);
+
+      const byDay = Object.fromEntries(points.map((p) => [p.at.toISOString().slice(0, 10), p]));
+
+      // 2026-07-02: TC-AUTH-002 flaked (1 of 6 results) and was quarantined that day.
+      expect(byDay['2026-07-02']?.flakeRate).toBeCloseTo(1 / 6);
+      expect(byDay['2026-07-02']?.newlyFlagged).toBe(1);
+      expect(byDay['2026-07-02']?.deflaked).toBe(0);
+
+      // 2026-07-06: flaked again and the quarantine cleared that day.
+      expect(byDay['2026-07-06']?.deflaked).toBe(1);
+
+      // A clean day has a zero flake rate and no events.
+      expect(byDay['2026-06-28']?.flakeRate).toBe(0);
+      expect(byDay['2026-06-28']?.newlyFlagged).toBe(0);
+    });
+  });
 });

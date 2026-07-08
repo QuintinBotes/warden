@@ -20,3 +20,4 @@ export * from './logger';
 export * from './v2';
 export * from './coverage-sync';
 export * from './visual';
+export * from './flake-intelligence';

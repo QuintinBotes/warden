@@ -90,4 +90,25 @@ describe('ctrfToExecution', () => {
     expect(execution.triggerType).toBe('manual');
     expect(execution.environment).toBe('ci');
   });
+
+  it('stamps retries/flakeFlag from retryMeta and marks a flaky pass as FLAKY', () => {
+    const report = fixtureReport({
+      tests: [
+        { name: 'login works', status: 'passed', duration: 500, filePath: 'login.spec.ts' },
+        { name: 'checkout fails', status: 'passed', duration: 700, filePath: 'checkout.spec.ts' },
+      ],
+    });
+    const retryMeta = new Map([
+      ['checkout.spec.ts::checkout fails', { retries: 1, flakeFlag: true }],
+    ]);
+
+    const execution = ctrfToExecution(report, { retryMeta });
+
+    const flaky = execution.results[1];
+    expect(flaky?.status).toBe('FLAKY');
+    expect(flaky?.retries).toBe(1);
+    expect(flaky?.flakeFlag).toBe(true);
+    // untouched test keeps the defaults
+    expect(execution.results[0]).toMatchObject({ status: 'PASS', retries: 0, flakeFlag: false });
+  });
 });

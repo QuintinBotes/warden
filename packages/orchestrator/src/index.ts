@@ -10,3 +10,6 @@ export { evaluateExitCriteria } from './evaluate-exit-criteria';
 export { dispatchAgents } from './dispatch-agents';
 export { analyzeChangeSurface, parseNameStatus } from './analyze-change-surface';
 export { firePluginHooks, type PluginHookOutcome } from './fire-plugin-hooks';
+
+// --- Accessibility + performance budgets: shared gate combinator ---
+export { combineGateDecisions } from './combine-gate-decisions';

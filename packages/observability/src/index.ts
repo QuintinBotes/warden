@@ -1,5 +1,9 @@
 export type { MetricsPusher, PushedMetric } from './types.js';
 export { formatExecutionMetrics } from './format-execution-metrics.js';
+export {
+  formatFlakeClassificationMetrics,
+  formatFlakeImpactMetrics,
+} from './format-flake-metrics.js';
 export { formatGateMetrics, type GateMetricsMeta } from './format-gate-metrics.js';
 export { PromClientPusher } from './prom-client-pusher.js';
 export {

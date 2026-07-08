@@ -1,5 +1,11 @@
-import type { GateDecision, MetricsEmitter, TestExecution } from '@warden/core';
+import type {
+  FlakeClassification,
+  GateDecision,
+  MetricsEmitter,
+  TestExecution,
+} from '@warden/core';
 import { formatExecutionMetrics } from './format-execution-metrics.js';
+import { formatFlakeClassificationMetrics } from './format-flake-metrics.js';
 import { formatGateMetrics } from './format-gate-metrics.js';
 import type { MetricsPusher } from './types.js';
 
@@ -34,5 +40,14 @@ export class PrometheusMetricsEmitter implements MetricsEmitter {
   ): Promise<void> {
     const metrics = formatGateMetrics(decision, meta);
     await this.pusher.push(`${this.jobName}_gate`, metrics);
+  }
+
+  /**
+   * Additive, optional `MetricsEmitter` method (flake-intelligence). Pushes the root-cause tally
+   * and confidence gauge for one classification through the same pusher — no new transport.
+   */
+  async emitFlakeClassification(classification: FlakeClassification): Promise<void> {
+    const metrics = formatFlakeClassificationMetrics(classification);
+    await this.pusher.push(`${this.jobName}_flake`, metrics);
   }
 }

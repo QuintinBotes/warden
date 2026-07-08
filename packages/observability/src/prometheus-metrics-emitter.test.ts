@@ -54,6 +54,26 @@ describe('PrometheusMetricsEmitter', () => {
     ]);
   });
 
+  it('pushes flake-classification metrics under a job named "<jobName>_flake"', async () => {
+    const { pusher, calls } = fakePusher();
+    const emitter = new PrometheusMetricsEmitter(pusher);
+
+    await emitter.emitFlakeClassification({
+      testCaseId: 'TC-001',
+      rootCause: 'timing',
+      confidence: 0.7,
+      explanation: 'timeout waiting for redirect',
+      classifiedAt: new Date('2026-07-07T12:00:00.000Z'),
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.job).toBe('warden_flake');
+    const names = calls[0]?.metrics.map((m) => m.name).sort();
+    expect(names).toEqual(
+      ['warden_flake_root_cause_total', 'warden_flake_classification_confidence'].sort(),
+    );
+  });
+
   it('respects a custom jobName prefix', async () => {
     const { pusher, calls } = fakePusher();
     const emitter = new PrometheusMetricsEmitter(pusher, { jobName: 'ci-nightly' });
