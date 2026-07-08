@@ -1,15 +1,26 @@
-import { computeFlakeRate, shouldQuarantine, type SqliteStore } from '@warden/test-management';
+import {
+  computeFlakeImpact,
+  computeFlakeRate,
+  computeMttrToDeflake,
+  shouldQuarantine,
+  type SqliteStore,
+} from '@warden/test-management';
 import type {
   CoverageCell,
   CoverageFilter,
   DashboardDataApi,
   DateRange,
+  FlakeBoardEntry,
+  FlakeIntelligenceDataApi,
   FlakeStat,
+  FlakeTrendPoint,
   Requirement,
   TestExecution,
   TrendMetric,
   TrendPoint,
 } from '@warden/core';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * How many recent executions to pull per test case when computing "last result" /
@@ -78,7 +89,7 @@ function computeMetricValue(
  * separate test-case table); coverage and flake data are derived from each test case's
  * execution history via `getRecentExecutions`.
  */
-export class SqliteDashboardApi implements DashboardDataApi {
+export class SqliteDashboardApi implements DashboardDataApi, FlakeIntelligenceDataApi {
   constructor(private readonly store: SqliteStore) {}
 
   async listRequirements(filter?: CoverageFilter): Promise<Requirement[]> {
@@ -131,5 +142,69 @@ export class SqliteDashboardApi implements DashboardDataApi {
       at: execution.startedAt,
       value: computeMetricValue(metric, execution, universeTestCaseIds),
     }));
+  }
+
+  /**
+   * The flake board widened with quantified impact, the latest root-cause classification, and the
+   * most recent episode's MTTR-to-deflake per test case — a superset of {@link flakeBoard}.
+   */
+  async flakeBoardDetailed(): Promise<FlakeBoardEntry[]> {
+    const base = await this.flakeBoard();
+    const events = this.store.listQuarantineEvents();
+    return base.map((stat) => {
+      const history = this.store.getRecentExecutions(stat.testCaseId, RECENT_HISTORY_LIMIT);
+      const entry: FlakeBoardEntry = {
+        ...stat,
+        impact: computeFlakeImpact(stat.testCaseId, history),
+      };
+      const classification = this.store.getFlakeClassification(stat.testCaseId);
+      if (classification) entry.rootCause = classification.rootCause;
+      const mttrHours = computeMttrToDeflake(events, stat.testCaseId);
+      if (mttrHours !== undefined) entry.mttrHours = mttrHours;
+      return entry;
+    });
+  }
+
+  /** The `n` test cases with the most CI time lost to flakiness, most-costly first. */
+  async topOffenders(n: number): Promise<FlakeBoardEntry[]> {
+    const detailed = await this.flakeBoardDetailed();
+    return detailed
+      .slice()
+      .sort((a, b) => b.impact.ciMinutesLost - a.impact.ciMinutesLost)
+      .slice(0, Math.max(0, n));
+  }
+
+  /**
+   * Flake rate over time, bucketed by UTC day across the executions in `range`. Each point's rate
+   * is the fraction of results that flaked (FLAKY status or `flakeFlag`) that day; `newlyFlagged`
+   * and `deflaked` count the quarantine/clear events recorded that day.
+   */
+  async flakeTrend(range: { from: Date; to: Date }): Promise<FlakeTrendPoint[]> {
+    const executions = this.store.listExecutions({ from: range.from, to: range.to });
+    const events = this.store.listQuarantineEvents();
+
+    const buckets = new Map<string, { flaky: number; total: number }>();
+    for (const execution of executions) {
+      const day = execution.startedAt.toISOString().slice(0, 10);
+      const bucket = buckets.get(day) ?? { flaky: 0, total: 0 };
+      for (const r of execution.results) {
+        bucket.total += 1;
+        if (r.status === 'FLAKY' || r.flakeFlag) bucket.flaky += 1;
+      }
+      buckets.set(day, bucket);
+    }
+
+    return [...buckets.keys()].sort().map((day) => {
+      const bucket = buckets.get(day) ?? { flaky: 0, total: 0 };
+      const at = new Date(`${day}T00:00:00.000Z`);
+      const start = at.getTime();
+      const inDay = (d: Date): boolean => d.getTime() >= start && d.getTime() < start + DAY_MS;
+      return {
+        at,
+        flakeRate: bucket.total > 0 ? bucket.flaky / bucket.total : 0,
+        newlyFlagged: events.filter((e) => e.event === 'quarantined' && inDay(e.at)).length,
+        deflaked: events.filter((e) => e.event === 'cleared' && inDay(e.at)).length,
+      };
+    });
   }
 }

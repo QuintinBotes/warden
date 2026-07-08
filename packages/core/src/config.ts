@@ -138,9 +138,7 @@ export const WardenConfigSchema = z.object({
       browser: z
         .object({
           enabled: z.boolean().default(false),
-          routes: z
-            .array(z.object({ pathPrefix: z.string(), urlPattern: z.string() }))
-            .default([]),
+          routes: z.array(z.object({ pathPrefix: z.string(), urlPattern: z.string() })).default([]),
           budgets: z
             .object({
               performanceScoreMin: z.number().default(0.9),

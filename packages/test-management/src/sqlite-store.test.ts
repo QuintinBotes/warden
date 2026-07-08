@@ -2,7 +2,13 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Requirement, TestExecution, TestPlan, TestResult } from '@warden/core';
+import type {
+  FlakeClassification,
+  Requirement,
+  TestExecution,
+  TestPlan,
+  TestResult,
+} from '@warden/core';
 import { SqliteStore } from './sqlite-store.js';
 
 function makeResult(overrides: Partial<TestResult> = {}): TestResult {
@@ -184,5 +190,67 @@ describe('SqliteStore', () => {
 
     expect(store.getTestPlan(plan.id)).toEqual(plan);
     expect(store.getTestPlan('missing')).toBeUndefined();
+  });
+
+  it('round-trips a flake classification via save/getFlakeClassification', () => {
+    const classification: FlakeClassification = {
+      testCaseId: 'TC-001',
+      rootCause: 'selector',
+      confidence: 0.82,
+      explanation: 'Strict mode violation on a renamed locator.',
+      classifiedAt: new Date('2026-07-07T12:00:00.000Z'),
+    };
+
+    store.saveFlakeClassification(classification);
+    const loaded = store.getFlakeClassification('TC-001');
+
+    expect(loaded).toEqual(classification);
+    expect(loaded?.classifiedAt).toBeInstanceOf(Date);
+    expect(store.getFlakeClassification('missing')).toBeUndefined();
+  });
+
+  it('upserts the classification for the same test case', () => {
+    const at = new Date('2026-07-07T12:00:00.000Z');
+    store.saveFlakeClassification({
+      testCaseId: 'TC-001',
+      rootCause: 'timing',
+      confidence: 0.3,
+      explanation: 'first',
+      classifiedAt: at,
+    });
+    store.saveFlakeClassification({
+      testCaseId: 'TC-001',
+      rootCause: 'network',
+      confidence: 0.9,
+      explanation: 'second',
+      classifiedAt: at,
+    });
+    expect(store.getFlakeClassification('TC-001')?.rootCause).toBe('network');
+  });
+
+  it('appends and lists quarantine events chronologically, filtered by test case', () => {
+    store.recordQuarantineEvent({
+      testCaseId: 'TC-001',
+      event: 'quarantined',
+      at: new Date('2026-07-01T00:00:00.000Z'),
+    });
+    store.recordQuarantineEvent({
+      testCaseId: 'TC-002',
+      event: 'quarantined',
+      at: new Date('2026-07-02T00:00:00.000Z'),
+    });
+    store.recordQuarantineEvent({
+      testCaseId: 'TC-001',
+      event: 'cleared',
+      at: new Date('2026-07-03T00:00:00.000Z'),
+    });
+
+    const all = store.listQuarantineEvents();
+    expect(all).toHaveLength(3);
+    expect(all[0]?.at.toISOString()).toBe('2026-07-01T00:00:00.000Z');
+    expect(all[0]?.at).toBeInstanceOf(Date);
+
+    const forOne = store.listQuarantineEvents('TC-001');
+    expect(forOne.map((e) => e.event)).toEqual(['quarantined', 'cleared']);
   });
 });

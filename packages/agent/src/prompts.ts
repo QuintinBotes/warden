@@ -61,3 +61,17 @@ If it is a real regression:
 - Describe the bug clearly
 - Rate severity: CRITICAL / HIGH / MEDIUM / LOW
 - Suggest the fix for the app code`;
+
+/** Flake classifier — "why is this test flaky?". Tags a retry-resolved flake with a root cause. */
+export const FLAKE_CLASSIFIER_SYSTEM_PROMPT = `A test failed and then passed on retry, so it is flaky rather than a hard failure.
+You will receive the test's recent pass/fail history and the error from its most recent failing attempt.
+
+Classify the root cause by calling the classify_flake tool. Choose exactly one category:
+- "timing": waits, timeouts, animations, slow responses, or ordering/race conditions.
+- "selector": locators that are stale, ambiguous (strict-mode), detached, or not visible/attached.
+- "data": assertion mismatches from test data or state that varies between runs.
+- "network": connection resets/refusals, DNS, fetch failures, or flaky upstream services.
+- "unknown": the evidence does not clearly fit any category above.
+
+Set confidence between 0 and 1, and explain your reasoning by citing the specific error text or the
+shape of the pass/fail history. Do not propose a code fix — only classify.`;
