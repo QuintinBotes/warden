@@ -133,7 +133,67 @@ export const WardenConfigSchema = z.object({
   performance: z
     .object({
       enabled: z.boolean().default(false),
-      p95LatencyMs: z.number().default(500),
+      p95LatencyMs: z.number().default(500), // existing: k6 API-latency budget
+      // Browser performance budgets (Lighthouse) — kept separate from the k6 API budget.
+      browser: z
+        .object({
+          enabled: z.boolean().default(false),
+          routes: z
+            .array(z.object({ pathPrefix: z.string(), urlPattern: z.string() }))
+            .default([]),
+          budgets: z
+            .object({
+              performanceScoreMin: z.number().default(0.9),
+              lcpMs: z.number().default(2500),
+              tbtMs: z.number().default(300),
+              clsScore: z.number().default(0.1),
+            })
+            .default({}),
+          warnMarginPercent: z.number().default(10),
+          maxRoutesPerRun: z.number().int().positive().default(10),
+        })
+        .default({}),
+    })
+    .default({}),
+  // Accessibility (axe-core) checks against the routes a PR changed.
+  a11y: z
+    .object({
+      enabled: z.boolean().default(false),
+      standard: z.enum(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).default('wcag21aa'),
+      routes: z.array(z.object({ pathPrefix: z.string(), urlPattern: z.string() })).default([]),
+      ignoreRules: z.array(z.string()).default([]),
+      blockOnImpact: z
+        .array(z.enum(['critical', 'serious', 'moderate', 'minor']))
+        .default(['critical', 'serious']),
+      warnOnImpact: z
+        .array(z.enum(['critical', 'serious', 'moderate', 'minor']))
+        .default(['moderate']),
+      maxRoutesPerRun: z.number().int().positive().default(10),
+    })
+    .default({}),
+  // Flaky-test intelligence: retry policy, root-cause classifier, trend gating.
+  flake: z
+    .object({
+      retry: z
+        .object({
+          enabled: z.boolean().default(true),
+          maxRetries: z.number().int().min(0).max(5).default(2),
+          backoffMs: z.number().int().nonnegative().default(1000),
+          backoffMultiplier: z.number().positive().default(2),
+          retryOnlyKnownFlaky: z.boolean().default(false),
+        })
+        .default({}),
+      classifier: z
+        .object({
+          enabled: z.boolean().default(true),
+          minHistoryForClassification: z.number().int().nonnegative().default(3),
+        })
+        .default({}),
+      gate: z
+        .object({
+          warnOnNewlyQuarantinedAbove: z.number().int().nonnegative().default(2),
+        })
+        .default({}),
     })
     .default({}),
   security: z
