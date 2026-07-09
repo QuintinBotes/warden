@@ -15,7 +15,7 @@
     "@warden/dashboard-api": "workspace:*",
     "@warden/design-system": "workspace:*",
     "@warden/test-management": "workspace:*",
-    "next": "^15.5.18",
+    "next": "^16.2.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
