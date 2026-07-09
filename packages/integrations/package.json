@@ -1,6 +1,6 @@
 {
   "name": "@warden/integrations",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Warden integrations — Linear/Jira/GitHub Projects requirement sync (IntegrationAdapter)",
   "license": "MIT",
   "type": "module",

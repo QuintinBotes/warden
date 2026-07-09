@@ -1,6 +1,6 @@
 {
   "name": "@warden/impact",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Warden test impact analysis — map a diff to the impacted tests via a coverage index",
   "license": "MIT",
   "type": "module",

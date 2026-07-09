@@ -1,6 +1,6 @@
 {
   "name": "@warden/design-system",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Sentinel — Warden's design system: tokens, themes, portcullis logo, and dashboard components",
   "license": "MIT",
   "type": "module",
