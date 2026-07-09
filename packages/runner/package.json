@@ -1,6 +1,6 @@
 {
   "name": "@warden/runner",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Warden runner — Playwright + Claude-Chrome browser engines, API tests, and CTRF conversion",
   "license": "MIT",
   "type": "module",
