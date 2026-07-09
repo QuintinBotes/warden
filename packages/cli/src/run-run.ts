@@ -5,6 +5,7 @@ import {
   createLogger,
   loadConfig,
   ProviderError,
+  type ChangeSurface,
   type CTRFReport,
   type CujHealthReport,
   type FixtureCatalog,
@@ -26,7 +27,8 @@ import { mergeGateDecisions } from '@warden/cuj';
 import { evaluateCujGateForRun, type CujGateRun } from './cuj-gate';
 import { runPlaywright, type RunPlaywrightOptions } from '@warden/runner';
 import { computeGateDecision, createReporters, type CreateReportersDeps } from '@warden/reporter';
-import { firePluginHooks } from '@warden/orchestrator';
+import { firePluginHooks, combineGateDecisions } from '@warden/orchestrator';
+import { runQualityAudits, type A11yAuditFn, type PerfAuditFn } from './run-quality-audits';
 import {
   computeFlakeRate,
   reconcileRetries,
@@ -137,6 +139,17 @@ export interface RunRunDeps {
    * merged worst-of into the final gate. Absent (the default), `runRun` behaves exactly as before.
    */
   cuj?: CujGateRun;
+  /**
+   * When present (and `cfg.a11y.enabled` / `cfg.performance.browser.enabled`), the route-scoped
+   * accessibility + performance-budget tiers run against `baseUrl` — each writes its CTRF to the
+   * artifacts dir and its gate is folded worst-of into the final gate. Absent, neither tier runs.
+   */
+  qualityAudits?: {
+    changeSurface: ChangeSurface;
+    baseUrl: string;
+    a11yAudit?: A11yAuditFn;
+    perfAudit?: PerfAuditFn;
+  };
 }
 
 /** Return value of {@link runRun}. */
@@ -430,6 +443,24 @@ export async function runRun(opts: RunRunOptions, deps: RunRunDeps = {}): Promis
           decision: 'WARN',
           reason: `${newlyQuarantined} test(s) newly quarantined this run`,
         };
+      }
+    }
+
+    // Fold in the accessibility + performance-budget tiers (worst-of). Each runs only when its
+    // config block is enabled and the change touches a mapped route; a bad audit tightens the gate.
+    if (deps.qualityAudits) {
+      const qa = await runQualityAudits({
+        changeSurface: deps.qualityAudits.changeSurface,
+        baseUrl: deps.qualityAudits.baseUrl,
+        cfg,
+        artifactsDir: opts.artifactsDir,
+        a11yAudit: deps.qualityAudits.a11yAudit,
+        perfAudit: deps.qualityAudits.perfAudit,
+        writeFile: fs.writeFile,
+        logger,
+      });
+      if (qa.gates.length > 0) {
+        gate = combineGateDecisions([gate, ...qa.gates]);
       }
     }
 
