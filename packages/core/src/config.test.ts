@@ -61,6 +61,28 @@ describe('defineConfig', () => {
     expect(cfg.traffic.synthesis.proposeCujs).toBe(true);
     expect(cfg.traffic.synthesis.outDir).toBe('tests/e2e/traffic/');
   });
+
+  it('defaults the additive enterprise block to auth-optional (mode none, audit off)', () => {
+    const cfg = defineConfig({});
+    expect(cfg.enterprise.auth.mode).toBe('none'); // self-hosted OSS default: no auth
+    expect(cfg.enterprise.auth.requiredRoleForGateOverride).toBe('maintainer');
+    expect(cfg.enterprise.auth.requiredRoleForSuggestionMerge).toBe('maintainer');
+    expect(cfg.enterprise.auth.requiredRoleForRoleChange).toBe('admin');
+    expect(cfg.enterprise.audit.enabled).toBe(false); // no audit records kept by default
+    expect(cfg.enterprise.audit.retentionDays).toBe(400);
+    expect(cfg.enterprise.dataHandling.piiScrubbing).toBe(true);
+    expect(cfg.enterprise.dataHandling.executionHistoryRetentionDays).toBe(400);
+  });
+
+  it('accepts an opt-in oidc enterprise config while keeping other defaults', () => {
+    const cfg = defineConfig({
+      enterprise: { auth: { mode: 'oidc' }, audit: { enabled: true, retentionDays: 90 } },
+    });
+    expect(cfg.enterprise.auth.mode).toBe('oidc');
+    expect(cfg.enterprise.auth.requiredRoleForGateOverride).toBe('maintainer'); // default kept
+    expect(cfg.enterprise.audit.enabled).toBe(true);
+    expect(cfg.enterprise.audit.retentionDays).toBe(90);
+  });
 });
 
 describe('loadConfig', () => {

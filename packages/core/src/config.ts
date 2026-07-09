@@ -13,6 +13,9 @@ import { CujTier } from './cuj';
 
 const providerEnum = z.enum(['anthropic', 'openai', 'gemini', 'ollama']);
 
+/** Warden's three roles for the `enterprise` block; mirrors the `Role` type in `auth.ts`. */
+const RoleSchema = z.enum(['viewer', 'maintainer', 'admin']);
+
 export const WardenConfigSchema = z.object({
   ai: z
     .object({
@@ -470,6 +473,38 @@ export const WardenConfigSchema = z.object({
     .default({}),
   // Device-cloud grid & parallel sharding (additive; defaulted off, `local` needs no account).
   grid: GridConfigSchema,
+  // Enterprise readiness — auth/RBAC/audit/multi-tenancy for the hosted dashboard + GitHub App
+  // (additive; every field defaults to today's behavior). `auth.mode: 'none'` keeps the
+  // self-hosted OSS core fully auth-optional: no login, no RBAC enforcement, no audit records
+  // kept. OIDC issuer/client secrets are DEPLOYMENT config (deploy/.env), never per-repo — they
+  // are injected into `@warden/enterprise`'s factory, not read from this file. See
+  // docs/proposals/2026-07-08-enterprise-readiness.md.
+  enterprise: z
+    .object({
+      auth: z
+        .object({
+          // 'none' (self-hosted OSS default) | 'oidc' (hosted deployment opts in).
+          mode: z.enum(['none', 'oidc']).default('none'),
+          requiredRoleForGateOverride: RoleSchema.default('maintainer'),
+          requiredRoleForSuggestionMerge: RoleSchema.default('maintainer'),
+          requiredRoleForRoleChange: RoleSchema.default('admin'),
+        })
+        .default({}),
+      audit: z
+        .object({
+          // auto-true when auth.mode !== 'none'; can be forced on independently.
+          enabled: z.boolean().default(false),
+          retentionDays: z.number().int().positive().default(400),
+        })
+        .default({}),
+      dataHandling: z
+        .object({
+          piiScrubbing: z.boolean().default(true),
+          executionHistoryRetentionDays: z.number().int().positive().default(400),
+        })
+        .default({}),
+    })
+    .default({}),
   plugins: z.array(z.custom<QAPlatformPlugin>()).default([]),
 });
 
