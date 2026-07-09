@@ -106,3 +106,44 @@ export {
   type RunPactVerificationOptions,
   type RunPactVerificationResult,
 } from './api/pact';
+
+// --- Work-stream 1: component testing tier (Playwright CT / Storybook test-runner) ---
+
+export {
+  componentResultsToCtrf,
+  evaluateComponentGate,
+  runComponentTests,
+  type ComponentTestResult,
+  type ComponentConfig,
+  type RunComponentOptions,
+  type RunComponentResult,
+} from './component/component';
+
+// --- Work-stream 2: load testing tier (first-class k6) ---
+
+export {
+  k6LoadResultsToCtrf,
+  evaluateLoadGate,
+  runK6Load,
+  type K6LoadSummary,
+  type K6LoadThresholds,
+  type K6LoadConfig,
+  type RunK6LoadOptions,
+  type RunK6LoadResult,
+} from './load/k6-load';
+
+// --- Work-stream 3: i18n content checks ---
+
+export {
+  findMissingTranslations,
+  i18nResultsToCtrf,
+  evaluateI18nGate,
+  readLocales,
+  type FlatLocale,
+  type LocaleMap,
+  type I18nMissingEntry,
+  type I18nCheckConfig,
+  type I18nGateConfig,
+  type I18nFileAccess,
+  type ReadLocalesConfig,
+} from './i18n/i18n';

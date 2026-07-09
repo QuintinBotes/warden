@@ -37448,6 +37448,41 @@ var WardenConfigSchema = external_exports.object({
     indexPath: external_exports.string().default("warden-coverage-index.json"),
     onUncovered: external_exports.enum(["run-all", "run-tagged", "warn"]).default("run-all")
   }).default({}),
+  // Component testing tier (additive; defaulted OFF). Runs isolated component tests via
+  // Playwright's component-test runner or Storybook's test-runner and gates on any failure,
+  // same shape/posture as `performance`/`security`/`a11y`.
+  component: external_exports.object({
+    enabled: external_exports.boolean().default(false),
+    runner: external_exports.enum(["playwright-ct", "storybook"]).default("playwright-ct"),
+    configPath: external_exports.string().optional(),
+    grep: external_exports.string().optional()
+  }).default({}),
+  // Load testing tier (additive; defaulted OFF). A separate, richer k6 tier — VUs, duration, and
+  // multiple thresholds (p95/p99 latency + error rate) — distinct from the single API p95 budget
+  // already covered by `performance.p95LatencyMs`. Same posture as `component`/`a11y`/`security`.
+  load: external_exports.object({
+    enabled: external_exports.boolean().default(false),
+    script: external_exports.string().default("load/script.js"),
+    vus: external_exports.number().default(10),
+    durationSec: external_exports.number().default(30),
+    thresholds: external_exports.object({
+      p95Ms: external_exports.number().default(800),
+      p99Ms: external_exports.number().default(1500),
+      errorRate: external_exports.number().default(0.01)
+    }).default({})
+  }).default({}),
+  // i18n content checks (additive; defaulted OFF). Pure — flattens locale JSON files under
+  // `localesDir` and diffs each non-default locale against `defaultLocale`, reporting keys that
+  // are present in the default locale but missing (or empty) elsewhere. Gaps rarely warrant
+  // blocking a merge, so the gate defaults to `warn`; make it `block` for locales your team
+  // treats as release-gating, or `off` to keep the check informational-only.
+  i18n: external_exports.object({
+    enabled: external_exports.boolean().default(false),
+    localesDir: external_exports.string().default("locales/"),
+    defaultLocale: external_exports.string().default("en"),
+    ignoreKeys: external_exports.array(external_exports.string()).default([]),
+    gate: external_exports.enum(["block", "warn", "off"]).default("warn")
+  }).default({}),
   plugins: external_exports.array(external_exports.custom()).default([])
 });
 var LearningChapterSchema = external_exports.object({
