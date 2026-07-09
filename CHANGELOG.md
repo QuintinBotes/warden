@@ -4,6 +4,57 @@ All notable changes to Warden are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-07-09 · "Tier-3 & Hardening"
+
+Completes the **Tier-3 roadmap** (all six items), packages the GitHub Action for real
+distribution, brings every dependency to its latest major, and hardens the codebase against
+its own security scanning. Everything new is additive, defaulted off, and hermetically tested.
+
+### Added — Tier-3 (precision)
+
+- **Test impact analysis** (`@warden/impact`) — a coverage index maps each test to the files it
+  exercised; `warden run --impact-index <path>` narrows the run to exactly the tests a diff impacts,
+  with a safety net for uncovered files. Risk escalation still forces the full suite.
+- **Component / Storybook testing** — a `component` tier in `@warden/runner` (Playwright CT or the
+  Storybook test-runner) → CTRF + gate.
+- **Load testing** — a first-class `load` tier (k6 VUs/duration + p95/p99/error-rate thresholds).
+- **i18n content checks** — a pure `i18n` check for missing/empty translation keys across locales.
+
+### Added — Tier-3 (ecosystem)
+
+- **Hosted results service** (`@warden/results-service`) — mints HMAC-signed, expiring **share tokens**
+  granting read-only access to one run's (redacted) results via a public link; opt-in, self-hostable,
+  secrets from env.
+- **Plugin registry** (`@warden/plugin-registry`) — a manifest schema + a searchable registry
+  (by text/capability/tag) + a dynamic resolver that turns a manifest into a `QAPlatformPlugin`.
+
+### Added — integration & UX
+
+- The **accessibility + performance-budget tiers are wired into `warden run`** (`--base-url` / `--base`
+  / `--head`) and into the **GitHub Action** (new `base-url` input) alongside the **CUJ-scoped gate**.
+- Dashboard panels for **Critical User Journeys**, **Visual Regression**, and **Flake Intelligence**.
+
+### Changed — packaging & CI
+
+- The **GitHub Action is now distributable**: its bundle is inlined and committed, guarded by a CI
+  freshness check — `uses: QuintinBotes/warden/packages/github-action@v0.3.0` works.
+- **Dependabot** version updates + **CodeQL** code scanning are enabled and running clean.
+- **Dependency modernization** — brought to latest major: React 19, Next 16, Vitest 4, jsdom 29,
+  `@types/node` 26, better-sqlite3 12, lighthouse 13, jose 6, commander 15, js-yaml 5, c12 3,
+  pixelmatch 7, `@actions/core` 3, and the `@octokit/*` majors. (TypeScript is deliberately held at 5.6
+  until tsup/rollup-plugin-dts support TS 7's native compiler.)
+
+### Security
+
+- **Resolved every CodeQL alert** (0 open): backtracking regexes replaced with linear
+  `@warden/core` helpers (`stripTrailingSlashes`, `slugify`) or safe rewrites; the markdown
+  `escapeCell` and route-wildcard substitution hardened against incomplete sanitization.
+- Pinned the `undici` override to the 7.x line (still above the 6.27.0 GHSA floor) so jsdom 29 loads.
+
+### Notes
+
+- Package count 25 → **28**; the test suite ~1,180 → **1,315**. All new capabilities remain opt-in.
+
 ## [0.2.0] — 2026-07-09 · "Warden Next"
 
 The competitive-gap roadmap, shipped. Thirteen new capabilities, all **additive to
@@ -73,5 +124,6 @@ quarantine; a merge-gate verdict; the Sentinel dashboard; Prometheus/Grafana obs
 Jira / GitHub Projects requirement sync; a session recorder and learning studio; and the cross-repo
 coverage-sync GitHub App.
 
+[0.3.0]: https://github.com/QuintinBotes/warden/releases/tag/v0.3.0
 [0.2.0]: https://github.com/QuintinBotes/warden/releases/tag/v0.2.0
 [0.1.0]: https://github.com/QuintinBotes/warden/releases/tag/v0.1.0

@@ -1,6 +1,6 @@
 {
   "name": "@warden/results-service",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Warden hosted results service — public, token-gated run links over dashboard-api",
   "license": "MIT",
   "type": "module",

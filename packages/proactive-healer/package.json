@@ -1,6 +1,6 @@
 {
   "name": "@warden/proactive-healer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Warden proactive self-healing — pre-emptive locator repair via draft PRs",
   "license": "MIT",
   "type": "module",

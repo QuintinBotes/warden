@@ -1,6 +1,6 @@
 {
   "name": "@warden/coverage-sync",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Warden cross-repo coverage sync — resolve linked repos, find test/doc gaps, publish suggestions",
   "license": "MIT",
   "type": "module",

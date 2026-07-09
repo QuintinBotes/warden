@@ -1,6 +1,6 @@
 {
   "name": "@warden/orchestrator",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Warden orchestrator — diff analysis, scope selection, risk scoring, and gate evaluation",
   "license": "MIT",
   "type": "module",
