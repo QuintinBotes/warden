@@ -28,6 +28,13 @@ inputs:
   anthropic-api-key:
     description: 'Anthropic API key used by the AI agent (pass ${{ secrets.ANTHROPIC_API_KEY }}).'
     required: true
+  base-url:
+    description: >-
+      Preview/staging deployment URL. When set (and the relevant config blocks are enabled), the
+      accessibility (axe) and performance-budget (Lighthouse) tiers run against the routes this PR
+      changed, and the CUJ-scoped gate runs. Leave empty to skip the route-scoped tiers.
+    required: false
+    default: ''
 
 outputs:
   gate:

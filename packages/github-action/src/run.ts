@@ -53,6 +53,8 @@ export async function run(deps: ActionDeps = {}): Promise<RunResult> {
   const strategy = core.getInput('strategy') || 'exploratory';
   const riskThreshold = Number(core.getInput('risk-threshold') || '4') || 4;
   const apiKey = core.getInput('anthropic-api-key', { required: true });
+  // Preview/staging URL for the route-scoped a11y + performance-budget tiers (input wins over env).
+  const baseUrl = core.getInput('base-url') || process.env.WARDEN_BASE_URL || '';
 
   // ── PR context ──────────────────────────────────────────────────────────────
   const pr: PrContext | null = loadPrEvent(eventPath, fs);
@@ -117,10 +119,15 @@ export async function run(deps: ActionDeps = {}): Promise<RunResult> {
 
   // ── Tier: selective regression (or full suite when escalated) ───────────────
   const regressionGrep = runFullSuite ? '@regression' : testTags || '@smoke';
+  // The regression tier also carries the diff bounds + preview URL, so `warden run` folds the
+  // route-scoped a11y/perf tiers and the CUJ-scoped gate into this (comprehensive) run — once.
   await tier(core, 'regression', () =>
     runTier(exec, {
       grep: regressionGrep,
       output: path.join(reportsDir, 'regression.ctrf.json'),
+      baseSha: pr.baseSha,
+      headSha: pr.headSha,
+      ...(baseUrl ? { baseUrl } : {}),
       ...execOpts,
     }),
   );

@@ -24,19 +24,21 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@warden/agent": "workspace:*",
     "@warden/core": "workspace:*",
     "@warden/cuj": "workspace:*",
     "@warden/orchestrator": "workspace:*",
-    "@warden/agent": "workspace:*",
+    "@warden/reporter": "workspace:*",
     "@warden/runner": "workspace:*",
     "@warden/test-management": "workspace:*",
-    "@warden/reporter": "workspace:*",
-    "@warden/visual": "workspace:*",
     "@warden/vcs": "workspace:*",
+    "@warden/visual": "workspace:*",
     "commander": "^12.1.0",
+    "js-yaml": "^4.1.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "tsup": "^8.3.5",
     "typescript": "^5.6.3"
   }

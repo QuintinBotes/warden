@@ -34,10 +34,22 @@ export async function analyze(
 /** `warden run --grep <tags> --output <file>` → runs a test tier, writes CTRF. */
 export async function runTier(
   exec: ExecFn,
-  opts: { grep: string; output: string } & ExecOptions,
+  opts: {
+    grep: string;
+    output: string;
+    /** Diff bounds — passed through so `warden run` can run the route-scoped a11y/perf tiers
+     *  and the CUJ-scoped gate against the change surface. */
+    baseSha?: string;
+    headSha?: string;
+    /** Preview/staging deployment URL for the a11y/perf tiers. */
+    baseUrl?: string;
+  } & ExecOptions,
 ): Promise<void> {
-  const { grep, output, ...execOpts } = opts;
-  await exec(CLI_LAUNCHER, args(['run', '--grep', grep, '--output', output]), execOpts);
+  const { grep, output, baseSha, headSha, baseUrl, ...execOpts } = opts;
+  const extra: string[] = [];
+  if (baseSha && headSha) extra.push('--base', baseSha, '--head', headSha);
+  if (baseUrl) extra.push('--base-url', baseUrl);
+  await exec(CLI_LAUNCHER, args(['run', '--grep', grep, '--output', output, ...extra]), execOpts);
 }
 
 /** `warden agent --strategy <s> --url <u> …` → runs an AI strategy, writes a report. */

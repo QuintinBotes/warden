@@ -2,6 +2,8 @@
 import { Command } from 'commander';
 import { loadConfig, type StrategyName } from '@warden/core';
 import { analyzeChangeSurface } from '@warden/orchestrator';
+import { load as parseYaml } from 'js-yaml';
+import { fsCujSource } from '../cuj-gate.js';
 import {
   createFetchOctokit,
   createVcsProviderFromEnv,
@@ -77,14 +79,28 @@ program
         const cwd = opts.cwd ?? process.cwd();
         const baseUrl = opts.baseUrl ?? process.env.WARDEN_BASE_URL;
         const deps: Parameters<typeof runRun>[1] = {};
-        // Wire the accessibility + performance-budget tiers when they're enabled and we have both a
-        // deployment to hit and a diff to scope routes from. Otherwise `run` behaves exactly as before.
-        if (baseUrl && opts.base && opts.head) {
+        // Wire the route-scoped a11y/perf tiers and the CUJ-scoped gate when they're enabled and we
+        // have a diff to scope from. Both reuse one computed change surface; the a11y/perf tiers also
+        // need a deployment URL. Without a diff (--base/--head), `run` behaves exactly as before.
+        if (opts.base && opts.head) {
           const cfg = await loadConfig(cwd);
-          if (cfg.a11y.enabled || cfg.performance.browser.enabled) {
+          const needQuality =
+            Boolean(baseUrl) && (cfg.a11y.enabled || cfg.performance.browser.enabled);
+          const needCuj = cfg.cuj.enabled;
+          if (needQuality || needCuj) {
             const changeSurface = await analyzeChangeSurface(opts.base, opts.head, cfg, cwd);
             deps.config = cfg;
-            deps.qualityAudits = { changeSurface, baseUrl };
+            if (needQuality && baseUrl) {
+              deps.qualityAudits = { changeSurface, baseUrl };
+            }
+            if (needCuj) {
+              deps.cuj = {
+                source: fsCujSource(),
+                changeSurface,
+                baseRef: opts.base,
+                parse: parseYaml,
+              };
+            }
           }
         }
         const result = await runRun(
