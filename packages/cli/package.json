@@ -27,6 +27,7 @@
     "@warden/agent": "workspace:*",
     "@warden/core": "workspace:*",
     "@warden/cuj": "workspace:*",
+    "@warden/impact": "workspace:*",
     "@warden/orchestrator": "workspace:*",
     "@warden/reporter": "workspace:*",
     "@warden/runner": "workspace:*",

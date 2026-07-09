@@ -62,6 +62,20 @@ describe('defineConfig', () => {
     expect(cfg.traffic.synthesis.outDir).toBe('tests/e2e/traffic/');
   });
 
+  it('defaults the additive impact block to OFF with a run-all safety net', () => {
+    const cfg = defineConfig({});
+    expect(cfg.impact.enabled).toBe(false); // opt-in feature defaults OFF
+    expect(cfg.impact.indexPath).toBe('warden-coverage-index.json');
+    expect(cfg.impact.onUncovered).toBe('run-all'); // a brand-new file is never silently skipped
+  });
+
+  it('accepts an opt-in impact config while keeping other defaults', () => {
+    const cfg = defineConfig({ impact: { enabled: true, onUncovered: 'warn' } });
+    expect(cfg.impact.enabled).toBe(true);
+    expect(cfg.impact.onUncovered).toBe('warn');
+    expect(cfg.impact.indexPath).toBe('warden-coverage-index.json'); // default kept
+  });
+
   it('defaults the additive enterprise block to auth-optional (mode none, audit off)', () => {
     const cfg = defineConfig({});
     expect(cfg.enterprise.auth.mode).toBe('none'); // self-hosted OSS default: no auth
