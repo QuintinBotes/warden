@@ -29,3 +29,4 @@ export * from './test-management-sync';
 export * from './vcs';
 export * from './cuj';
 export * from './traffic';
+export * from './auth';
