@@ -9,6 +9,7 @@ import type {
   GridSessionInfo,
   LaneOutcome,
 } from '@warden/core';
+import { slugify } from '@warden/core';
 import { GridCapacityError, type GridHttpClient } from '../http-client';
 
 /**
@@ -64,10 +65,7 @@ export interface CloudProviderDeps {
 const STATUS_QUEUE_FULL = new Set(['queue_full', 'queued', 'capacity', 'busy']);
 
 function slug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  return slugify(value.toLowerCase());
 }
 
 function mapPlatform(os: string | undefined, device: string | undefined): GridPlatform {

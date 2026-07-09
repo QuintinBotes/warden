@@ -69,8 +69,12 @@ export function buildSynthesisPrompt(session: RecordedSession): string {
 /** Strips a ```json ... ``` (or bare ``` ... ```) fence if the model wrapped its JSON in one. */
 function stripFences(raw: string): string {
   const trimmed = raw.trim();
-  const fence = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(trimmed);
-  return (fence?.[1] ?? trimmed).trim();
+  if (!trimmed.startsWith('```') || !trimmed.endsWith('```') || trimmed.length < 6) {
+    return trimmed;
+  }
+  const afterOpen = trimmed.slice(3, trimmed.length - 3);
+  const bodyStart = /^json/i.test(afterOpen) ? 4 : 0;
+  return afterOpen.slice(bodyStart).trim();
 }
 
 /** Parses + validates the model response into flows, throwing a typed error on bad output. */

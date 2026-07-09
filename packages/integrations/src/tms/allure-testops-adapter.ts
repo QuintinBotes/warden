@@ -6,6 +6,7 @@ import type {
   TmsTestRef,
   TmsTestUpsert,
 } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 import { defaultFetch, requestJson, type FetchLike } from '../fetch-like.js';
 import { mapResultStatus } from './result-status.js';
 
@@ -53,7 +54,7 @@ export class AllureTestOpsAdapter implements TestManagementSync {
   constructor(opts: AllureTestOpsAdapterOptions) {
     this.token = opts.token;
     this.project = opts.project;
-    this.apiUrl = opts.apiUrl.replace(/\/+$/, '');
+    this.apiUrl = stripTrailingSlashes(opts.apiUrl);
     this.fetchImpl = opts.fetchImpl ?? defaultFetch();
   }
 

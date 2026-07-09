@@ -6,7 +6,7 @@ import type {
   TmsTestRef,
   TmsTestUpsert,
 } from '@warden/core';
-import { WardenError } from '@warden/core';
+import { WardenError, stripTrailingSlashes } from '@warden/core';
 import { defaultFetch, requestJson, type FetchLike } from '../fetch-like.js';
 import { mapResultStatus } from './result-status.js';
 
@@ -52,7 +52,7 @@ export class XrayAdapter implements TestManagementSync {
   constructor(opts: XrayAdapterOptions) {
     this.token = opts.token;
     this.project = opts.project;
-    this.apiUrl = (opts.apiUrl ?? 'https://xray.cloud.getxray.app').replace(/\/+$/, '');
+    this.apiUrl = stripTrailingSlashes(opts.apiUrl ?? 'https://xray.cloud.getxray.app');
     this.fetchImpl = opts.fetchImpl ?? defaultFetch();
   }
 

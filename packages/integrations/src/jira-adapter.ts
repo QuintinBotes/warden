@@ -1,4 +1,9 @@
-import { type CoverageStatus, type IntegrationAdapter, type Requirement } from '@warden/core';
+import {
+  type CoverageStatus,
+  type IntegrationAdapter,
+  type Requirement,
+  stripTrailingSlashes,
+} from '@warden/core';
 import { defaultFetch, requestJson, type FetchLike } from './fetch-like.js';
 import { mapLabelsToRequirementType, mapStateNameToCoverageStatus } from './status-mapping.js';
 
@@ -37,7 +42,7 @@ export class JiraAdapter implements IntegrationAdapter {
 
   constructor(opts: JiraAdapterOptions) {
     this.token = opts.token;
-    this.baseUrl = opts.baseUrl.replace(/\/+$/, '');
+    this.baseUrl = stripTrailingSlashes(opts.baseUrl);
     this.fetchImpl = opts.fetchImpl ?? defaultFetch();
     this.jql = opts.jql ?? 'order by created DESC';
   }

@@ -1,4 +1,5 @@
 import type { GitHubAccess, PrRef, Recommendation, RepoTarget } from '@warden/core';
+import { slugify } from '@warden/core';
 
 /** Result of publishing recommendations: one entry per external draft PR + self-suggestion count. */
 export interface PublishResult {
@@ -8,10 +9,7 @@ export interface PublishResult {
 
 /** Slugify a repo target into a branch-safe token: `org/e2e-tests` -> `org-e2e-tests`. */
 export function slug(repo: RepoTarget): string {
-  return repo
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .toLowerCase();
+  return slugify(repo).toLowerCase();
 }
 
 /**

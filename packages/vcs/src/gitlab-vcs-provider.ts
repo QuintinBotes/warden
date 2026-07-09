@@ -8,6 +8,7 @@ import type {
   VcsPullRequest,
   VcsRepoRef,
 } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 import { requestJson, requestJsonOrNull, requestVoid, type FetchImpl } from './vcs-http.js';
 
 const ERROR_CODE = 'VCS_GITLAB_REQUEST_FAILED';
@@ -82,7 +83,7 @@ export class GitLabVcsProvider implements VcsProvider {
 
   constructor(opts: GitLabVcsProviderOptions) {
     this.token = opts.token;
-    this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
+    this.baseUrl = stripTrailingSlashes(opts.baseUrl ?? DEFAULT_BASE_URL);
     this.fetchImpl = opts.fetchImpl ?? (globalThis.fetch as FetchImpl);
     this.maxFiles = opts.maxFiles ?? DEFAULT_MAX_FILES;
   }

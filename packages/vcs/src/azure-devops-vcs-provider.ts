@@ -8,7 +8,7 @@ import type {
   VcsPullRequest,
   VcsRepoRef,
 } from '@warden/core';
-import { WardenError } from '@warden/core';
+import { WardenError, stripTrailingSlashes } from '@warden/core';
 import { requestJson, requestJsonOrNull, requestVoid, type FetchImpl } from './vcs-http.js';
 
 const ERROR_CODE = 'VCS_AZURE_DEVOPS_REQUEST_FAILED';
@@ -83,7 +83,7 @@ export class AzureDevOpsVcsProvider implements VcsProvider {
 
   constructor(opts: AzureDevOpsVcsProviderOptions) {
     this.token = opts.token;
-    this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
+    this.baseUrl = stripTrailingSlashes(opts.baseUrl ?? DEFAULT_BASE_URL);
     this.apiVersion = opts.apiVersion ?? DEFAULT_API_VERSION;
     this.fetchImpl = opts.fetchImpl ?? (globalThis.fetch as FetchImpl);
   }

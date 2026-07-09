@@ -1,4 +1,5 @@
 import type { GridCapability } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 import type { WebdriverLike, WebdriverElementLike } from './appium';
 
 /**
@@ -57,7 +58,7 @@ export function createGridWebdriver(
   capability: GridCapability,
   http: GridWebdriverHttp,
 ): WebdriverLike {
-  const base = endpoint.replace(/\/+$/, '');
+  const base = stripTrailingSlashes(endpoint);
   let sessionId: string | undefined;
 
   async function ensureSession(): Promise<string> {

@@ -55,13 +55,53 @@ export interface HandleOverrideCommentDeps {
   reply: (loc: { owner: string; repo: string; number: number }, message: string) => Promise<void>;
 }
 
-/** `/warden override <reason>` or `/warden override: <reason>`, case-insensitive, anywhere in the body. */
-const OVERRIDE_COMMAND = /^\s*\/warden\s+override:?\s+(.+?)\s*$/im;
+const WHITESPACE = /\s/;
 
-/** Extract the override reason from a comment body, or `null` if it is not an override command. */
+/** True when `line[at..]` starts with `token`, compared case-insensitively. */
+function startsWithCaseInsensitive(line: string, at: number, token: string): boolean {
+  if (line.length - at < token.length) return false;
+  return line.slice(at, at + token.length).toLowerCase() === token.toLowerCase();
+}
+
+/**
+ * Match `\s*\/warden\s+override:?\s+(.+)\s*` against a single line (no backtracking — a single
+ * linear scan). Returns the trimmed reason, or `null` when the line is not an override command.
+ */
+function matchOverrideLine(line: string): string | null {
+  const len = line.length;
+  let i = 0;
+  while (i < len && WHITESPACE.test(line.charAt(i))) i++;
+
+  if (!startsWithCaseInsensitive(line, i, '/warden')) return null;
+  i += '/warden'.length;
+
+  const wardenWsStart = i;
+  while (i < len && WHITESPACE.test(line.charAt(i))) i++;
+  if (i === wardenWsStart) return null;
+
+  if (!startsWithCaseInsensitive(line, i, 'override')) return null;
+  i += 'override'.length;
+
+  if (i < len && line.charAt(i) === ':') i++;
+
+  const reasonWsStart = i;
+  while (i < len && WHITESPACE.test(line.charAt(i))) i++;
+  if (i === reasonWsStart || i >= len) return null;
+
+  let end = len;
+  while (end > i && WHITESPACE.test(line.charAt(end - 1))) end--;
+  if (end <= i) return null;
+
+  return line.slice(i, end);
+}
+
+/** `/warden override <reason>` or `/warden override: <reason>`, case-insensitive, anywhere in the body. */
 export function parseOverrideCommand(body: string): string | null {
-  const match = OVERRIDE_COMMAND.exec(body);
-  return match && match[1] ? match[1].trim() : null;
+  for (const line of body.split(/\r\n|\r|\n/)) {
+    const reason = matchOverrideLine(line);
+    if (reason) return reason;
+  }
+  return null;
 }
 
 /**

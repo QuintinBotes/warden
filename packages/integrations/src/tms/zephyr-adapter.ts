@@ -7,6 +7,7 @@ import type {
   TmsTestRef,
   TmsTestUpsert,
 } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 import { defaultFetch, requestJson, type FetchLike } from '../fetch-like.js';
 import { mapResultStatus } from './result-status.js';
 
@@ -60,7 +61,7 @@ export class ZephyrAdapter implements TestManagementSync {
   constructor(opts: ZephyrAdapterOptions) {
     this.token = opts.token;
     this.project = opts.project;
-    this.apiUrl = (opts.apiUrl ?? 'https://api.zephyrscale.smartbear.com/v2').replace(/\/+$/, '');
+    this.apiUrl = stripTrailingSlashes(opts.apiUrl ?? 'https://api.zephyrscale.smartbear.com/v2');
     this.fetchImpl = opts.fetchImpl ?? defaultFetch();
   }
 

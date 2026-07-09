@@ -1,4 +1,4 @@
-import { contentId } from '@warden/core';
+import { contentId, slugify } from '@warden/core';
 
 /**
  * `RunNamespace` — derives a short, deterministic, collision-safe namespace used to prefix/suffix
@@ -16,14 +16,8 @@ export interface NamespaceInput {
   shardId?: string | number;
 }
 
-const NON_ALNUM = /[^a-z0-9]+/g;
-
 function slug(part: string, max: number): string {
-  return part
-    .toLowerCase()
-    .replace(NON_ALNUM, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, max);
+  return slugify(part.toLowerCase()).slice(0, max);
 }
 
 /**
