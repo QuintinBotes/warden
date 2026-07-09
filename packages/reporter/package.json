@@ -1,6 +1,6 @@
 {
   "name": "@warden/reporter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Warden reporter — CTRF, GitHub Job Summary, PR comment, and Check-Run annotation surfaces",
   "license": "MIT",
   "type": "module",

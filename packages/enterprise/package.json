@@ -1,6 +1,6 @@
 {
   "name": "@warden/enterprise",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Warden enterprise readiness — OIDC auth, RBAC, append-only audit, per-tenant isolation for hosted surfaces",
   "license": "MIT",
   "type": "module",
