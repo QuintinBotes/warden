@@ -6,14 +6,20 @@
   "description": "Warden — open-source, AI-native QA platform",
   "license": "MIT",
   "packageManager": "pnpm@10.14.0",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "better-sqlite3"],
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "better-sqlite3"
+    ],
     "overrides": {
       "undici": ">=6.27.0",
       "postcss": ">=8.5.10",
       "esbuild": ">=0.28.1",
-      "tar": ">=7.5.16"
+      "tar": ">=7.5.16",
+      "@opentelemetry/core": ">=2.8.0"
     }
   },
   "scripts": {
