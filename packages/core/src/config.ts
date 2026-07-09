@@ -505,6 +505,19 @@ export const WardenConfigSchema = z.object({
         .default({}),
     })
     .default({}),
+  // Test Impact Analysis (TIA) (additive; defaulted OFF so zero-config repos are unaffected).
+  // When enabled with a coverage index present, a PR's default run is narrowed to exactly the
+  // tests whose covered files intersect the diff. An uncovered changed file trips the
+  // `onUncovered` safety net (`run-all` | `run-tagged` | `warn`) so a brand-new file is never
+  // silently skipped; risk-based full-suite escalation still applies on top. See
+  // docs/proposals/2026-07-09-tier-3-roadmap.md §1.
+  impact: z
+    .object({
+      enabled: z.boolean().default(false),
+      indexPath: z.string().default('warden-coverage-index.json'),
+      onUncovered: z.enum(['run-all', 'run-tagged', 'warn']).default('run-all'),
+    })
+    .default({}),
   plugins: z.array(z.custom<QAPlatformPlugin>()).default([]),
 });
 
