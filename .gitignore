@@ -1,6 +1,10 @@
 # dependencies & build output
 node_modules/
 dist/
+# Exception: the GitHub Action is consumed from a checkout with no node_modules, so its
+# self-contained bundle MUST be committed (a CI job keeps it in sync with source).
+!packages/github-action/dist/
+!packages/github-action/dist/**
 .turbo/
 .next/
 out/
