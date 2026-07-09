@@ -10,10 +10,12 @@ Design proposals (RFCs) for Warden capabilities. Each is a self-contained spec: 
 
 A competitive gap analysis turned into a buildable roadmap.
 
+> **Status: shipped.** All thirteen capabilities below are implemented and merged (Tier-1 + Tier-2). Each spec stays here as the design record for the code that now exists.
+
 - **[Competitive gap analysis](2026-07-08-warden-next-competitive-gaps.md)** — what comparable products have that Warden lacks (the _why_), prioritized must-have → differentiator → nice-to-have.
 - **[The integrated flow](2026-07-08-warden-next-integrated-flow.md)** — the umbrella: how all the capabilities below compose into one PR-processing pipeline (the _how_). **Read this first.**
 
-### Capability specs
+### Capability specs (all ✅ shipped)
 
 | Spec                                                            | Tier               | Package / seam                      |
 | --------------------------------------------------------------- | ------------------ | ----------------------------------- |

@@ -34,4 +34,9 @@ export type TestTier = 'smoke' | 'selective' | 'fullRegression' | 'aiExploratory
 export interface GateDecision {
   decision: 'PASS' | 'WARN' | 'BLOCK';
   reason: string;
+  // ── Enterprise gate-override trail (additive; all optional, so every existing reader is
+  //    unaffected — a self-hosted decision simply never sets these). ──────────────────────
+  overridden?: boolean;
+  overriddenBy?: string; // Principal.subject
+  overrideReason?: string;
 }

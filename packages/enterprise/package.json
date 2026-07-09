@@ -1,7 +1,7 @@
 {
-  "name": "@warden/github-app",
+  "name": "@warden/enterprise",
   "version": "0.1.0",
-  "description": "Warden GitHub App — cross-repo coverage sync on pull requests",
+  "description": "Warden enterprise readiness — OIDC auth, RBAC, append-only audit, per-tenant isolation for hosted surfaces",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -21,18 +21,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@octokit/app": "^15.1.1",
-    "@octokit/rest": "^21.0.2",
-    "@octokit/webhooks": "^13.4.1",
-    "@warden/agent": "workspace:*",
     "@warden/core": "workspace:*",
-    "@warden/coverage-sync": "workspace:*",
-    "@warden/enterprise": "workspace:*",
-    "@warden/orchestrator": "workspace:*",
-    "zod": "^3.24.1"
+    "@warden/test-management": "workspace:*",
+    "better-sqlite3": "^11.7.0",
+    "jose": "^5.9.6"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
+    "@types/better-sqlite3": "^7.6.12",
     "tsup": "^8.3.5",
     "typescript": "^5.6.3"
   }
