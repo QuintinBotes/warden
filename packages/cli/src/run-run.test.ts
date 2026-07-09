@@ -53,6 +53,71 @@ describe('runRun', () => {
     await fs.rm(artifactsDir, { recursive: true, force: true });
   });
 
+  it('folds the a11y tier gate worst-of into the final gate and writes its CTRF', async () => {
+    const passing: CTRFReport = {
+      results: {
+        tool: { name: 'playwright' },
+        summary: {
+          tests: 1,
+          passed: 1,
+          failed: 0,
+          skipped: 0,
+          pending: 0,
+          other: 0,
+          start: 0,
+          stop: 1,
+        },
+        tests: [{ name: 'smoke: home ok', status: 'passed', duration: 10 }],
+      },
+    };
+    const result = await runRun(
+      { artifactsDir },
+      {
+        config: defineConfig({
+          a11y: {
+            enabled: true,
+            routes: [{ pathPrefix: 'apps/checkout/', urlPattern: '/checkout/*' }],
+          },
+        }),
+        runTests: async () => passing,
+        reporters: [],
+        qualityAudits: {
+          changeSurface: {
+            changedFiles: ['apps/checkout/app/page.tsx'],
+            changedModules: [],
+            testTags: [],
+            riskScore: 0,
+            selectedTiers: [],
+          } as never,
+          baseUrl: 'https://preview.example.com',
+          a11yAudit: async () => ({
+            results: [],
+            report: {
+              results: {
+                tool: { name: 'warden-a11y' },
+                summary: {
+                  tests: 1,
+                  passed: 0,
+                  failed: 1,
+                  skipped: 0,
+                  pending: 0,
+                  other: 0,
+                  start: 0,
+                  stop: 1,
+                },
+                tests: [{ name: 'a11y: color-contrast', status: 'failed', duration: 1 }],
+              },
+            } as never,
+            gate: { decision: 'BLOCK', reason: 'axe found a critical violation' },
+          }),
+        },
+      },
+    );
+    expect(result.gate.decision).toBe('BLOCK');
+    const written = await fs.readFile(path.join(artifactsDir, 'a11y-report.json'), 'utf-8');
+    expect(written).toContain('warden-a11y');
+  });
+
   it('wires the injected runner, writes the CTRF file, and invokes injected reporters', async () => {
     const report = fixtureCtrf();
     const calls: Array<{ grep?: string; cwd?: string }> = [];

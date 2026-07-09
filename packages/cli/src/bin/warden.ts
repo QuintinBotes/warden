@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { loadConfig, type StrategyName } from '@warden/core';
+import { analyzeChangeSurface } from '@warden/orchestrator';
 import {
   createFetchOctokit,
   createVcsProviderFromEnv,
@@ -54,18 +55,48 @@ program
     'directory to write the CTRF report + artifacts to',
     'warden-artifacts',
   )
-  .action(async (opts: { grep?: string; cwd?: string; artifactsDir: string }) => {
-    try {
-      const result = await runRun({
-        grep: opts.grep,
-        cwd: opts.cwd,
-        artifactsDir: opts.artifactsDir,
-      });
-      process.stdout.write(`wrote CTRF report to ${result.ctrfPath}\n`);
-    } catch (err) {
-      fail(err);
-    }
-  });
+  .option(
+    '--base-url <url>',
+    'preview/staging URL for the route-scoped a11y + performance-budget tiers (or $WARDEN_BASE_URL)',
+  )
+  .option(
+    '--base <sha>',
+    'base git ref/sha — enables the a11y/perf tiers to scope to changed routes',
+  )
+  .option('--head <sha>', 'head git ref/sha for the change-surface diff')
+  .action(
+    async (opts: {
+      grep?: string;
+      cwd?: string;
+      artifactsDir: string;
+      baseUrl?: string;
+      base?: string;
+      head?: string;
+    }) => {
+      try {
+        const cwd = opts.cwd ?? process.cwd();
+        const baseUrl = opts.baseUrl ?? process.env.WARDEN_BASE_URL;
+        const deps: Parameters<typeof runRun>[1] = {};
+        // Wire the accessibility + performance-budget tiers when they're enabled and we have both a
+        // deployment to hit and a diff to scope routes from. Otherwise `run` behaves exactly as before.
+        if (baseUrl && opts.base && opts.head) {
+          const cfg = await loadConfig(cwd);
+          if (cfg.a11y.enabled || cfg.performance.browser.enabled) {
+            const changeSurface = await analyzeChangeSurface(opts.base, opts.head, cfg, cwd);
+            deps.config = cfg;
+            deps.qualityAudits = { changeSurface, baseUrl };
+          }
+        }
+        const result = await runRun(
+          { grep: opts.grep, cwd: opts.cwd, artifactsDir: opts.artifactsDir },
+          deps,
+        );
+        process.stdout.write(`wrote CTRF report to ${result.ctrfPath}\n`);
+      } catch (err) {
+        fail(err);
+      }
+    },
+  );
 
 program
   .command('agent')
