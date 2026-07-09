@@ -109,7 +109,13 @@ export function createWebhookServer(opts: WebhookServerOptions): Server {
     });
   });
 
-  const middleware = createNodeMiddleware(app.webhooks, { path: webhookPath });
+  // `@octokit/app` carries its own (older) `Webhooks` type whose context differs from the
+  // top-level `@octokit/webhooks` v14 that `createNodeMiddleware` expects — a type-only variance
+  // (the instance is the same at runtime), so cast to the middleware's exact parameter type.
+  const middleware = createNodeMiddleware(
+    app.webhooks as unknown as Parameters<typeof createNodeMiddleware>[0],
+    { path: webhookPath },
+  );
 
   return createServer(async (req: IncomingMessage, res: ServerResponse) => {
     if (req.method === 'GET' && req.url === '/healthz') {
