@@ -1,6 +1,6 @@
 {
   "name": "@warden/dashboard-api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Warden dashboard data API — DashboardDataApi over the SQLite store and metrics",
   "license": "MIT",
   "type": "module",
