@@ -28,5 +28,6 @@ export * from './grid';
 export * from './test-management-sync';
 export * from './vcs';
 export * from './cuj';
+export * from './impact';
 export * from './traffic';
 export * from './auth';

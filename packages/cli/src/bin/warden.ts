@@ -2,7 +2,9 @@
 import { Command } from 'commander';
 import { loadConfig, type StrategyName } from '@warden/core';
 import { analyzeChangeSurface } from '@warden/orchestrator';
+import { readFile } from 'node:fs/promises';
 import { load as parseYaml } from 'js-yaml';
+import { loadCoverageIndex, selectWithImpact } from '@warden/impact';
 import { fsCujSource } from '../cuj-gate.js';
 import {
   createFetchOctokit,
@@ -66,6 +68,10 @@ program
     'base git ref/sha — enables the a11y/perf tiers to scope to changed routes',
   )
   .option('--head <sha>', 'head git ref/sha for the change-surface diff')
+  .option(
+    '--impact-index <path>',
+    'coverage index JSON — narrows the run to the tests the diff impacts (needs --base/--head)',
+  )
   .action(
     async (opts: {
       grep?: string;
@@ -74,11 +80,13 @@ program
       baseUrl?: string;
       base?: string;
       head?: string;
+      impactIndex?: string;
     }) => {
       try {
         const cwd = opts.cwd ?? process.cwd();
         const baseUrl = opts.baseUrl ?? process.env.WARDEN_BASE_URL;
         const deps: Parameters<typeof runRun>[1] = {};
+        let grep = opts.grep;
         // Wire the route-scoped a11y/perf tiers and the CUJ-scoped gate when they're enabled and we
         // have a diff to scope from. Both reuse one computed change surface; the a11y/perf tiers also
         // need a deployment URL. Without a diff (--base/--head), `run` behaves exactly as before.
@@ -87,7 +95,8 @@ program
           const needQuality =
             Boolean(baseUrl) && (cfg.a11y.enabled || cfg.performance.browser.enabled);
           const needCuj = cfg.cuj.enabled;
-          if (needQuality || needCuj) {
+          const needImpact = Boolean(opts.impactIndex) && cfg.impact.enabled;
+          if (needQuality || needCuj || needImpact) {
             const changeSurface = await analyzeChangeSurface(opts.base, opts.head, cfg, cwd);
             deps.config = cfg;
             if (needQuality && baseUrl) {
@@ -101,12 +110,17 @@ program
                 parse: parseYaml,
               };
             }
+            // Test impact analysis: narrow --grep to only the tests the diff impacts.
+            if (needImpact && opts.impactIndex) {
+              const raw = await readFile(opts.impactIndex, 'utf-8').catch(() => null);
+              if (raw) {
+                const sel = selectWithImpact(changeSurface, loadCoverageIndex(raw), cfg);
+                if (!sel.runAll && sel.grep) grep = sel.grep;
+              }
+            }
           }
         }
-        const result = await runRun(
-          { grep: opts.grep, cwd: opts.cwd, artifactsDir: opts.artifactsDir },
-          deps,
-        );
+        const result = await runRun({ grep, cwd: opts.cwd, artifactsDir: opts.artifactsDir }, deps);
         process.stdout.write(`wrote CTRF report to ${result.ctrfPath}\n`);
       } catch (err) {
         fail(err);
