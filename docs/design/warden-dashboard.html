@@ -308,6 +308,107 @@
         </div>
       </div>
     </section>
+
+    <!-- journeys + visual regression -->
+    <div class="cols">
+      <section class="panel">
+        <div class="hd"><h2>Critical User Journeys</h2><span class="eyebrow">2 touched by this change</span></div>
+        <div class="bd rows">
+          <div class="row" style="cursor:default">
+            <div><div class="nm">Guest checkout</div>
+              <div class="tags"><span class="tag">Payments</span><span class="tag" style="color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)">touched by PR</span><span class="tag">86% · 14 tests</span></div></div>
+            <span style="display:flex;gap:.28rem;align-items:center"><span style="width:8px;height:8px;border-radius:50%;background:var(--pass)" title="View cart"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--pass)" title="Enter address"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--flaky)" title="Pay: degraded"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--pass)" title="Confirmation"></span></span>
+            <span class="pill flaky"><span class="dt"></span>DEGRADED</span>
+          </div>
+          <div class="row" style="cursor:default">
+            <div><div class="nm">Sign-in with MFA</div>
+              <div class="tags"><span class="tag">Identity</span><span class="tag">100% · 9 tests</span></div></div>
+            <span style="display:flex;gap:.28rem;align-items:center"><span style="width:8px;height:8px;border-radius:50%;background:var(--pass)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--pass)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--pass)"></span></span>
+            <span class="pill pass"><span class="dt"></span>HEALTHY</span>
+          </div>
+          <div class="row" style="cursor:default">
+            <div><div class="nm">Start a subscription</div>
+              <div class="tags"><span class="tag">Growth</span><span class="tag" style="color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)">touched by PR</span><span class="tag">91% · 11 tests</span></div></div>
+            <span style="display:flex;gap:.28rem;align-items:center"><span style="width:8px;height:8px;border-radius:50%;background:var(--pass)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--flaky)" title="Add payment: at risk"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--pass)"></span></span>
+            <span class="pill flaky"><span class="dt"></span>AT RISK</span>
+          </div>
+          <div class="row" style="cursor:default">
+            <div><div class="nm">Request a refund</div>
+              <div class="tags"><span class="tag">Support</span><span class="tag">50% · 6 tests</span></div></div>
+            <span style="display:flex;gap:.28rem;align-items:center"><span style="width:8px;height:8px;border-radius:50%;background:var(--pass)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--fail)" title="Submit refund: broken"></span></span>
+            <span class="pill fail"><span class="dt"></span>BROKEN</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="hd"><h2>Visual Regression</h2><span class="eyebrow">1 diff to review</span></div>
+        <div class="bd rows">
+          <div class="row" style="cursor:default">
+            <div><div class="nm">apps/checkout</div>
+              <div class="tags"><span class="tag">desktop</span><span class="tag">light</span><span class="tag">8% changed</span></div></div>
+            <span class="pill fail"><span class="dt"></span>VISUAL DIFF</span>
+            <button class="chip" type="button" disabled style="opacity:.7;cursor:not-allowed">Approve</button>
+          </div>
+          <div class="row" style="cursor:default">
+            <div><div class="nm">apps/checkout</div>
+              <div class="tags"><span class="tag">mobile</span><span class="tag">light</span></div></div>
+            <span class="pill pass"><span class="dt"></span>MATCH</span>
+            <span class="dur">✓</span>
+          </div>
+          <div class="row" style="cursor:default">
+            <div><div class="nm">apps/account</div>
+              <div class="tags"><span class="tag">desktop</span><span class="tag">dark</span><span class="tag">first capture</span></div></div>
+            <span class="pill flaky"><span class="dt"></span>NEW BASELINE</span>
+            <button class="chip" type="button" disabled style="opacity:.7;cursor:not-allowed">Approve</button>
+          </div>
+          <div class="row" style="cursor:default">
+            <div><div class="nm">apps/marketing</div>
+              <div class="tags"><span class="tag">desktop</span><span class="tag">light</span></div></div>
+            <span class="pill pass"><span class="dt"></span>MATCH</span>
+            <span class="dur">✓</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- flake intelligence -->
+    <section class="panel">
+      <div class="hd"><h2>Flake Intelligence</h2><span class="eyebrow">rate over time · top offenders by impact</span></div>
+      <div class="bd" style="padding:1rem">
+        <div style="display:flex;gap:1.6rem;flex-wrap:wrap;align-items:flex-start">
+          <div style="display:flex;flex-direction:column;gap:.45rem">
+            <svg viewBox="0 0 260 44" style="width:260px;height:44px" role="img" aria-label="Flake rate trend, latest 2.1%">
+              <polyline points="0,6.3 43.3,11.6 86.6,4 130,16.2 173.2,20.8 216.5,24.3 260,27.8" fill="none" stroke="var(--flaky)" stroke-width="2"/>
+              <circle cx="260" cy="27.8" r="3" fill="var(--flaky)"/>
+            </svg>
+            <span class="eyebrow" style="letter-spacing:.04em;text-transform:none">flake rate — latest <b style="color:var(--flaky)">2.1%</b>, down from 5.8%</span>
+          </div>
+          <div class="rows" style="flex:1;min-width:17rem">
+            <div class="row" style="cursor:default">
+              <div><div class="nm">checkout applies coupon</div><div class="tags"><span class="tag">selector</span></div></div>
+              <span class="pill flaky"><span class="dt"></span>34% flaky</span>
+              <span class="dur">9 re-runs · 12m</span>
+            </div>
+            <div class="row" style="cursor:default">
+              <div><div class="nm">search returns results</div><div class="tags"><span class="tag">timing</span></div></div>
+              <span class="pill flaky"><span class="dt"></span>22% flaky</span>
+              <span class="dur">6 re-runs · 7m</span>
+            </div>
+            <div class="row" style="cursor:default">
+              <div><div class="nm">profile avatar upload</div><div class="tags"><span class="tag">network</span></div></div>
+              <span class="pill flaky"><span class="dt"></span>18% flaky</span>
+              <span class="dur">4 re-runs · 5m</span>
+            </div>
+            <div class="row" style="cursor:default">
+              <div><div class="nm">orders list pagination</div><div class="tags"><span class="tag">data</span></div></div>
+              <span class="pill flaky"><span class="dt"></span>12% flaky</span>
+              <span class="dur">3 re-runs · 3m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer>Warden Dashboard · Sentinel · reads @warden/dashboard-api over the SQLite execution store · components from @warden/design-system</footer>
