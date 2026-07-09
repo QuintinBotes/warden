@@ -24,7 +24,7 @@
     "@warden/core": "workspace:*",
     "@warden/test-management": "workspace:*",
     "better-sqlite3": "^12.11.1",
-    "jose": "^5.9.6"
+    "jose": "^6.2.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
