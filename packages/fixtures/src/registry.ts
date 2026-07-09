@@ -96,6 +96,8 @@ function coerceDef(raw: unknown, source: string): FixtureDef {
 
 /** Parses one fixture YAML document (a single def or a list of defs) into `FixtureDef[]`. */
 export function parseFixtureDefs(content: string, source = '<inline>'): FixtureDef[] {
+  // js-yaml 5 throws on empty input (v4 returned undefined); treat empty/whitespace as no fixtures.
+  if (content.trim() === '') return [];
   let doc: unknown;
   try {
     doc = loadYaml(content);
