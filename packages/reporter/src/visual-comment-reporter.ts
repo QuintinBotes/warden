@@ -8,7 +8,7 @@ const SEVERITY_EMOJI: Record<VisualFinding['severity'], string> = {
 
 /** Escapes pipe/newline characters so arbitrary text is safe inside a Markdown table cell. */
 function escapeCell(value: string): string {
-  return value.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+  return value.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 }
 
 /** Renders `changedRatio` (0..1) as a percentage with two decimals. */

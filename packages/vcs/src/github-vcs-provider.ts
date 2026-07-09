@@ -8,6 +8,7 @@ import type {
   VcsPullRequest,
   VcsRepoRef,
 } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 import { requestJson, requestJsonOrNull, requestVoid, type FetchImpl } from './vcs-http.js';
 
 const ERROR_CODE = 'VCS_GITHUB_REQUEST_FAILED';
@@ -71,7 +72,7 @@ export class GitHubVcsProvider implements VcsProvider {
 
   constructor(opts: GitHubVcsProviderOptions) {
     this.token = opts.token;
-    this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
+    this.baseUrl = stripTrailingSlashes(opts.baseUrl ?? DEFAULT_BASE_URL);
     this.fetchImpl = opts.fetchImpl ?? (globalThis.fetch as FetchImpl);
     this.maxFiles = opts.maxFiles ?? DEFAULT_MAX_FILES;
   }

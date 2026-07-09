@@ -8,6 +8,7 @@ import type {
   TmsTestRef,
   TmsTestUpsert,
 } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 import { defaultFetch, requestJson, type FetchLike } from '../fetch-like.js';
 import { mapResultStatus } from './result-status.js';
 
@@ -81,7 +82,7 @@ export class TestomatioAdapter implements TestManagementSync {
   constructor(opts: TestomatioAdapterOptions) {
     this.token = opts.token;
     this.project = opts.project;
-    this.apiUrl = (opts.apiUrl ?? 'https://app.testomat.io').replace(/\/+$/, '');
+    this.apiUrl = stripTrailingSlashes(opts.apiUrl ?? 'https://app.testomat.io');
     this.fetchImpl = opts.fetchImpl ?? defaultFetch();
     this.resultChunkSize = opts.resultChunkSize ?? 100;
   }

@@ -1,12 +1,13 @@
-import type {
-  Logger,
-  VisualBaselineKey,
-  VisualBaselineStore,
-  VisualCheck,
-  VisualComparison,
-  VisualEngine,
-  VisualJudge,
-  WardenConfig,
+import {
+  slugify,
+  type Logger,
+  type VisualBaselineKey,
+  type VisualBaselineStore,
+  type VisualCheck,
+  type VisualComparison,
+  type VisualEngine,
+  type VisualJudge,
+  type WardenConfig,
 } from '@warden/core';
 import { pixelDiff } from './pixel-diff.js';
 
@@ -39,8 +40,7 @@ export function keyOf(check: VisualCheck): VisualBaselineKey {
 
 /** File-safe slug for a baseline key, used to name replay artifacts. */
 export function keySlug(key: VisualBaselineKey): string {
-  const clean = (s: string): string => s.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  return `${clean(key.module)}__${clean(key.viewport)}__${key.theme}`;
+  return `${slugify(key.module)}__${slugify(key.viewport)}__${key.theme}`;
 }
 
 /**

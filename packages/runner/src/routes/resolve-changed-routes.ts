@@ -21,7 +21,7 @@ export interface ResolveChangedRoutesResult {
 }
 
 function substitute(urlPattern: string, remainder: string): string {
-  return urlPattern.includes('*') ? urlPattern.replace('*', remainder) : urlPattern;
+  return urlPattern.includes('*') ? urlPattern.replaceAll('*', () => remainder) : urlPattern;
 }
 
 function resolveAgainstBase(path: string, baseUrl: string): string {
