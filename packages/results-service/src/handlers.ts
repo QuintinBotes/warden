@@ -9,6 +9,13 @@ export interface HandlerResult {
   body: unknown;
 }
 
+/** Strip trailing slashes in linear time (a regex like `/\/+$/` can backtrack on hostile input). */
+function stripTrailingSlashes(s: string): string {
+  let end = s.length;
+  while (end > 0 && s.charCodeAt(end - 1) === 47 /* '/' */) end--;
+  return s.slice(0, end);
+}
+
 /** Everything the handlers need, all injected — a facade, a signer, a clock, and config. */
 export interface HandlerDeps {
   facade: ResultsFacade;
@@ -34,7 +41,7 @@ export async function getRunHandler(deps: HandlerDeps, id: string): Promise<Hand
 /** `POST /api/runs/:id/share` — mint a public share link for the run. */
 export function createShareHandler(deps: HandlerDeps, id: string): HandlerResult {
   const token = mintShareToken(id, deps.signer, deps.now(), deps.cfg.resultsService.tokenTtlSec);
-  const base = deps.cfg.resultsService.publicBaseUrl.replace(/\/+$/, '');
+  const base = stripTrailingSlashes(deps.cfg.resultsService.publicBaseUrl);
   return { status: 201, body: { url: `${base}/share/${token}` } };
 }
 
