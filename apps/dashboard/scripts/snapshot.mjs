@@ -422,6 +422,147 @@ async function main() {
       },
     ];
 
+    // Critical User Journeys — presentational sample (shape mirrors @warden/cuj CujHealthReport).
+    const cujBoard = [
+      {
+        id: 'cuj-guest-checkout',
+        name: 'Guest checkout',
+        status: 'DEGRADED',
+        team: 'Payments',
+        testCount: 14,
+        passRate: 0.86,
+        touched: true,
+        steps: [
+          { name: 'View cart', status: 'HEALTHY' },
+          { name: 'Enter address', status: 'HEALTHY' },
+          { name: 'Pay', status: 'DEGRADED' },
+          { name: 'Confirmation', status: 'HEALTHY' },
+        ],
+      },
+      {
+        id: 'cuj-signin-mfa',
+        name: 'Sign-in with MFA',
+        status: 'HEALTHY',
+        team: 'Identity',
+        testCount: 9,
+        passRate: 1,
+        touched: false,
+        steps: [
+          { name: 'Email + password', status: 'HEALTHY' },
+          { name: 'One-time code', status: 'HEALTHY' },
+          { name: 'Land on home', status: 'HEALTHY' },
+        ],
+      },
+      {
+        id: 'cuj-subscribe',
+        name: 'Start a subscription',
+        status: 'AT_RISK',
+        team: 'Growth',
+        testCount: 11,
+        passRate: 0.91,
+        touched: true,
+        steps: [
+          { name: 'Choose plan', status: 'HEALTHY' },
+          { name: 'Add payment', status: 'AT_RISK' },
+          { name: 'Activate', status: 'HEALTHY' },
+        ],
+      },
+      {
+        id: 'cuj-refund',
+        name: 'Request a refund',
+        status: 'BROKEN',
+        team: 'Support',
+        testCount: 6,
+        passRate: 0.5,
+        touched: false,
+        steps: [
+          { name: 'Open order', status: 'HEALTHY' },
+          { name: 'Submit refund', status: 'BROKEN' },
+        ],
+      },
+    ];
+
+    // Visual regression — presentational sample (shape mirrors @warden/core VisualComparison).
+    const visual = [
+      {
+        id: 'vis-checkout-desktop',
+        module: 'apps/checkout',
+        viewport: 'desktop',
+        theme: 'light',
+        status: 'VISUAL_DIFF',
+        changedRatio: 0.081,
+        rationale: 'Pay button shifted 12px and changed colour — likely a real regression',
+      },
+      {
+        id: 'vis-checkout-mobile',
+        module: 'apps/checkout',
+        viewport: 'mobile',
+        theme: 'light',
+        status: 'MATCH',
+        changedRatio: 0.0004,
+      },
+      {
+        id: 'vis-account-dark',
+        module: 'apps/account',
+        viewport: 'desktop',
+        theme: 'dark',
+        status: 'NEW_BASELINE',
+        changedRatio: 0,
+        rationale: 'First capture for this check — approve to set the baseline',
+      },
+      {
+        id: 'vis-home-desktop',
+        module: 'apps/marketing',
+        viewport: 'desktop',
+        theme: 'light',
+        status: 'MATCH',
+        changedRatio: 0.002,
+      },
+    ];
+
+    // Flake intelligence — presentational sample (shape mirrors FlakeTrendPoint + FlakeBoardEntry).
+    const flakeTrend = {
+      points: [
+        { at: '6w', flakeRate: 0.058, newlyFlagged: 3, deflaked: 0 },
+        { at: '5w', flakeRate: 0.049, newlyFlagged: 1, deflaked: 2 },
+        { at: '4w', flakeRate: 0.062, newlyFlagged: 4, deflaked: 1 },
+        { at: '3w', flakeRate: 0.041, newlyFlagged: 0, deflaked: 3 },
+        { at: '2w', flakeRate: 0.033, newlyFlagged: 1, deflaked: 2 },
+        { at: '1w', flakeRate: 0.027, newlyFlagged: 1, deflaked: 2 },
+        { at: 'now', flakeRate: 0.021, newlyFlagged: 0, deflaked: 1 },
+      ],
+      topOffenders: [
+        {
+          testName: 'checkout applies coupon',
+          flakeRate: 0.34,
+          rootCause: 'selector',
+          reRunsCaused: 9,
+          ciMinutesLost: 12,
+        },
+        {
+          testName: 'search returns results',
+          flakeRate: 0.22,
+          rootCause: 'timing',
+          reRunsCaused: 6,
+          ciMinutesLost: 7,
+        },
+        {
+          testName: 'profile avatar upload',
+          flakeRate: 0.18,
+          rootCause: 'network',
+          reRunsCaused: 4,
+          ciMinutesLost: 5,
+        },
+        {
+          testName: 'orders list pagination',
+          flakeRate: 0.12,
+          rootCause: 'data',
+          reRunsCaused: 3,
+          ciMinutesLost: 3,
+        },
+      ],
+    };
+
     const snapshot = {
       generatedAt: new Date().toISOString(),
       run: {
@@ -440,6 +581,9 @@ async function main() {
       flake: flakeBoard,
       learning,
       coverageSync,
+      cujBoard,
+      visual,
+      flakeTrend,
     };
 
     mkdirSync(OUT_DIR, { recursive: true });

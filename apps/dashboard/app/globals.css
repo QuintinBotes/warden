@@ -521,3 +521,179 @@ body {
   align-items: center;
   gap: 0.5rem;
 }
+
+/* ── Journeys · Visual regression · Flake intelligence ─────────────────── */
+.wd-sev--HEALTHY {
+  --sev: var(--pass);
+}
+.wd-sev--DEGRADED,
+.wd-sev--AT_RISK {
+  --sev: var(--flaky);
+}
+.wd-sev--BROKEN {
+  --sev: var(--fail);
+}
+.wd-vis--MATCH {
+  --sev: var(--pass);
+}
+.wd-vis--VISUAL_DIFF {
+  --sev: var(--fail);
+}
+.wd-vis--NEW_BASELINE {
+  --sev: var(--flaky);
+}
+
+.wd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--sev, var(--ink1));
+  background: color-mix(in srgb, var(--sev, var(--ink1)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sev, var(--ink1)) 30%, transparent);
+}
+.wd-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.wd-cuj-item,
+.wd-visual-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--hair);
+}
+.wd-cuj-item:first-child,
+.wd-visual-item:first-child {
+  border-top: 0;
+}
+.wd-cuj-head,
+.wd-visual-id {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 12rem;
+}
+.wd-cuj-name,
+.wd-visual-module {
+  font-weight: 600;
+}
+.wd-cuj-team,
+.wd-visual-ctx {
+  font-size: 0.78rem;
+  color: var(--ink2);
+}
+.wd-cuj-touched {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+}
+.wd-cuj-steps {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+.wd-cuj-step {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--sev, var(--ink2));
+}
+.wd-cuj-meta,
+.wd-visual-ratio {
+  font-size: 0.8rem;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.wd-cuj-meta {
+  margin-left: auto;
+}
+.wd-visual-why {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--ink2);
+}
+.wd-visual-ok {
+  color: var(--pass);
+  font-weight: 700;
+}
+.wd-chip-btn {
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--hair);
+  background: transparent;
+  color: var(--ink2);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.wd-chip-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.wd-flakeint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+.wd-flakeint-trend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.wd-spark {
+  width: 260px;
+  height: 44px;
+}
+.wd-flakeint-legend {
+  font-size: 0.78rem;
+  color: var(--ink2);
+}
+.wd-offenders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 18rem;
+}
+.wd-offender {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--hair);
+}
+.wd-offender:first-child {
+  border-top: 0;
+}
+.wd-offender-name {
+  font-weight: 500;
+}
+.wd-offender-cause {
+  font-size: 0.72rem;
+  color: var(--ink2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.wd-offender-cost {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--ink2);
+  white-space: nowrap;
+}
