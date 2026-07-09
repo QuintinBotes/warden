@@ -1,6 +1,6 @@
 {
   "name": "@warden/fixtures",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Warden test-data management — declarative, namespaced seed/teardown via SQL, API, or Testcontainers",
   "license": "MIT",
   "type": "module",

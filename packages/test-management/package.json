@@ -1,6 +1,6 @@
 {
   "name": "@warden/test-management",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Warden test management — SQLite execution history, Git-YAML test cases, coverage matrix, flake quarantine",
   "license": "MIT",
   "type": "module",

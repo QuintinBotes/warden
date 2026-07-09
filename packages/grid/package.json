@@ -1,6 +1,6 @@
 {
   "name": "@warden/grid",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Warden device cloud grid — GridProvider adapters (local/BrowserStack/Sauce/LambdaTest) + shard planner",
   "license": "MIT",
   "type": "module",
