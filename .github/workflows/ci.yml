@@ -28,3 +28,30 @@ jobs:
         run: pnpm -w test
       - name: Lint
         run: pnpm -w lint
+
+  action-dist:
+    name: Action bundle is fresh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build workspace (the deps the bundle inlines must exist first)
+        run: pnpm -w build
+      - name: Rebuild the Action bundle
+        run: pnpm -C packages/github-action exec tsup
+      - name: Verify the committed bundle is in sync with source
+        run: |
+          if ! git diff --quiet -- packages/github-action/dist; then
+            echo "::error::packages/github-action/dist is stale. Run 'pnpm -C packages/github-action exec tsup' and commit the result."
+            git --no-pager diff --stat -- packages/github-action/dist
+            exit 1
+          fi
+          echo "Action bundle is in sync with source."
