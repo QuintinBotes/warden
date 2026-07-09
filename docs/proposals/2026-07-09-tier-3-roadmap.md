@@ -1,22 +1,22 @@
 # Proposal: Tier-3 — Precision & Ecosystem
 
-- **Status:** In progress — the **precision band (items 1–4) is shipped**; the ecosystem plays (5–6) remain · **Date:** 2026-07-09
+- **Status:** ✅ **Complete — all six items shipped** (precision band 1–4 + ecosystem plays 5–6) · **Date:** 2026-07-09
 - **Relates to:** [warden-next-competitive-gaps.md](2026-07-08-warden-next-competitive-gaps.md) §Tier-3, now that Tier-1 + Tier-2 have shipped.
 
 Tier-3 is the "nice-to-have" band from the gap analysis: capabilities that sharpen precision and grow the ecosystem, but aren't table stakes. This doc scopes the six items. Each stays **additive to `@warden/core`, defaulted off, and hermetic**, and plugs into the two shared contracts (the CUJ rollup and the single gate + CTRF report).
 
 ## The six capabilities
 
-| #   | Status     | Capability                                | Package / seam                                             |
-| --- | ---------- | ----------------------------------------- | ---------------------------------------------------------- |
-| 1   | ✅ shipped | Test impact analysis (this doc)           | `@warden/impact` + core seam + `warden run --impact-index` |
-| 2   | ✅ shipped | Component / Storybook testing             | `component` tier in `@warden/runner`                       |
-| 3   | ✅ shipped | Load testing as a first-class tier        | `load` tier in `@warden/runner` (k6 VUs + thresholds)      |
-| 4   | ✅ shipped | i18n content checks                       | `i18n` check in `@warden/runner` (missing/empty keys)      |
-| 5   | ⬜ planned | Hosted results service / public run links | a small service over `dashboard-api` + share tokens        |
-| 6   | ⬜ planned | Plugin marketplace / registry             | a manifest + discovery layer over `QAPlatformPlugin`       |
+| #   | Status     | Capability                                | Package / seam                                                     |
+| --- | ---------- | ----------------------------------------- | ------------------------------------------------------------------ |
+| 1   | ✅ shipped | Test impact analysis (this doc)           | `@warden/impact` + core seam + `warden run --impact-index`         |
+| 2   | ✅ shipped | Component / Storybook testing             | `component` tier in `@warden/runner`                               |
+| 3   | ✅ shipped | Load testing as a first-class tier        | `load` tier in `@warden/runner` (k6 VUs + thresholds)              |
+| 4   | ✅ shipped | i18n content checks                       | `i18n` check in `@warden/runner` (missing/empty keys)              |
+| 5   | ✅ shipped | Hosted results service / public run links | `@warden/results-service` (HMAC share tokens over `dashboard-api`) |
+| 6   | ✅ shipped | Plugin marketplace / registry             | `@warden/plugin-registry` (manifest discovery + resolver)          |
 
-The precision band (1–4) landed as runner tiers + core seams, each mirroring the k6/ZAP converter → gate → integration-fn shape. Items 5 and 6 are ecosystem/hosted plays that imply a hosted tier (see the enterprise proposal's hosted-vs-OSS note); they should follow.
+The precision band (1–4) landed as runner tiers + core seams, each mirroring the k6/ZAP converter → gate → integration-fn shape. The ecosystem plays (5–6) are opt-in, self-hostable packages: **results-service** mints signed, expiring share tokens that grant read-only access to one run's results via a public link (à la Currents.dev shareable URLs), and **plugin-registry** turns `QAPlatformPlugin` into a discoverable ecosystem via a manifest schema, a searchable registry, and a dynamic resolver.
 
 ---
 

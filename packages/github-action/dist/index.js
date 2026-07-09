@@ -36236,6 +36236,18 @@ var WardenConfigSchema = external_exports.object({
     ignoreKeys: external_exports.array(external_exports.string()).default([]),
     gate: external_exports.enum(["block", "warn", "off"]).default("warn")
   }).default({}),
+  // Hosted results service: public, token-gated run links (opt-in, self-hostable).
+  resultsService: external_exports.object({
+    enabled: external_exports.boolean().default(false),
+    tokenTtlSec: external_exports.number().int().positive().default(604800),
+    // 7 days
+    publicBaseUrl: external_exports.string().default("")
+  }).default({}),
+  // Plugin registry: manifest-based discovery/resolution of QAPlatformPlugins (opt-in).
+  pluginRegistry: external_exports.object({
+    enabled: external_exports.boolean().default(false),
+    sources: external_exports.array(external_exports.object({ kind: external_exports.enum(["dir", "index"]), location: external_exports.string() })).default([])
+  }).default({}),
   plugins: external_exports.array(external_exports.custom()).default([])
 });
 var LearningChapterSchema = external_exports.object({
@@ -36257,6 +36269,20 @@ var LearningModuleSchema = external_exports.object({
   // stable id for embedding in the learning platform
 });
 var FlakeRootCause = external_exports.enum(["timing", "selector", "data", "network", "unknown"]);
+var PluginManifestSchema = external_exports.object({
+  /** Unique plugin name, e.g. `@acme/warden-slack`. */
+  name: external_exports.string().min(1),
+  version: external_exports.string().min(1),
+  description: external_exports.string().default(""),
+  author: external_exports.string().optional(),
+  homepage: external_exports.string().url().optional(),
+  /** Module specifier to import for the plugin factory (its default export or a named `plugin`). */
+  entry: external_exports.string().min(1),
+  /** Hook names the plugin implements, e.g. `['onGateDecision', 'onBugFound']` — used for search. */
+  capabilities: external_exports.array(external_exports.string()).default([]),
+  /** Free-form tags for discovery, e.g. `['notifications', 'slack']`. */
+  tags: external_exports.array(external_exports.string()).default([])
+});
 
 // ../orchestrator/dist/index.js
 function errMsg(err) {

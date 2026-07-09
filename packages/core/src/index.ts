@@ -31,3 +31,5 @@ export * from './cuj';
 export * from './impact';
 export * from './traffic';
 export * from './auth';
+export * from './share';
+export * from './plugin-manifest';

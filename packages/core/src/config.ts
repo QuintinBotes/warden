@@ -561,6 +561,23 @@ export const WardenConfigSchema = z.object({
       gate: z.enum(['block', 'warn', 'off']).default('warn'),
     })
     .default({}),
+  // Hosted results service: public, token-gated run links (opt-in, self-hostable).
+  resultsService: z
+    .object({
+      enabled: z.boolean().default(false),
+      tokenTtlSec: z.number().int().positive().default(604800), // 7 days
+      publicBaseUrl: z.string().default(''),
+    })
+    .default({}),
+  // Plugin registry: manifest-based discovery/resolution of QAPlatformPlugins (opt-in).
+  pluginRegistry: z
+    .object({
+      enabled: z.boolean().default(false),
+      sources: z
+        .array(z.object({ kind: z.enum(['dir', 'index']), location: z.string() }))
+        .default([]),
+    })
+    .default({}),
   plugins: z.array(z.custom<QAPlatformPlugin>()).default([]),
 });
 
