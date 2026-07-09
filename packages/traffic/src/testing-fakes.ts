@@ -11,6 +11,7 @@ import type {
   TrafficSource,
   TrafficStore,
 } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 import type { CapturedSessionInput } from './traffic-source.js';
 import type { TrafficMetrics, TrafficRunCounts } from './run.js';
 
@@ -159,7 +160,7 @@ function slugify(text: string): string {
  * the provider once (so provider wiring is exercised), then ignores the response.
  */
 export function fakeTestSynthesizer(opts: FakeSynthesizerOptions = {}): TestSynthesizer {
-  const testDir = (opts.testDir ?? 'tests/generated').replace(/\/+$/, '');
+  const testDir = stripTrailingSlashes(opts.testDir ?? 'tests/generated');
   const baseTags = opts.baseTags ?? ['@e2e'];
   return {
     async synthesize(session: RecordedSession, provider: LLMProvider): Promise<GeneratedTest[]> {

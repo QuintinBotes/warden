@@ -13,6 +13,7 @@ import type {
   TrafficStore,
   WardenConfig,
 } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 
 /**
  * `runTraffic` — the production-traffic pipeline, wired entirely from injected collaborators:
@@ -107,7 +108,7 @@ function basename(path: string): string {
 
 /** Re-homes a synthesized spec under `outDir`, deduping filenames across all clusters. */
 function repath(originalPath: string, outDir: string, used: Set<string>): string {
-  const dir = outDir.replace(/\/+$/, '');
+  const dir = stripTrailingSlashes(outDir);
   const name = basename(originalPath);
   const ext = name.endsWith('.spec.ts') ? '.spec.ts' : '';
   const base = ext ? name.slice(0, -ext.length) : name;

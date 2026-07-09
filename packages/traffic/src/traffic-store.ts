@@ -1,4 +1,5 @@
 import type { RecordedSession, TrafficStore } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 
 /**
  * `fsTrafficStore` — a filesystem-backed {@link TrafficStore} for scrubbed sessions. It writes one
@@ -53,7 +54,7 @@ function reviveSession(record: StoredRecord): RecordedSession {
 let counter = 0;
 
 export function fsTrafficStore(opts: FsTrafficStoreOptions): TrafficStore {
-  const dir = opts.dir.replace(/\/+$/, '');
+  const dir = stripTrailingSlashes(opts.dir);
   const now = opts.now ?? (() => new Date());
   const fsPromise = opts.fs ? Promise.resolve(opts.fs) : nodeFs();
 

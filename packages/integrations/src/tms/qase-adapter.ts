@@ -7,6 +7,7 @@ import type {
   TmsTestRef,
   TmsTestUpsert,
 } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 import { defaultFetch, requestJson, type FetchLike } from '../fetch-like.js';
 import { mapResultStatus } from './result-status.js';
 
@@ -63,7 +64,7 @@ export class QaseAdapter implements TestManagementSync {
   constructor(opts: QaseAdapterOptions) {
     this.token = opts.token;
     this.project = opts.project;
-    this.apiUrl = (opts.apiUrl ?? 'https://api.qase.io/v1').replace(/\/+$/, '');
+    this.apiUrl = stripTrailingSlashes(opts.apiUrl ?? 'https://api.qase.io/v1');
     this.fetchImpl = opts.fetchImpl ?? defaultFetch();
   }
 

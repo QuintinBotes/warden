@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RecordedSession } from '@warden/core';
+import { stripTrailingSlashes } from '@warden/core';
 import { fsTrafficStore, type TrafficStoreFs } from './traffic-store.js';
 import { inMemoryTrafficStore } from './testing-fakes.js';
 
@@ -15,7 +16,7 @@ function memFs(): TrafficStoreFs & { files: Map<string, string> } {
   return {
     files,
     async readdir(dir) {
-      const prefix = `${dir.replace(/\/+$/, '')}/`;
+      const prefix = `${stripTrailingSlashes(dir)}/`;
       return [...files.keys()]
         .filter((k) => k.startsWith(prefix) && !k.slice(prefix.length).includes('/'))
         .map((k) => k.slice(prefix.length));

@@ -33,3 +33,4 @@ export * from './traffic';
 export * from './auth';
 export * from './share';
 export * from './plugin-manifest';
+export * from './text-safety';

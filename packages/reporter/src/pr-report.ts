@@ -24,7 +24,7 @@ const GATE_EMOJI: Record<GateDecision['decision'], string> = {
 
 /** Escapes pipe/newline characters so arbitrary text is safe inside a Markdown table cell. */
 function escapeCell(value: string): string {
-  return value.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+  return value.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 }
 
 /**

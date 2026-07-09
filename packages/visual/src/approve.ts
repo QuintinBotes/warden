@@ -1,10 +1,11 @@
-import type {
-  DraftPrResult,
-  GitHubAccess,
-  RepoTarget,
-  VisualBaseline,
-  VisualBaselineKey,
-  VisualBaselineStore,
+import {
+  slugify,
+  type DraftPrResult,
+  type GitHubAccess,
+  type RepoTarget,
+  type VisualBaseline,
+  type VisualBaselineKey,
+  type VisualBaselineStore,
 } from '@warden/core';
 
 /** Options for committing an approved baseline back to a repo. */
@@ -28,8 +29,7 @@ export interface ApproveBaselineResult {
 
 /** Branch name for an approved baseline commit — stable per key so re-approvals reuse the branch. */
 export function approveBranchName(key: VisualBaselineKey): string {
-  const clean = (s: string): string => s.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  return `warden/visual-approve/${clean(key.module)}-${clean(key.viewport)}-${key.theme}`;
+  return `warden/visual-approve/${slugify(key.module)}-${slugify(key.viewport)}-${key.theme}`;
 }
 
 /**
