@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # npm / pnpm dependencies (single root lockfile — pnpm workspaces).
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+    # Group updates to cut PR noise: one PR for dev deps, one for prod minor/patch.
+    # Production major bumps stay individual so they get proper review.
+    groups:
+      dev-dependencies:
+        dependency-type: 'development'
+        update-types: ['minor', 'patch']
+      production-minor-patch:
+        dependency-type: 'production'
+        update-types: ['minor', 'patch']
+
+  # Keep the versions of actions used in workflows current.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    commit-message:
+      prefix: 'chore(ci)'
