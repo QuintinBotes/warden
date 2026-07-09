@@ -15,7 +15,7 @@
       "better-sqlite3"
     ],
     "overrides": {
-      "undici": ">=6.27.0",
+      "undici": "^7.25.0",
       "postcss": ">=8.5.10",
       "esbuild": ">=0.28.1",
       "tar": ">=7.5.16",
