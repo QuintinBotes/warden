@@ -81,6 +81,46 @@ interface CoverageSyncRun {
   at: string;
 }
 
+type CujStatus = 'HEALTHY' | 'DEGRADED' | 'AT_RISK' | 'BROKEN';
+
+interface CujJourney {
+  id: string;
+  name: string;
+  status: CujStatus;
+  team: string;
+  testCount: number;
+  passRate: number;
+  touched: boolean;
+  steps: { name: string; status: CujStatus }[];
+}
+
+type VisualStatus = 'MATCH' | 'VISUAL_DIFF' | 'NEW_BASELINE';
+
+interface VisualCheck {
+  id: string;
+  module: string;
+  viewport: string;
+  theme: 'light' | 'dark';
+  status: VisualStatus;
+  changedRatio: number;
+  rationale?: string;
+}
+
+type FlakeRootCause = 'timing' | 'selector' | 'data' | 'network' | 'unknown';
+
+interface FlakeOffender {
+  testName: string;
+  flakeRate: number;
+  rootCause: FlakeRootCause;
+  reRunsCaused: number;
+  ciMinutesLost: number;
+}
+
+interface FlakeTrend {
+  points: { at: string; flakeRate: number; newlyFlagged: number; deflaked: number }[];
+  topOffenders: FlakeOffender[];
+}
+
 export interface DashboardData {
   generatedAt: string;
   run: {
@@ -99,6 +139,9 @@ export interface DashboardData {
   flake: FlakeRow[];
   learning: Learning[];
   coverageSync: CoverageSyncRun[];
+  cujBoard: CujJourney[];
+  visual: VisualCheck[];
+  flakeTrend: FlakeTrend;
 }
 
 // ---------------------------------------------------------------------------
@@ -129,6 +172,44 @@ function PlayGlyph() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
       <path d="M3 2.2v9.6a.6.6 0 0 0 .92.5l7.4-4.8a.6.6 0 0 0 0-1L3.92 1.7A.6.6 0 0 0 3 2.2Z" />
+    </svg>
+  );
+}
+
+function pct(ratio: number) {
+  return `${(ratio * 100).toFixed(ratio < 0.1 ? 1 : 0)}%`;
+}
+
+function FlakeSparkline({ points }: { points: FlakeTrend['points'] }) {
+  const w = 260;
+  const h = 44;
+  const max = Math.max(0.0001, ...points.map((p) => p.flakeRate));
+  const step = points.length > 1 ? w / (points.length - 1) : w;
+  const coords = points
+    .map((p, i) => {
+      const x = i * step;
+      const y = h - 4 - (p.flakeRate / max) * (h - 8);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+  const last = points[points.length - 1];
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      className="wd-spark"
+      role="img"
+      aria-label={`Flake rate trend, latest ${last ? pct(last.flakeRate) : 'n/a'}`}
+    >
+      <polyline points={coords} fill="none" stroke="var(--flaky)" strokeWidth="2" />
+      {points.map((p, i) => (
+        <circle
+          key={i}
+          cx={(i * step).toFixed(1)}
+          cy={(h - 4 - (p.flakeRate / max) * (h - 8)).toFixed(1)}
+          r={i === points.length - 1 ? 3 : 1.6}
+          fill="var(--flaky)"
+        />
+      ))}
     </svg>
   );
 }
@@ -362,6 +443,118 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
               );
             })
           )}
+        </div>
+      </section>
+
+      {/* Critical User Journeys */}
+      <section className="wd-block wd-section">
+        <SectionHead
+          eyebrow="Journeys"
+          title="Critical User Journeys"
+          subtitle={`${data.cujBoard.filter((c) => c.touched).length} touched by this change`}
+        />
+        <div className="wd-panel">
+          {data.cujBoard.map((c) => (
+            <div className="wd-cuj-item" key={c.id}>
+              <span className="wd-cuj-head">
+                <span className="wd-cuj-name">{c.name}</span>
+                <span className="wd-cuj-team">{c.team}</span>
+                {c.touched ? <span className="wd-cuj-touched">touched by PR</span> : null}
+              </span>
+              <span className="wd-cuj-steps" aria-hidden="false">
+                {c.steps.map((s, i) => (
+                  <span
+                    key={i}
+                    className={`wd-cuj-step wd-sev--${s.status}`}
+                    title={`${s.name}: ${s.status}`}
+                    aria-label={`${s.name}: ${s.status}`}
+                  />
+                ))}
+              </span>
+              <span className="wd-cuj-meta">
+                {pct(c.passRate)} pass · {c.testCount} tests
+              </span>
+              <span className={`wd-badge wd-sev--${c.status}`} data-status={c.status}>
+                <span className="wd-badge-dot" aria-hidden="true" />
+                {c.status.replace('_', ' ')}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Visual Regression */}
+      <section className="wd-block wd-section">
+        <SectionHead
+          eyebrow="Visual"
+          title="Visual Regression"
+          subtitle={`${data.visual.filter((v) => v.status === 'VISUAL_DIFF').length} diffs to review`}
+        />
+        <div className="wd-panel">
+          {data.visual.map((v) => (
+            <div className="wd-visual-item" key={v.id}>
+              <span className="wd-visual-id">
+                <span className="wd-visual-module">{v.module}</span>
+                <span className="wd-visual-ctx">
+                  {v.viewport} · {v.theme}
+                </span>
+              </span>
+              <span className={`wd-badge wd-vis--${v.status}`} data-status={v.status}>
+                <span className="wd-badge-dot" aria-hidden="true" />
+                {v.status.replace('_', ' ')}
+              </span>
+              <span className="wd-visual-ratio">{pct(v.changedRatio)} changed</span>
+              <span className="wd-visual-why">{v.rationale ?? ''}</span>
+              {v.status === 'MATCH' ? (
+                <span className="wd-visual-ok" aria-hidden="true">
+                  ✓
+                </span>
+              ) : (
+                <button
+                  className="wd-chip-btn"
+                  type="button"
+                  disabled
+                  title="Approve in CLI: warden visual approve"
+                >
+                  Approve baseline
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Flake Intelligence */}
+      <section className="wd-block wd-section">
+        <SectionHead
+          eyebrow="Reliability"
+          title="Flake Intelligence"
+          subtitle="Flake rate over time · top offenders by impact"
+        />
+        <div className="wd-panel wd-flakeint">
+          <div className="wd-flakeint-trend">
+            <FlakeSparkline points={data.flakeTrend.points} />
+            <span className="wd-flakeint-legend">
+              flake rate — latest{' '}
+              <strong>
+                {data.flakeTrend.points.length
+                  ? pct(data.flakeTrend.points[data.flakeTrend.points.length - 1]!.flakeRate)
+                  : 'n/a'}
+              </strong>
+            </span>
+          </div>
+          <ul className="wd-offenders">
+            {data.flakeTrend.topOffenders.map((o, i) => (
+              <li className="wd-offender" key={i}>
+                <span className="wd-offender-name">{o.testName}</span>
+                <span className="wd-offender-cause">{o.rootCause}</span>
+                <span className="wd-badge wd-sev--DEGRADED">{pct(o.flakeRate)} flaky</span>
+                <span className="wd-offender-cost">
+                  {o.reRunsCaused} re-runs · {o.ciMinutesLost}m lost
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
