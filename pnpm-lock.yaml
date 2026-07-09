@@ -473,6 +473,22 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
+  packages/plugin-registry:
+    dependencies:
+      '@warden/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   packages/proactive-healer:
     dependencies:
       '@warden/agent':
@@ -525,6 +541,28 @@ importers:
     devDependencies:
       tsup:
         specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  packages/results-service:
+    dependencies:
+      '@warden/core':
+        specifier: workspace:*
+        version: link:../core
+      '@warden/dashboard-api':
+        specifier: workspace:*
+        version: link:../dashboard-api
+      '@warden/test-management':
+        specifier: workspace:*
+        version: link:../test-management
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      tsup:
+        specifier: ^8.5.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(typescript@5.9.3)
       typescript:
         specifier: ^5.6.3

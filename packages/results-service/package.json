@@ -1,0 +1,33 @@
+{
+  "name": "@warden/results-service",
+  "version": "0.2.0",
+  "description": "Warden hosted results service — public, token-gated run links over dashboard-api",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@warden/core": "workspace:*",
+    "@warden/dashboard-api": "workspace:*",
+    "@warden/test-management": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.6.3"
+  }
+}
