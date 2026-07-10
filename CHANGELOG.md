@@ -4,7 +4,12 @@ All notable changes to Warden are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.1] — 2026-07-11 · "Fail Closed"
+
+A correctness patch from a systemic audit of every gate-decision path: 16 places where an
+empty/degenerate input ("nothing ran, passed, measured, or gated") produced a false-green `PASS`.
+All now signal honestly — WARN-direction across the board, except the GitHub Action, which fails
+**closed** to BLOCK so a broken gate can never post a green check that unblocks a merge.
 
 ### Fixed
 
@@ -188,6 +193,7 @@ quarantine; a merge-gate verdict; the Sentinel dashboard; Prometheus/Grafana obs
 Jira / GitHub Projects requirement sync; a session recorder and learning studio; and the cross-repo
 coverage-sync GitHub App.
 
+[0.4.1]: https://github.com/QuintinBotes/warden/releases/tag/v0.4.1
 [0.4.0]: https://github.com/QuintinBotes/warden/releases/tag/v0.4.0
 [0.3.0]: https://github.com/QuintinBotes/warden/releases/tag/v0.3.0
 [0.2.0]: https://github.com/QuintinBotes/warden/releases/tag/v0.2.0
