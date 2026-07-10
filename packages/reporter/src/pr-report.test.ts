@@ -53,6 +53,25 @@ describe('renderPrReport', () => {
     expect(markdown).toContain('PASS');
   });
 
+  it('shows the human-readable test name in the coverage table when present', () => {
+    const execution = fixtureExecution({
+      results: [
+        {
+          testCaseId: 'TC-042',
+          name: 'checkout › apply discount code',
+          status: 'PASS',
+          duration: 10,
+          retries: 0,
+          flakeFlag: false,
+        },
+      ],
+    });
+
+    const markdown = renderPrReport(execution, { decision: 'PASS', reason: 'all good' });
+
+    expect(markdown).toContain('checkout › apply discount code');
+  });
+
   it('renders a requirements traceability table', () => {
     const execution = fixtureExecution();
 
