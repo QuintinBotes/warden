@@ -45,6 +45,17 @@ describe('ctrfToExecution', () => {
     });
   });
 
+  it('preserves the human-readable test name and filePath onto each TestResult', () => {
+    const report = fixtureReport();
+    const execution = ctrfToExecution(report);
+
+    expect(execution.results[0]).toMatchObject({ name: 'login works', filePath: 'login.spec.ts' });
+    expect(execution.results[1]).toMatchObject({
+      name: 'checkout fails',
+      filePath: 'checkout.spec.ts',
+    });
+  });
+
   it('maps skipped/pending/other CTRF statuses onto TestStatus', () => {
     const report = fixtureReport({
       tests: [

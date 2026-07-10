@@ -35638,7 +35638,7 @@ var coerce = {
 };
 var NEVER = INVALID;
 
-// ../core/dist/chunk-43YZPZAR.js
+// ../core/dist/chunk-G2MDWY53.js
 var TestStatus = external_exports.enum(["PASS", "FAIL", "SKIP", "BLOCKED", "FLAKY"]);
 var Priority = external_exports.enum(["P1", "P2", "P3"]);
 var TestType = external_exports.enum([
@@ -35696,6 +35696,14 @@ var TestPlanSchema = external_exports.object({
 });
 var TestResultSchema = external_exports.object({
   testCaseId: external_exports.string(),
+  /**
+   * Human-readable test title (e.g. `checkout › apply discount code`), preserved from the
+   * runner so reporters can show a real name instead of the opaque `testCaseId` hash.
+   * Optional/back-compatible: consumers fall back to `testCaseId` when absent.
+   */
+  name: external_exports.string().optional(),
+  /** Source file the test lives in, preserved from the runner for the dashboard/reporters. */
+  filePath: external_exports.string().optional(),
   status: TestStatus,
   duration: external_exports.number(),
   // ms
