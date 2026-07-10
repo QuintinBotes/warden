@@ -36522,18 +36522,17 @@ function parseGithubOutput(stdout) {
   return out;
 }
 function normalizeGate(raw, fallbackReason) {
-  if (raw && typeof raw === "object") {
-    const g = raw;
-    const decision2 = String(g.decision ?? "PASS").toUpperCase();
-    return {
-      decision: decision2 === "BLOCK" || decision2 === "WARN" ? decision2 : "PASS",
-      reason: typeof g.reason === "string" ? g.reason : ""
-    };
+  const isObject = Boolean(raw) && typeof raw === "object";
+  const g = isObject ? raw : void 0;
+  const rawDecision = g ? g.decision : raw;
+  const reason = g ? typeof g.reason === "string" ? g.reason : "" : typeof fallbackReason === "string" ? fallbackReason : "";
+  const decision = String(rawDecision ?? "").toUpperCase();
+  if (decision === "PASS" || decision === "WARN" || decision === "BLOCK") {
+    return { decision, reason };
   }
-  const decision = String(raw ?? "PASS").toUpperCase();
   return {
-    decision: decision === "BLOCK" || decision === "WARN" ? decision : "PASS",
-    reason: typeof fallbackReason === "string" ? fallbackReason : ""
+    decision: "BLOCK",
+    reason: reason || "unrecognized or missing gate decision \u2014 failing closed"
   };
 }
 function parseAggregateReport(stdout) {
@@ -36730,7 +36729,9 @@ async function run(deps = {}) {
     report = await aggregate(exec2, { reportsDir, prNumber: pr.number, ...execOpts });
   } catch (err) {
     core.warning(`Warden: aggregate failed: ${errMsg2(err)}`);
-    report = { gate: { decision: "PASS", reason: "No aggregated results available." } };
+    report = {
+      gate: { decision: "BLOCK", reason: `aggregate failed \u2014 gate not evaluated: ${errMsg2(err)}` }
+    };
   }
   const gate = report.gate.decision;
   const reportPath = report.reportPath ?? path6.join(reportsDir, "warden-ctrf.json");

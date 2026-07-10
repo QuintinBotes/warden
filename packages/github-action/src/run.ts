@@ -158,8 +158,12 @@ export async function run(deps: ActionDeps = {}): Promise<RunResult> {
   try {
     report = await aggregate(exec, { reportsDir, prNumber: pr.number, ...execOpts });
   } catch (err) {
+    // Fail closed: a gate that could not be evaluated must not post a green check that unblocks
+    // the merge. Surface the crash as a BLOCK rather than defaulting to PASS.
     core.warning(`Warden: aggregate failed: ${errMsg(err)}`);
-    report = { gate: { decision: 'PASS', reason: 'No aggregated results available.' } };
+    report = {
+      gate: { decision: 'BLOCK', reason: `aggregate failed — gate not evaluated: ${errMsg(err)}` },
+    };
   }
   const gate = report.gate.decision;
   const reportPath = report.reportPath ?? path.join(reportsDir, 'warden-ctrf.json');
