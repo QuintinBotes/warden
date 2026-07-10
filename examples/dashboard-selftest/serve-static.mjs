@@ -2,7 +2,7 @@
 // Rooted at apps/dashboard/out so the export's absolute asset paths (/_next/...) resolve —
 // exactly what a file:// open cannot do. Started/torn down by Playwright's webServer.
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { join, normalize, extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -41,13 +41,15 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    const info = await stat(filePath).catch(() => null);
-    if (!info || !info.isFile()) {
+    // Read directly and handle errors — no stat() first, to avoid a check-then-use (TOCTOU) race.
+    let body;
+    try {
+      body = await readFile(filePath);
+    } catch {
+      // ENOENT (missing) or EISDIR (a directory) → not found.
       res.writeHead(404, { 'content-type': 'text/plain' }).end('not found');
       return;
     }
-
-    const body = await readFile(filePath);
     res.writeHead(200, {
       'content-type': MIME[extname(filePath)] ?? 'application/octet-stream',
       'content-length': body.length,
