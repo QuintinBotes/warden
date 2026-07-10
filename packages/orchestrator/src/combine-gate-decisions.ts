@@ -6,11 +6,11 @@ const SEVERITY: Record<GateDecision['decision'], number> = { PASS: 0, WARN: 1, B
  * Combines several independently-computed gate decisions (functional tiers + a11y + perf budget,
  * etc.) into one, worst-first (`BLOCK` > `WARN` > `PASS`). Reasons from every non-`PASS` decision
  * are joined so the combined decision explains every rule that fired, not just the first.
- * An empty list is a vacuous `PASS`.
+ * An empty list is a `WARN`, not a pass — "nothing to combine" must never read as a green gate.
  */
 export function combineGateDecisions(decisions: GateDecision[]): GateDecision {
   if (decisions.length === 0) {
-    return { decision: 'PASS', reason: 'no gate decisions to combine' };
+    return { decision: 'WARN', reason: 'no gate decisions to combine' };
   }
 
   const worst = decisions.reduce((a, b) => (SEVERITY[b.decision] > SEVERITY[a.decision] ? b : a));

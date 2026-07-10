@@ -18,11 +18,11 @@ const DECISION_SEVERITY: Record<GateDecision['decision'], number> = { PASS: 0, W
 /**
  * Worst-of composition of several gate decisions. `BLOCK` > `WARN` > `PASS`; the reasons of
  * every non-`PASS` decision are preserved so a `BLOCK`'s reason never hides a `WARN` that also
- * fired. An empty list is a vacuous `PASS`.
+ * fired. An empty list is a `WARN` — "nothing to combine" must never read as a green gate.
  */
 export function mergeGateDecisions(...decisions: GateDecision[]): GateDecision {
   if (decisions.length === 0) {
-    return { decision: 'PASS', reason: 'no gate decisions to combine' };
+    return { decision: 'WARN', reason: 'no gate decisions to combine' };
   }
   const worst = decisions.reduce((a, b) =>
     DECISION_SEVERITY[b.decision] > DECISION_SEVERITY[a.decision] ? b : a,
@@ -60,6 +60,16 @@ function decideForCuj(
     return {
       decision: 'BLOCK',
       reason: `Blocked: ${tierLabel} journey '${name}' is BROKEN.`,
+    };
+  }
+
+  // A touched journey with no result this run verified nothing — it must not read as "healthy",
+  // even against a DEGRADED/BROKEN baseline (NOT_TESTED sorts below those, so the regression
+  // check below would miss it). Surface it as a WARN.
+  if (after.status === 'NOT_TESTED') {
+    return {
+      decision: 'WARN',
+      reason: `Warning: ${tierLabel} journey '${name}' was not tested this run.`,
     };
   }
 

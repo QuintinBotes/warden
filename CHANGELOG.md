@@ -4,6 +4,22 @@ All notable changes to Warden are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Gate hardening — "nothing ran/passed" never reads as a green gate.** A parallel audit of the
+  gate-decision logic surfaced a class of empty/degenerate inputs that returned a false `PASS`.
+  All now WARN honestly (WARN-direction only, so no currently-passing merge is newly blocked):
+  - `computeGateDecision` → `WARN "no tests passed"` when tests ran but every result was skipped
+    or blocked (previously `PASS "All tests passed"` — a blocked test started but never finished).
+  - `evaluateExitCriteria([])` → `WARN "no tests ran"` (the pass-rate math previously manufactured
+    100% for an empty 0/0 set).
+  - `combineGateDecisions([])` and the CUJ `mergeGateDecisions()` → `WARN`, not a vacuous `PASS`,
+    when given no decisions to combine.
+  - The CUJ gate `WARN`s a touched journey whose tests didn't run this change (`NOT_TESTED`)
+    instead of reporting it "healthy" against a DEGRADED/BROKEN baseline.
+
 ## [0.4.0] — 2026-07-10 · "Dogfood"
 
 Driven by dogfooding `warden run` against Warden's own repo (and an adversarial verification
