@@ -95,10 +95,19 @@ export function k6LoadResultsToCtrf(
 
 /**
  * Pure gate mapping over the CTRF output of {@link k6LoadResultsToCtrf}: any breached threshold
- * (p95, p99, or error rate) → `BLOCK`, otherwise `PASS`. Load thresholds have no "acceptable
- * degradation" tier the way a11y/perf budgets do, so there is no `WARN` outcome here.
+ * (p95, p99, or error rate) → `BLOCK`. A run that issued zero requests measured nothing (missing
+ * latency/error metrics coerce to 0 and spuriously pass every threshold) → `WARN`. Otherwise `PASS`.
  */
-export function evaluateLoadGate(report: CTRFReport): GateDecision {
+export function evaluateLoadGate(report: CTRFReport, summary: K6LoadSummary): GateDecision {
+  // Zero requests issued (script error, target unreachable) → the latency/error thresholds were
+  // never actually measured; they only "passed" because absent metrics normalize to 0.
+  if (summary.requests === 0) {
+    return {
+      decision: 'WARN',
+      reason:
+        'load test issued zero requests — latency and error-rate thresholds were not measured',
+    };
+  }
   const failed = report.results.tests.filter((t) => t.status === 'failed');
   if (failed.length > 0) {
     return {
@@ -197,6 +206,6 @@ export function runK6Load(
       requests: raw.metrics?.http_reqs?.values?.count ?? 0,
     };
     const report = k6LoadResultsToCtrf(summary, cfg.thresholds);
-    return { summary, report, gate: evaluateLoadGate(report) };
+    return { summary, report, gate: evaluateLoadGate(report, summary) };
   });
 }

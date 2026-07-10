@@ -101,10 +101,27 @@ export interface I18nGateConfig {
  * Pure gate mapping over the CTRF output of {@link i18nResultsToCtrf}. i18n gaps rarely warrant
  * blocking a merge, so any missing translation → `WARN` by default; set `cfg.gate` to `'block'`
  * to treat gaps as blocking, or `'off'` to keep the check informational-only (always `PASS`).
+ *
+ * `findMissingTranslations` returns `[]` both when everything is translated AND when it could
+ * compare nothing (the default locale wasn't loaded, or there are no other locales) — the latter
+ * is a measurement gap, not a clean bill of health. Pass `measurement.comparedLocaleCount` so the
+ * gate can `WARN` on that case instead of a false `PASS`.
  */
-export function evaluateI18nGate(report: CTRFReport, cfg: I18nGateConfig): GateDecision {
+export function evaluateI18nGate(
+  report: CTRFReport,
+  cfg: I18nGateConfig,
+  measurement?: { comparedLocaleCount: number },
+): GateDecision {
   if (cfg.gate === 'off') {
     return { decision: 'PASS', reason: 'i18n gate is disabled (gate: "off")' };
+  }
+
+  if (measurement && measurement.comparedLocaleCount === 0) {
+    return {
+      decision: 'WARN',
+      reason:
+        'i18n check compared no locales (default locale missing, or no other locales to compare) — nothing was measured',
+    };
   }
 
   const failed = report.results.tests.filter((t) => t.status === 'failed').length;

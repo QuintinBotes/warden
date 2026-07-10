@@ -123,4 +123,16 @@ describe('evaluateI18nGate', () => {
     expect(evaluateI18nGate(emptyReport, { gate: 'warn' }).decision).toBe('PASS');
     expect(evaluateI18nGate(emptyReport, { gate: 'block' }).decision).toBe('PASS');
   });
+
+  it('WARNs when the check compared no locales (measurement gap, not a clean bill)', () => {
+    const gate = evaluateI18nGate(emptyReport, { gate: 'warn' }, { comparedLocaleCount: 0 });
+    expect(gate.decision).toBe('WARN');
+    expect(gate.reason).toMatch(/no locales|nothing was measured/i);
+  });
+
+  it('PASSes when locales were compared and nothing is missing', () => {
+    expect(
+      evaluateI18nGate(emptyReport, { gate: 'warn' }, { comparedLocaleCount: 2 }).decision,
+    ).toBe('PASS');
+  });
 });

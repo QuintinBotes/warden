@@ -23,6 +23,11 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   aggregate report with a missing/unrecognized gate decision, previously defaulted the merge check
   to `PASS` — a broken gate could post a green check and unblock a merge. Both now resolve to
   `BLOCK`; only an explicit, recognized `PASS`/`WARN`/`BLOCK` is trusted.
+- **Quality tiers that ran but measured nothing now `WARN` instead of `PASS`.** "0 failures" is not
+  "no measurements": the perf/Lighthouse tier when routes were audited but no metric was readable,
+  the k6 load tier when the run issued zero requests, the component tier when the runner collected
+  0 tests, the Pact tier when no contracts were verified, the i18n gate when no locales were
+  compared, and the CUJ gate when it's enabled but no CUJ definitions loaded.
 
 ## [0.4.0] — 2026-07-10 · "Dogfood"
 
