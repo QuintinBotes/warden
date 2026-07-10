@@ -84,7 +84,9 @@ describe('executionToCtrf', () => {
 
   it('falls back to testCaseId as the name when no human-readable name is present', () => {
     const execution = fixtureExecution({
-      results: [{ testCaseId: 'TC-xyz', status: 'PASS', duration: 10, retries: 0, flakeFlag: false }],
+      results: [
+        { testCaseId: 'TC-xyz', status: 'PASS', duration: 10, retries: 0, flakeFlag: false },
+      ],
     });
 
     expect(executionToCtrf(execution).results.tests[0]?.name).toBe('TC-xyz');
