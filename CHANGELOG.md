@@ -4,10 +4,11 @@ All notable changes to Warden are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] — 2026-07-10 · "Dogfood"
 
-Fixes surfaced by dogfooding `warden run` against Warden's own repo (and an adversarial
-verification pass on the result).
+Driven by dogfooding `warden run` against Warden's own repo (and an adversarial verification
+pass on the results): a batch of real fixes the hermetic tests never exercised, plus a local
+loop that lets you **see your own run in the Sentinel dashboard**.
 
 ### Fixed
 
@@ -20,6 +21,8 @@ verification pass on the result).
   carry the real title (e.g. `checkout › apply discount code`) and `filePath`, so the
   dashboard, PR comment, and job summary are legible. `testCaseId` remains the stable
   identity for flake/quarantine history.
+- **The PR comment / job-summary coverage table** now shows the human-readable test name
+  instead of the `testCaseId` hash — the last surface that still leaked hashes.
 - **The gate no longer reports a false green when zero tests ran.** `computeGateDecision`
   previously emitted `PASS — "All tests passed"` for an empty (or silently unparseable)
   report; it now returns `WARN — "no tests ran"`, surfacing the anomaly without hard-blocking
@@ -160,6 +163,7 @@ quarantine; a merge-gate verdict; the Sentinel dashboard; Prometheus/Grafana obs
 Jira / GitHub Projects requirement sync; a session recorder and learning studio; and the cross-repo
 coverage-sync GitHub App.
 
+[0.4.0]: https://github.com/QuintinBotes/warden/releases/tag/v0.4.0
 [0.3.0]: https://github.com/QuintinBotes/warden/releases/tag/v0.3.0
 [0.2.0]: https://github.com/QuintinBotes/warden/releases/tag/v0.2.0
 [0.1.0]: https://github.com/QuintinBotes/warden/releases/tag/v0.1.0

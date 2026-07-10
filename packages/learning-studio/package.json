@@ -1,6 +1,6 @@
 {
   "name": "@warden/learning-studio",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Warden Learning Content Studio — turn tested flows into narrated learning videos + articles",
   "license": "MIT",
   "type": "module",

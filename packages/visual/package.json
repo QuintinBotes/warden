@@ -1,6 +1,6 @@
 {
   "name": "@warden/visual",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Warden visual regression — deterministic screenshot diffing with an optional AI structure-aware judge",
   "license": "MIT",
   "type": "module",
