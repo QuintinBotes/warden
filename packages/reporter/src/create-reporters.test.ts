@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { defineConfig, WardenError } from '@warden/core';
+import { defineConfig } from '@warden/core';
 import { createFakeVcsProvider } from '@warden/core/testing';
 import { createReporters } from './create-reporters.js';
 
@@ -74,7 +74,7 @@ describe('createReporters', () => {
     expect(reporters.map((r) => r.name).sort()).toEqual(['vcs-check', 'vcs-comment']);
   });
 
-  it('throws when prComment is enabled without an octokit', () => {
+  it('skips the PR comment (with a warning) when enabled but no client is provided — a local run', () => {
     const cfg = defineConfig({
       reporting: {
         ctrf: false,
@@ -83,11 +83,15 @@ describe('createReporters', () => {
         checkRunAnnotations: false,
       },
     });
+    const warnings: string[] = [];
 
-    expect(() => createReporters(cfg)).toThrow(WardenError);
+    const reporters = createReporters(cfg, { logger: { warn: (m) => warnings.push(m) } });
+
+    expect(reporters).toEqual([]);
+    expect(warnings.join(' ')).toContain('PR comment');
   });
 
-  it('throws when checkRunAnnotations is enabled without an octokit', () => {
+  it('skips the check run (with a warning) when enabled but no client is provided', () => {
     const cfg = defineConfig({
       reporting: {
         ctrf: false,
@@ -96,8 +100,12 @@ describe('createReporters', () => {
         checkRunAnnotations: true,
       },
     });
+    const warnings: string[] = [];
 
-    expect(() => createReporters(cfg)).toThrow(WardenError);
+    const reporters = createReporters(cfg, { logger: { warn: (m) => warnings.push(m) } });
+
+    expect(reporters).toEqual([]);
+    expect(warnings.join(' ')).toContain('check run');
   });
 
   it('returns an empty list when every flag is disabled', () => {
