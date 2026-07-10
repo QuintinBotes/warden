@@ -1,6 +1,6 @@
 {
   "name": "warden-action",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Warden GitHub Action — tiered AI QA on every PR",
   "license": "MIT",
   "type": "module",

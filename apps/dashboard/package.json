@@ -1,6 +1,6 @@
 {
   "name": "dashboard",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Warden dashboard — Next.js app rendering the Sentinel design system over dashboard-api data",
   "scripts": {

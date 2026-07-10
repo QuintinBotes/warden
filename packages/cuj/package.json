@@ -1,6 +1,6 @@
 {
   "name": "@warden/cuj",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Warden Critical User Journey modeling — journey entity, health rollup, scoped gating",
   "license": "MIT",
   "type": "module",
