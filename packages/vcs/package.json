@@ -1,6 +1,6 @@
 {
   "name": "@warden/vcs",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Warden multi-SCM — VcsProvider adapters for GitHub, GitLab, Bitbucket, and Azure DevOps",
   "license": "MIT",
   "type": "module",
