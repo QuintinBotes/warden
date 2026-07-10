@@ -70,6 +70,14 @@ run appends to the same `warden.sqlite`.
 - **CTRF report + gate summary:** `warden-artifacts/ctrf-report.json` and `warden-artifacts/job-summary.md`.
 - **Playwright's own report** (per-test traces + video): `npx playwright show-report`.
 
+## In CI
+
+The [`Dashboard Self-Test`](../../.github/workflows/dashboard-selftest.yml) workflow runs the
+`@smoke` tier against the freshly-built dashboard export on every PR that touches the dashboard,
+CLI, runner, reporter, core, or this example, and fails the build if the render or gate breaks
+(via [`scripts/assert-green.mjs`](scripts/assert-green.mjs)). This is the one place CI exercises
+the full `warden run → Playwright → CTRF → gate` loop end-to-end.
+
 ## How it fits together
 
 ```
