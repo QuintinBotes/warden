@@ -5,6 +5,7 @@ import { analyzeChangeSurface } from '@warden/orchestrator';
 import { readFile } from 'node:fs/promises';
 import { load as parseYaml } from 'js-yaml';
 import { loadCoverageIndex, selectWithImpact } from '@warden/impact';
+import { SqliteStore } from '@warden/test-management';
 import { fsCujSource } from '../cuj-gate.js';
 import {
   createFetchOctokit,
@@ -72,6 +73,10 @@ program
     '--impact-index <path>',
     'coverage index JSON — narrows the run to the tests the diff impacts (needs --base/--head)',
   )
+  .option(
+    '--db <path>',
+    'SQLite store to persist this run into (builds flake history across runs; feeds the dashboard)',
+  )
   .action(
     async (opts: {
       grep?: string;
@@ -81,6 +86,7 @@ program
       base?: string;
       head?: string;
       impactIndex?: string;
+      db?: string;
     }) => {
       try {
         const cwd = opts.cwd ?? process.cwd();
@@ -120,8 +126,20 @@ program
             }
           }
         }
-        const result = await runRun({ grep, cwd: opts.cwd, artifactsDir: opts.artifactsDir }, deps);
-        process.stdout.write(`wrote CTRF report to ${result.ctrfPath}\n`);
+        // Persist the run when asked, so flake history builds across runs and the dashboard
+        // snapshot can render it. Off by default — nothing writes a DB unless --db is given.
+        const store = opts.db ? new SqliteStore(opts.db) : undefined;
+        if (store) deps.store = store;
+        try {
+          const result = await runRun(
+            { grep, cwd: opts.cwd, artifactsDir: opts.artifactsDir },
+            deps,
+          );
+          process.stdout.write(`wrote CTRF report to ${result.ctrfPath}\n`);
+          if (opts.db) process.stdout.write(`persisted run to ${opts.db}\n`);
+        } finally {
+          store?.close();
+        }
       } catch (err) {
         fail(err);
       }

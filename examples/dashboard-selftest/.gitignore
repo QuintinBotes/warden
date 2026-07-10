@@ -1,0 +1,7 @@
+node_modules/
+warden.sqlite
+warden.sqlite-*
+warden-artifacts/
+test-results/
+playwright-report/
+pnpm-lock.yaml

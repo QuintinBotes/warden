@@ -1,0 +1,14 @@
+{
+  "name": "warden-example-dashboard-selftest",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Warden dogfooding its own Sentinel dashboard: run the @smoke tier against the dashboard export over http, persist the run, and rebuild the dashboard FROM that run so you can see real results locally.",
+  "scripts": {
+    "test": "playwright test --grep @smoke",
+    "selftest": "node scripts/run-selftest.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
+  }
+}

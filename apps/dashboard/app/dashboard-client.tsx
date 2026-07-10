@@ -380,6 +380,9 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             subtitle={`${data.learning.length} modules`}
           />
           <div className="wd-panel">
+            {data.learning.length === 0 && (
+              <p className="wd-empty">No learning modules yet — these are generated from test failures.</p>
+            )}
             {data.learning.map((l) => (
               <article className="wd-learn-item" key={l.embedId}>
                 <span className="wd-learn-play">
@@ -454,6 +457,9 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           subtitle={`${data.cujBoard.filter((c) => c.touched).length} touched by this change`}
         />
         <div className="wd-panel">
+          {data.cujBoard.length === 0 && (
+            <p className="wd-empty">No critical user journeys defined for this run.</p>
+          )}
           {data.cujBoard.map((c) => (
             <div className="wd-cuj-item" key={c.id}>
               <span className="wd-cuj-head">
@@ -491,6 +497,9 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           subtitle={`${data.visual.filter((v) => v.status === 'VISUAL_DIFF').length} diffs to review`}
         />
         <div className="wd-panel">
+          {data.visual.length === 0 && (
+            <p className="wd-empty">No visual regression checks for this run.</p>
+          )}
           {data.visual.map((v) => (
             <div className="wd-visual-item" key={v.id}>
               <span className="wd-visual-id">
@@ -532,6 +541,10 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           subtitle="Flake rate over time · top offenders by impact"
         />
         <div className="wd-panel wd-flakeint">
+          {data.flakeTrend.points.length === 0 && data.flakeTrend.topOffenders.length === 0 ? (
+            <p className="wd-empty">No flake history yet — it builds up as the suite runs over time.</p>
+          ) : (
+          <>
           <div className="wd-flakeint-trend">
             <FlakeSparkline points={data.flakeTrend.points} />
             <span className="wd-flakeint-legend">
@@ -555,6 +568,8 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
               </li>
             ))}
           </ul>
+          </>
+          )}
         </div>
       </section>
 
