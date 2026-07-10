@@ -1,6 +1,6 @@
 {
   "name": "@warden/agent",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Warden agent layer — LLM provider abstraction and the exploratory/generative/healer strategies",
   "license": "MIT",
   "type": "module",
