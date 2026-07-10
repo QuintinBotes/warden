@@ -1,0 +1,76 @@
+name: Dashboard Self-Test
+
+# Dogfood: run Warden's @smoke tier against its own Sentinel dashboard (served over http) and
+# fail if the render or the gate breaks. This exercises the full `warden run → Playwright → CTRF
+# → gate` loop end-to-end — the path the change-surface self-test (warden-selftest.yml) and the
+# unit suite don't cover. Path-filtered so it only runs when something that could affect it changes.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/dashboard/**'
+      - 'packages/cli/**'
+      - 'packages/runner/**'
+      - 'packages/reporter/**'
+      - 'packages/core/**'
+      - 'examples/dashboard-selftest/**'
+      - '.github/workflows/dashboard-selftest.yml'
+  pull_request:
+    paths:
+      - 'apps/dashboard/**'
+      - 'packages/cli/**'
+      - 'packages/runner/**'
+      - 'packages/reporter/**'
+      - 'packages/core/**'
+      - 'examples/dashboard-selftest/**'
+      - '.github/workflows/dashboard-selftest.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  dashboard-selftest:
+    name: Dashboard self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build workspace (CLI + dashboard packages)
+        run: pnpm -w build
+      - name: Build the dashboard export (what gets served over http)
+        run: pnpm --filter dashboard snapshot && pnpm --filter dashboard build
+
+      - name: Install the example's deps + Chromium
+        working-directory: examples/dashboard-selftest
+        run: |
+          pnpm install --ignore-workspace
+          npx playwright install --with-deps chromium
+
+      - name: Run the @smoke tier against the dashboard
+        working-directory: examples/dashboard-selftest
+        run: node ../../packages/cli/dist/bin/warden.js run --grep @smoke --artifacts-dir warden-artifacts
+
+      - name: Assert the gate is green
+        working-directory: examples/dashboard-selftest
+        run: node scripts/assert-green.mjs
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-selftest-artifacts
+          path: |
+            examples/dashboard-selftest/warden-artifacts/
+            examples/dashboard-selftest/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
