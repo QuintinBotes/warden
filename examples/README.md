@@ -10,6 +10,7 @@ installed from here.
 | [`express-api/`](express-api/README.md) | A backend-only API project: Playwright **API tests** (`request` fixture, no browser) against a tiny Express JSON API. |
 | [`next-app/`](next-app/README.md) | A frontend project: Playwright **E2E tests** with role-based locators (`getByRole`/`getByLabel`) against a login + checkout web UI. |
 | [`monorepo/`](monorepo/README.md) | A multi-app repo: **module-scoped test tags** (`@apps/checkout`, `@apps/cart`) that let Warden's selective testing scope a run to only the module a PR changed. |
+| [`dashboard-selftest/`](dashboard-selftest/README.md) | **Dogfood** (monorepo-internal): Warden runs its `@smoke` tier against its own Sentinel dashboard over http, **persists the run** (`warden run --db`), and rebuilds the dashboard **from that run** so you can see real results in the UI locally. |
 
 All three share one fictional product, "Warden Demo Shop," and the same requirement IDs
 (`ISSUE-101` auth, `ISSUE-150` cart, `ISSUE-201` checkout) so you can compare how the same

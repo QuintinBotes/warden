@@ -29,6 +29,16 @@ verification pass on the result).
 
 - `TestResult` gains optional `name` and `filePath` fields (additive; consumers fall back to
   `testCaseId` when absent).
+- **`warden run --db <path>`** persists a run into a SQLite store, so flake history builds up
+  across runs and the dashboard can render real results. Off by default — no store is written
+  unless `--db` is given.
+- **See a real run in the dashboard locally.** `snapshot.mjs` accepts `WARDEN_STORE=<path>` to
+  build the dashboard snapshot from a real store (instead of the demo seed), and prefers each
+  result's real name. Panels a single run can't populate (Coverage Sync, CUJ, Visual
+  Regression, Flake Intelligence, Learning) now render honest empty states for a real snapshot.
+- **`examples/dashboard-selftest/`** — a dogfood example that runs Warden's `@smoke` tier
+  against its own dashboard over http, persists the run, and rebuilds the dashboard from it, so
+  you can open the Sentinel UI locally and see your own results.
 
 ## [0.3.0] — 2026-07-09 · "Tier-3 & Hardening"
 

@@ -158,11 +158,14 @@ function mockTrace(result, execution) {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const dbPath = join(tmpdir(), `warden-dashboard-snapshot-${Date.now()}.sqlite`);
+  // With WARDEN_STORE set, snapshot a REAL store (e.g. one written by `warden run --db`);
+  // otherwise seed the canonical demo dataset into a throwaway db in the temp dir.
+  const externalStorePath = process.env.WARDEN_STORE;
+  const dbPath = externalStorePath ?? join(tmpdir(), `warden-dashboard-snapshot-${Date.now()}.sqlite`);
   const store = new SqliteStore(dbPath);
 
   try {
-    seedStore(store);
+    if (!externalStorePath) seedStore(store);
     const api = new SqliteDashboardApi(store);
 
     // Wide window so every seeded execution is captured.
@@ -306,7 +309,7 @@ async function main() {
               errorMessage: r.errorMessage ?? null,
               screenshots: [
                 mockScreenshot({
-                  title: TEST_NAMES[r.testCaseId] ?? r.testCaseId,
+                  title: r.name ?? TEST_NAMES[r.testCaseId] ?? r.testCaseId,
                   error: r.errorMessage ?? 'See trace for details',
                 }),
                 mockScreenshot({
@@ -319,7 +322,8 @@ async function main() {
           : null;
         return {
           id: r.testCaseId,
-          name: TEST_NAMES[r.testCaseId] ?? r.testCaseId,
+          // Prefer the real test title the runner now persists; fall back to the demo lookup.
+          name: r.name ?? TEST_NAMES[r.testCaseId] ?? r.testCaseId,
           durationMs: r.duration,
           tags: [moduleOf(r.testCaseId).toLowerCase(), 'e2e'],
           status,
@@ -579,11 +583,13 @@ async function main() {
       results,
       defaultSelectedId,
       flake: flakeBoard,
-      learning,
-      coverageSync,
-      cujBoard,
-      visual,
-      flakeTrend,
+      // These panels are demo-only samples (no store queries back them yet). For a real store
+      // snapshot, show honest empty states instead of demo data that contradicts the real run.
+      learning: externalStorePath ? [] : learning,
+      coverageSync: externalStorePath ? [] : coverageSync,
+      cujBoard: externalStorePath ? [] : cujBoard,
+      visual: externalStorePath ? [] : visual,
+      flakeTrend: externalStorePath ? { points: [], topOffenders: [] } : flakeTrend,
     };
 
     mkdirSync(OUT_DIR, { recursive: true });
@@ -594,7 +600,8 @@ async function main() {
     );
   } finally {
     store.close();
-    rmSync(dbPath, { force: true });
+    // Only delete the throwaway demo db — never a real store the caller pointed us at.
+    if (!externalStorePath) rmSync(dbPath, { force: true });
   }
 }
 
