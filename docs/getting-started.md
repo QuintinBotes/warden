@@ -75,7 +75,16 @@ npx warden analyze --base origin/main --head HEAD
 
 # run the exploratory agent against a local app
 npx warden agent --strategy exploratory --url http://localhost:3000 --output report.json
+
+# run the test tiers + gate, writing a CTRF report and a job summary
+npx warden run --grep @smoke --artifacts-dir warden-artifacts
 ```
+
+`warden run` drives the Playwright test runner, so your repo needs `@playwright/test`
+installed (and its browsers — `npx playwright install`). Outside CI there's no GitHub
+client, so Warden skips the PR comment and check-run annotations (logging a warning for
+each) and writes the job summary to `warden-artifacts/job-summary.md` instead of the
+Actions summary — the run still produces the CTRF report and computes the merge gate.
 
 If `ANTHROPIC_API_KEY` is unset, the agent runs with a stub provider so you can exercise the wiring without spending tokens. See the [CLI Reference](cli.md).
 

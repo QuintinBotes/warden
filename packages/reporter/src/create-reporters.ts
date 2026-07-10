@@ -1,4 +1,4 @@
-import { WardenError, type Reporter, type VcsProvider, type WardenConfig } from '@warden/core';
+import type { Logger, Reporter, VcsProvider, WardenConfig } from '@warden/core';
 import { CheckRunReporter } from './check-run-reporter.js';
 import { CtrfReporter } from './ctrf-reporter.js';
 import { GithubJobSummaryReporter } from './github-job-summary-reporter.js';
@@ -18,6 +18,8 @@ export interface CreateReportersDeps {
   vcs?: VcsProvider;
   /** Overrides `process.env.GITHUB_STEP_SUMMARY` for the job-summary reporter. */
   jobSummaryPath?: string;
+  /** Warns when a GitHub-only reporter is enabled but no client is available (e.g. a local run). */
+  logger?: Pick<Logger, 'warn'>;
 }
 
 /** Selects the `Reporter`s enabled by `cfg.reporting`. */
@@ -38,9 +40,10 @@ export function createReporters(cfg: WardenConfig, deps: CreateReportersDeps = {
     } else if (deps.octokit) {
       reporters.push(new PrCommentReporter(deps.octokit));
     } else {
-      throw new WardenError(
-        'a VcsProvider (deps.vcs) or octokit client is required when cfg.reporting.prComment is enabled',
-        'REPORTER_MISSING_OCTOKIT',
+      // No client (e.g. a local `warden run` without a token): skip the PR comment rather than
+      // fail the whole run. In CI the Action always supplies an octokit, so nothing changes there.
+      deps.logger?.warn(
+        'reporting.prComment is enabled but no VcsProvider/octokit client was provided — skipping the PR comment.',
       );
     }
   }
@@ -51,9 +54,8 @@ export function createReporters(cfg: WardenConfig, deps: CreateReportersDeps = {
     } else if (deps.octokit) {
       reporters.push(new CheckRunReporter(deps.octokit));
     } else {
-      throw new WardenError(
-        'a VcsProvider (deps.vcs) or octokit client is required when cfg.reporting.checkRunAnnotations is enabled',
-        'REPORTER_MISSING_OCTOKIT',
+      deps.logger?.warn(
+        'reporting.checkRunAnnotations is enabled but no VcsProvider/octokit client was provided — skipping the check run.',
       );
     }
   }
