@@ -162,10 +162,22 @@ export function lighthouseResultsToCtrf(
 
 /**
  * Pure gate mapping over the CTRF output of {@link lighthouseResultsToCtrf}: any `failed` metric
- * → `BLOCK`, any `near-budget` tag with no failures → `WARN`, else `PASS`.
+ * → `BLOCK`, any `near-budget` tag with no failures → `WARN`, else `PASS`. When `auditedRouteCount`
+ * routes were audited but no metric could be read (a runtime-error report), it is `WARN` — a
+ * measurement gap must not read as "all budgets satisfied".
  */
-export function evaluatePerfBudgetGate(report: CTRFReport): GateDecision {
+export function evaluatePerfBudgetGate(report: CTRFReport, auditedRouteCount = 0): GateDecision {
   const { tests } = report.results;
+
+  // Routes were audited but zero metrics were measurable (every Lighthouse metric was undefined,
+  // e.g. the page failed to load). "Measured nothing" is not "all budgets satisfied".
+  if (auditedRouteCount > 0 && tests.length === 0) {
+    return {
+      decision: 'WARN',
+      reason: `${auditedRouteCount} route(s) audited but no performance metrics were measured`,
+    };
+  }
+
   const failed = tests.filter((t) => t.status === 'failed');
   if (failed.length > 0) {
     return {
@@ -268,5 +280,5 @@ export async function runLighthouseAudit(
   }
 
   const report = lighthouseResultsToCtrf(results, budgets);
-  return { results, report, gate: evaluatePerfBudgetGate(report) };
+  return { results, report, gate: evaluatePerfBudgetGate(report, results.length) };
 }
