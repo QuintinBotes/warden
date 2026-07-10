@@ -7,8 +7,10 @@ function d(decision: GateDecision['decision'], reason: string): GateDecision {
 }
 
 describe('combineGateDecisions', () => {
-  it('returns PASS for an empty list', () => {
-    expect(combineGateDecisions([])).toEqual({ decision: 'PASS', reason: expect.any(String) });
+  it('WARNs for an empty list — nothing to combine is not a pass', () => {
+    const r = combineGateDecisions([]);
+    expect(r.decision).toBe('WARN');
+    expect(r.reason).toMatch(/no gate decisions/i);
   });
 
   it('returns PASS when every decision is PASS', () => {

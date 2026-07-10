@@ -10,6 +10,13 @@ export function evaluateExitCriteria(
   cfg: WardenConfig,
 ): GateDecision {
   const total = results.length;
+
+  // No results is not a pass — the pass-rate math below would otherwise manufacture 100% for
+  // an empty set (0/0). "No tests ran" surfaces the anomaly without hard-blocking.
+  if (total === 0) {
+    return { decision: 'WARN', reason: 'no tests ran' };
+  }
+
   const passCount = results.filter((r) => r.status === 'PASS').length;
   const p1Fails = results.filter((r) => r.status === 'FAIL' && r.priority === 'P1').length;
   const p2Fails = results.filter((r) => r.status === 'FAIL' && r.priority === 'P2').length;

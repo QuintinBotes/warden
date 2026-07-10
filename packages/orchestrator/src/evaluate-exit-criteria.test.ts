@@ -54,8 +54,9 @@ describe('evaluateExitCriteria', () => {
     expect(decision.decision).toBe('PASS');
   });
 
-  it('passes on an empty result set', () => {
+  it('WARNs on an empty result set — no tests ran is not a pass', () => {
     const decision = evaluateExitCriteria([], cfg);
-    expect(decision.decision).toBe('PASS');
+    expect(decision.decision).toBe('WARN');
+    expect(decision.reason).toMatch(/no tests ran/i);
   });
 });
