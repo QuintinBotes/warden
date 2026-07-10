@@ -54,19 +54,29 @@ export interface AggregateReport {
   markdown?: string;
 }
 
+/**
+ * Only an explicit, recognized PASS/WARN/BLOCK is trusted. A missing or unrecognized decision
+ * fails **closed** to BLOCK — a gate report we can't read must never read as a green merge signal.
+ */
 function normalizeGate(raw: unknown, fallbackReason: unknown): AggregateReport['gate'] {
-  if (raw && typeof raw === 'object') {
-    const g = raw as { decision?: unknown; reason?: unknown };
-    const decision = String(g.decision ?? 'PASS').toUpperCase();
-    return {
-      decision: (decision === 'BLOCK' || decision === 'WARN' ? decision : 'PASS') as GateVerdict,
-      reason: typeof g.reason === 'string' ? g.reason : '',
-    };
+  const isObject = Boolean(raw) && typeof raw === 'object';
+  const g = isObject ? (raw as { decision?: unknown; reason?: unknown }) : undefined;
+  const rawDecision = g ? g.decision : raw;
+  const reason = g
+    ? typeof g.reason === 'string'
+      ? g.reason
+      : ''
+    : typeof fallbackReason === 'string'
+      ? fallbackReason
+      : '';
+
+  const decision = String(rawDecision ?? '').toUpperCase();
+  if (decision === 'PASS' || decision === 'WARN' || decision === 'BLOCK') {
+    return { decision: decision as GateVerdict, reason };
   }
-  const decision = String(raw ?? 'PASS').toUpperCase();
   return {
-    decision: (decision === 'BLOCK' || decision === 'WARN' ? decision : 'PASS') as GateVerdict,
-    reason: typeof fallbackReason === 'string' ? fallbackReason : '',
+    decision: 'BLOCK',
+    reason: reason || 'unrecognized or missing gate decision — failing closed',
   };
 }
 

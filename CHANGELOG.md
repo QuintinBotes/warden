@@ -19,6 +19,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     when given no decisions to combine.
   - The CUJ gate `WARN`s a touched journey whose tests didn't run this change (`NOT_TESTED`)
     instead of reporting it "healthy" against a DEGRADED/BROKEN baseline.
+- **The GitHub Action now fails _closed_.** A crashed/absent `warden report aggregate` step, or an
+  aggregate report with a missing/unrecognized gate decision, previously defaulted the merge check
+  to `PASS` — a broken gate could post a green check and unblock a merge. Both now resolve to
+  `BLOCK`; only an explicit, recognized `PASS`/`WARN`/`BLOCK` is trusted.
 
 ## [0.4.0] — 2026-07-10 · "Dogfood"
 

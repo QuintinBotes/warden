@@ -231,6 +231,34 @@ describe('run', () => {
     expect(runCall).toBeDefined();
   });
 
+  it('fails closed (BLOCK) when the aggregate step crashes', async () => {
+    const exec: ExecFn = (_command, args) => {
+      if (args.includes('analyze')) {
+        return Promise.resolve({
+          stdout: 'test_tags=@x\nrisk_score=1\nrun_full_suite=false\n',
+          stderr: '',
+        });
+      }
+      if (args.includes('aggregate')) {
+        return Promise.reject(new Error('aggregate boom'));
+      }
+      return Promise.resolve({ stdout: '{}', stderr: '' });
+    };
+
+    await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: { GITHUB_REPOSITORY: 'acme/shop' },
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    // A gate that could not be evaluated must never read as green.
+    expect(core.outputs.gate).toBe('BLOCK');
+    expect(core.failed.length).toBeGreaterThan(0);
+  });
+
   it('skips the AI agent when risk is below the threshold and passes the gate', async () => {
     const passReport = {
       gate: { decision: 'PASS', reason: 'All exit criteria met' },

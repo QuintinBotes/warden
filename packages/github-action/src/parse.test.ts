@@ -47,4 +47,21 @@ describe('parseAggregateReport', () => {
   it('throws a WardenError when there is no JSON', () => {
     expect(() => parseAggregateReport('no json here')).toThrow(WardenError);
   });
+
+  it('fails closed (BLOCK) on an unrecognized gate decision', () => {
+    const report = parseAggregateReport(JSON.stringify({ gate: { decision: 'WEIRD' } }));
+    expect(report.gate.decision).toBe('BLOCK');
+  });
+
+  it('fails closed (BLOCK) when the gate decision is missing', () => {
+    const report = parseAggregateReport(JSON.stringify({ gate: { reason: 'x' } }));
+    expect(report.gate.decision).toBe('BLOCK');
+  });
+
+  it('still honors an explicit PASS decision', () => {
+    const report = parseAggregateReport(
+      JSON.stringify({ gate: { decision: 'PASS', reason: 'ok' } }),
+    );
+    expect(report.gate).toEqual({ decision: 'PASS', reason: 'ok' });
+  });
 });
