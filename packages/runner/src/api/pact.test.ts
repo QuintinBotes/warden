@@ -159,6 +159,16 @@ describe('evaluatePactGate', () => {
     expect(evaluatePactGate(results).decision).toBe('PASS');
   });
 
+  it('WARNs when no interactions were verified at all (no contracts found)', () => {
+    expect(evaluatePactGate([]).decision).toBe('WARN');
+    const withEmptyChecks: ContractVerificationResult[] = [
+      { consumer: 'web-app', provider: 'checkout-service', checks: [] },
+    ];
+    const gate = evaluatePactGate(withEmptyChecks);
+    expect(gate.decision).toBe('WARN');
+    expect(gate.reason).toMatch(/no.*contract/i);
+  });
+
   it('BLOCKs when any interaction check failed', () => {
     const results: ContractVerificationResult[] = [
       {

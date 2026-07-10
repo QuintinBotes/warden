@@ -83,7 +83,17 @@ export async function evaluateCujGateForRun(
 
   const { cujs, errors } = await new CujRegistry(run.source, run.parse).load(cfg.cuj.dir);
   for (const err of errors) logger.warn(`CUJ definition skipped: ${err.message}`);
-  if (cujs.length === 0) return { gate: NEUTRAL, reports: [] };
+  // The gate is enabled but no CUJ definitions loaded (missing/misconfigured `cuj.dir`, or every
+  // def was malformed). It ran but measured nothing — WARN rather than a confident neutral PASS.
+  if (cujs.length === 0) {
+    return {
+      gate: {
+        decision: 'WARN',
+        reason: `CUJ gate is enabled but no CUJ definitions were loaded from '${cfg.cuj.dir}' — journey health was not measured.`,
+      },
+      reports: [],
+    };
+  }
 
   const touched = resolveTouchedCujs(run.changeSurface, cujs);
   if (touched.length === 0) return { gate: NEUTRAL, reports: [] };

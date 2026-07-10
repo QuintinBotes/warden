@@ -161,14 +161,25 @@ export function pactVerificationToCtrf(results: ContractVerificationResult[]): C
 
 /**
  * Pure gate mapping over {@link ContractVerificationResult}s. Any failed interaction check →
- * `BLOCK` (a broken contract is a breaking change for a live consumer); otherwise `PASS`.
+ * `BLOCK` (a broken contract is a breaking change for a live consumer); zero interactions verified
+ * at all (no contracts found) → `WARN` (a config/broker gap, not a clean bill); otherwise `PASS`.
  */
 export function evaluatePactGate(results: ContractVerificationResult[]): GateDecision {
-  const failed = results.flatMap((r) => r.checks).filter((c) => !c.success);
+  const checks = results.flatMap((r) => r.checks);
+  const failed = checks.filter((c) => !c.success);
   if (failed.length > 0) {
     return {
       decision: 'BLOCK',
       reason: `${failed.length} contract interaction(s) failed verification`,
+    };
+  }
+  // No interactions were verified at all (broker returned no contracts, wrong provider name, or a
+  // tag that matched nothing). "0 verified" is a broker/config gap, not "all verified".
+  if (checks.length === 0) {
+    return {
+      decision: 'WARN',
+      reason:
+        'no consumer contract interactions were verified (no contracts found — broker/tag misconfiguration?)',
     };
   }
   return { decision: 'PASS', reason: 'all contract interactions verified' };

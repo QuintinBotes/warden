@@ -79,6 +79,15 @@ describe('evaluateCujGateForRun', () => {
     expect(outcome.reports[0]!.status).toBe('BROKEN');
   });
 
+  it('WARNs when the gate is enabled but no CUJ definitions loaded', async () => {
+    const outcome = await evaluateCujGateForRun([result('TC-pay', 'PASS')], enabledCfg(), {
+      source: memSource({}),
+      changeSurface: surface(),
+    });
+    expect(outcome.gate.decision).toBe('WARN');
+    expect(outcome.gate.reason).toMatch(/no CUJ definitions/i);
+  });
+
   it('is a neutral PASS when the change touches no journey', async () => {
     const outcome = await evaluateCujGateForRun([result('TC-pay', 'FAIL')], enabledCfg(), {
       source: memSource({ 'checkout.yaml': CHECKOUT_DEF }),

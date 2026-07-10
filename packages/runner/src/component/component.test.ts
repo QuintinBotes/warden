@@ -73,7 +73,9 @@ describe('evaluateComponentGate', () => {
     expect(gate.decision).toBe('PASS');
   });
 
-  it('PASSes on an empty report', () => {
-    expect(evaluateComponentGate(componentResultsToCtrf([])).decision).toBe('PASS');
+  it('WARNs on an empty report — 0 tests collected is "did not measure", not "no failures"', () => {
+    const gate = evaluateComponentGate(componentResultsToCtrf([]));
+    expect(gate.decision).toBe('WARN');
+    expect(gate.reason).toMatch(/0 tests/i);
   });
 });

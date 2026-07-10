@@ -68,31 +68,37 @@ describe('k6LoadResultsToCtrf', () => {
 describe('evaluateLoadGate', () => {
   it('PASSes when the summary is within budget', () => {
     const report = k6LoadResultsToCtrf(withinBudget, thresholds);
-    expect(evaluateLoadGate(report)).toEqual({
+    expect(evaluateLoadGate(report, withinBudget)).toEqual({
       decision: 'PASS',
       reason: expect.any(String),
     });
   });
 
   it('BLOCKs when p95 latency is breached', () => {
-    const report = k6LoadResultsToCtrf({ ...withinBudget, p95Ms: 900 }, thresholds);
-    const gate = evaluateLoadGate(report);
+    const summary = { ...withinBudget, p95Ms: 900 };
+    const gate = evaluateLoadGate(k6LoadResultsToCtrf(summary, thresholds), summary);
     expect(gate.decision).toBe('BLOCK');
     expect(gate.reason).toContain('p95Ms');
   });
 
   it('BLOCKs when the error rate is breached', () => {
-    const report = k6LoadResultsToCtrf({ ...withinBudget, errorRate: 0.05 }, thresholds);
-    const gate = evaluateLoadGate(report);
+    const summary = { ...withinBudget, errorRate: 0.05 };
+    const gate = evaluateLoadGate(k6LoadResultsToCtrf(summary, thresholds), summary);
     expect(gate.decision).toBe('BLOCK');
     expect(gate.reason).toContain('errorRate');
   });
 
   it('BLOCKs and reports every breached threshold when multiple are breached', () => {
-    const report = k6LoadResultsToCtrf(breached, thresholds);
-    const gate = evaluateLoadGate(report);
+    const gate = evaluateLoadGate(k6LoadResultsToCtrf(breached, thresholds), breached);
     expect(gate.decision).toBe('BLOCK');
     expect(gate.reason).toContain('p95Ms');
     expect(gate.reason).toContain('errorRate');
+  });
+
+  it('WARNs when the load run issued zero requests (measured nothing)', () => {
+    const zeroRequests: K6LoadSummary = { p95Ms: 0, p99Ms: 0, errorRate: 0, requests: 0 };
+    const gate = evaluateLoadGate(k6LoadResultsToCtrf(zeroRequests, thresholds), zeroRequests);
+    expect(gate.decision).toBe('WARN');
+    expect(gate.reason).toMatch(/zero requests/i);
   });
 });

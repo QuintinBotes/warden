@@ -67,8 +67,8 @@ export function componentResultsToCtrf(results: ComponentTestResult[]): CTRFRepo
 
 /**
  * Pure gate mapping over the CTRF output of {@link componentResultsToCtrf}: any failed component
- * test → `BLOCK`, otherwise `PASS`. Component tests have no "acceptable degradation" tier the way
- * a11y/perf budgets do, so there is no `WARN` outcome here.
+ * test → `BLOCK`; a run that collected zero tests (nothing matched/discovered) → `WARN` (it did
+ * not measure); otherwise `PASS`.
  */
 export function evaluateComponentGate(report: CTRFReport): GateDecision {
   const failed = report.results.tests.filter((t) => t.status === 'failed');
@@ -76,6 +76,14 @@ export function evaluateComponentGate(report: CTRFReport): GateDecision {
     return {
       decision: 'BLOCK',
       reason: `${failed.length} component test failure(s)`,
+    };
+  }
+  // The runner ran but collected no tests (grep/testNamePattern matched nothing, or no
+  // component tests/stories were discovered). "0 tests" is "did not measure", not "no failures".
+  if (report.results.tests.length === 0) {
+    return {
+      decision: 'WARN',
+      reason: 'component tier ran but collected 0 tests (nothing matched or was discovered)',
     };
   }
   return { decision: 'PASS', reason: 'no component test failures' };

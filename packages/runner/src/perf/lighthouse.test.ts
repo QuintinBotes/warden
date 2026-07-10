@@ -143,4 +143,21 @@ describe('evaluatePerfBudgetGate', () => {
     const gate = evaluatePerfBudgetGate(lighthouseResultsToCtrf(results, budgets));
     expect(gate.decision).toBe('PASS');
   });
+
+  it('WARNs when routes were audited but no metrics could be measured', () => {
+    // A runtime-error report: no categories, no audits → every metric undefined → 0 CTRF tests.
+    const results: LighthouseRouteResult[] = [
+      { route: 'https://preview.example.com/checkout', report: {} },
+    ];
+    const report = lighthouseResultsToCtrf(results, budgets);
+    expect(report.results.tests).toHaveLength(0); // pins the "measured nothing" signal
+    const gate = evaluatePerfBudgetGate(report, results.length);
+    expect(gate.decision).toBe('WARN');
+    expect(gate.reason).toMatch(/no performance metrics/i);
+  });
+
+  it('PASSes when no routes were audited at all (nothing to measure)', () => {
+    const report = lighthouseResultsToCtrf([], budgets);
+    expect(evaluatePerfBudgetGate(report, 0).decision).toBe('PASS');
+  });
 });
