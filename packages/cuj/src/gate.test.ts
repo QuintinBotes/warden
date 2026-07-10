@@ -91,6 +91,17 @@ describe('evaluateCujGate', () => {
     expect(decision.decision).toBe('WARN');
   });
 
+  it('WARNs when a touched journey was not tested this run (NOT_TESTED after a DEGRADED baseline)', () => {
+    const decision = evaluateCujGate({
+      touched: [touch('CUJ-1', 'tier1')],
+      before: [report('CUJ-1', 'DEGRADED')],
+      after: [report('CUJ-1', 'NOT_TESTED')],
+      cfg,
+    });
+    expect(decision.decision).toBe('WARN');
+    expect(decision.reason).toMatch(/not tested/i);
+  });
+
   it('still BLOCKs a BROKEN journey even with no baseline', () => {
     const decision = evaluateCujGate({
       touched: [touch('CUJ-1', 'tier1')],
@@ -181,7 +192,9 @@ describe('mergeGateDecisions', () => {
     expect(merged.decision).toBe('PASS');
   });
 
-  it('an empty list is a vacuous PASS', () => {
-    expect(mergeGateDecisions().decision).toBe('PASS');
+  it('WARNs on an empty list — nothing to combine is not a pass', () => {
+    const r = mergeGateDecisions();
+    expect(r.decision).toBe('WARN');
+    expect(r.reason).toMatch(/no gate decisions/i);
   });
 });

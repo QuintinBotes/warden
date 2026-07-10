@@ -22,5 +22,14 @@ export function computeGateDecision(execution: TestExecution): GateDecision {
     return { decision: 'WARN', reason: `${flaky} test(s) flaky` };
   }
 
+  // Tests ran but nothing actually passed — every result was skipped or blocked (a blocked test
+  // started but never finished). "Nothing passed" must never read as "All tests passed".
+  const passed = execution.results.filter((r) => r.status === 'PASS').length;
+  if (passed === 0) {
+    const skipped = execution.results.filter((r) => r.status === 'SKIP').length;
+    const blocked = execution.results.filter((r) => r.status === 'BLOCKED').length;
+    return { decision: 'WARN', reason: `no tests passed (${skipped} skipped, ${blocked} blocked)` };
+  }
+
   return { decision: 'PASS', reason: 'All tests passed' };
 }

@@ -40,4 +40,28 @@ describe('computeGateDecision', () => {
     expect(gate.decision).toBe('WARN');
     expect(gate.reason).toMatch(/no tests ran/i);
   });
+
+  it('WARNs (not PASS) when tests ran but none actually passed — all skipped or blocked', () => {
+    const execution = fixtureExecution({
+      results: [
+        { testCaseId: 'TC-1', status: 'SKIP', duration: 0, retries: 0, flakeFlag: false },
+        { testCaseId: 'TC-2', status: 'BLOCKED', duration: 0, retries: 0, flakeFlag: false },
+      ],
+    });
+
+    const gate = computeGateDecision(execution);
+    expect(gate.decision).toBe('WARN');
+    expect(gate.reason).toMatch(/no tests passed/i);
+  });
+
+  it('still PASSes when at least one test passed and the rest were skipped', () => {
+    const execution = fixtureExecution({
+      results: [
+        { testCaseId: 'TC-1', status: 'PASS', duration: 10, retries: 0, flakeFlag: false },
+        { testCaseId: 'TC-2', status: 'SKIP', duration: 0, retries: 0, flakeFlag: false },
+      ],
+    });
+
+    expect(computeGateDecision(execution).decision).toBe('PASS');
+  });
 });
