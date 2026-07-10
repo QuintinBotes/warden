@@ -418,7 +418,17 @@ export async function runRun(opts: RunRunOptions, deps: RunRunDeps = {}): Promis
       results: execution.results,
     });
 
-    const reporters = deps.reporters ?? createReporters(cfg, deps.reporterDeps);
+    const reporters =
+      deps.reporters ??
+      createReporters(cfg, {
+        logger,
+        // In GitHub Actions the job summary renders from $GITHUB_STEP_SUMMARY; locally, fall back
+        // to a file in the artifacts dir so a bare `warden run` writes a useful summary instead of
+        // crashing on the missing env var.
+        jobSummaryPath:
+          process.env.GITHUB_STEP_SUMMARY ?? path.join(opts.artifactsDir, 'job-summary.md'),
+        ...deps.reporterDeps,
+      });
     const ctx: ReportContext = {
       config: cfg,
       artifactsDir: opts.artifactsDir,
