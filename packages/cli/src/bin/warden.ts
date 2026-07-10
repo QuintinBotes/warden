@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { loadConfig, type StrategyName } from '@warden/core';
 import { analyzeChangeSurface } from '@warden/orchestrator';
 import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { load as parseYaml } from 'js-yaml';
 import { loadCoverageIndex, selectWithImpact } from '@warden/impact';
 import { SqliteStore } from '@warden/test-management';
@@ -23,7 +24,18 @@ import {
 
 const program = new Command();
 
-program.name('warden').description('Warden — the AI QA platform CLI').version('0.1.0');
+/** Reads the CLI version from this package's own package.json (never goes stale on a release). */
+function resolveVersion(): string {
+  try {
+    // From dist/bin/warden.js, package.json sits two levels up (packages/cli/package.json).
+    const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
+    return typeof pkg.version === 'string' ? pkg.version : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+program.name('warden').description('Warden — the AI QA platform CLI').version(resolveVersion());
 
 function fail(err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
