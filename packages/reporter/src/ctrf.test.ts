@@ -61,6 +61,37 @@ describe('executionToCtrf', () => {
     expect(test?.extra?.flakeFlag).toBe(true);
   });
 
+  it('writes the human-readable name/filePath when present, keeping testCaseId as identity', () => {
+    const execution = fixtureExecution({
+      results: [
+        {
+          testCaseId: 'TC-abc',
+          name: 'checkout › apply discount code',
+          filePath: 'checkout.spec.ts',
+          status: 'PASS',
+          duration: 10,
+          retries: 0,
+          flakeFlag: false,
+        },
+      ],
+    });
+
+    const report = executionToCtrf(execution);
+
+    expect(report.results.tests[0]?.name).toBe('checkout › apply discount code');
+    expect(report.results.tests[0]?.filePath).toBe('checkout.spec.ts');
+  });
+
+  it('falls back to testCaseId as the name when no human-readable name is present', () => {
+    const execution = fixtureExecution({
+      results: [
+        { testCaseId: 'TC-xyz', status: 'PASS', duration: 10, retries: 0, flakeFlag: false },
+      ],
+    });
+
+    expect(executionToCtrf(execution).results.tests[0]?.name).toBe('TC-xyz');
+  });
+
   it('honors a custom tool name', () => {
     const execution = fixtureExecution();
 

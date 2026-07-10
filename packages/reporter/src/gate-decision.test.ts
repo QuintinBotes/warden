@@ -32,4 +32,12 @@ describe('computeGateDecision', () => {
 
     expect(computeGateDecision(execution).decision).toBe('WARN');
   });
+
+  it('does not claim "All tests passed" when zero tests ran — WARNs with an honest reason', () => {
+    const execution = fixtureExecution({ results: [] });
+
+    const gate = computeGateDecision(execution);
+    expect(gate.decision).toBe('WARN');
+    expect(gate.reason).toMatch(/no tests ran/i);
+  });
 });

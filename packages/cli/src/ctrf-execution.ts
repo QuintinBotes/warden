@@ -52,12 +52,16 @@ export function ctrfToExecution(
     const meta = opts.retryMeta?.get(identity);
     const result: TestResult = {
       testCaseId: contentId('TC', identity),
+      name: test.name,
       status: meta?.flakeFlag ? 'FLAKY' : CTRF_STATUS_MAP[test.status],
       duration: test.duration,
       retries: meta?.retries ?? 0,
       flakeFlag: meta?.flakeFlag ?? false,
       artifacts: [],
     };
+    if (test.filePath !== undefined) {
+      result.filePath = test.filePath;
+    }
     if (test.message !== undefined) {
       result.errorMessage = test.message;
     }
