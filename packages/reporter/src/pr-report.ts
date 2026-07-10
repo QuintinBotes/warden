@@ -77,7 +77,7 @@ export function renderPrReport(
   lines.push('| --- | --- | --- | --- |');
   for (const result of execution.results) {
     lines.push(
-      `| ${result.testCaseId} | ${result.status} | ${result.duration} | ${result.retries} |`,
+      `| ${result.name ?? result.testCaseId} | ${result.status} | ${result.duration} | ${result.retries} |`,
     );
   }
   lines.push('');
