@@ -76,6 +76,14 @@ export type TestPlan = z.infer<typeof TestPlanSchema>;
 
 export const TestResultSchema = z.object({
   testCaseId: z.string(),
+  /**
+   * Human-readable test title (e.g. `checkout › apply discount code`), preserved from the
+   * runner so reporters can show a real name instead of the opaque `testCaseId` hash.
+   * Optional/back-compatible: consumers fall back to `testCaseId` when absent.
+   */
+  name: z.string().optional(),
+  /** Source file the test lives in, preserved from the runner for the dashboard/reporters. */
+  filePath: z.string().optional(),
   status: TestStatus,
   duration: z.number(), // ms
   errorMessage: z.string().optional(),

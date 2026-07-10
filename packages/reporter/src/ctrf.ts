@@ -52,10 +52,12 @@ export function executionToCtrf(
     if (result.artifacts.length > 0) extra.artifacts = result.artifacts;
 
     return {
-      name: result.testCaseId,
+      // Prefer the human-readable title; fall back to the stable id when the runner didn't supply one.
+      name: result.name ?? result.testCaseId,
       status: mapStatus(result.status),
       duration: result.duration,
       message: result.errorMessage,
+      filePath: result.filePath,
       tags: result.flakeFlag ? ['flaky'] : undefined,
       extra,
     };

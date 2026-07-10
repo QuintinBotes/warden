@@ -4,6 +4,32 @@ All notable changes to Warden are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Fixes surfaced by dogfooding `warden run` against Warden's own repo (and an adversarial
+verification pass on the result).
+
+### Fixed
+
+- **A local `warden run` no longer crashes** outside GitHub Actions. When no GitHub client
+  is available the PR-comment and check-run reporters are skipped with a warning instead of
+  throwing, and the job summary falls back to `<artifacts-dir>/job-summary.md`. The CI path
+  (where the Action supplies an octokit) is unchanged.
+- **CTRF reports keep human-readable test names.** The CTRF→execution→CTRF round-trip was
+  replacing each test's title with its opaque `testCaseId` hash (`TC-ef7a…`); reports now
+  carry the real title (e.g. `checkout › apply discount code`) and `filePath`, so the
+  dashboard, PR comment, and job summary are legible. `testCaseId` remains the stable
+  identity for flake/quarantine history.
+- **The gate no longer reports a false green when zero tests ran.** `computeGateDecision`
+  previously emitted `PASS — "All tests passed"` for an empty (or silently unparseable)
+  report; it now returns `WARN — "no tests ran"`, surfacing the anomaly without hard-blocking
+  legitimate no-test changes.
+
+### Added
+
+- `TestResult` gains optional `name` and `filePath` fields (additive; consumers fall back to
+  `testCaseId` when absent).
+
 ## [0.3.0] — 2026-07-09 · "Tier-3 & Hardening"
 
 Completes the **Tier-3 roadmap** (all six items), packages the GitHub Action for real
