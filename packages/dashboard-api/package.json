@@ -24,7 +24,7 @@
     "@warden/core": "workspace:*",
     "@warden/cuj": "workspace:*",
     "@warden/test-management": "workspace:*",
-    "zod": "^3.24.1"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "tsup": "^8.3.5",
