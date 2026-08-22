@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useDeferredValue, useMemo, useState, type ReactNode } from 'react';
 import {
   applyTheme,
   CoverageMatrix,
   PortcullisLogo,
   ReplayViewer,
+  STATUS_META,
   StatusPill,
   TestResultRow,
   ThemeToggle,
@@ -152,10 +153,13 @@ function SectionHead({
   eyebrow,
   title,
   subtitle,
+  controls,
 }: {
   eyebrow: string;
   title: string;
   subtitle?: string;
+  /** Optional filter controls, stacked under the subtitle on the right of the head. */
+  controls?: ReactNode;
 }) {
   return (
     <header className="wd-section-head">
@@ -163,10 +167,46 @@ function SectionHead({
         <p className="wd-eyebrow">{eyebrow}</p>
         <h2 className="wd-title">{title}</h2>
       </div>
-      {subtitle ? <p className="wd-subtitle">{subtitle}</p> : null}
+      {subtitle || controls ? (
+        <div className="wd-section-head-aside">
+          {subtitle ? <p className="wd-subtitle">{subtitle}</p> : null}
+          {controls}
+        </div>
+      ) : null}
     </header>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Results list: filtering and paging.
+// ---------------------------------------------------------------------------
+
+/**
+ * Rows drawn per page. A real run is thousands of results (Warden's own snapshot of a
+ * 3,231-test Vitest suite drew every one of them, and the page stopped responding), so
+ * the list is paged rather than virtualised: rows have variable height once tags wrap,
+ * which a windowing implementation would have to measure, and a page number is something
+ * the header can state honestly. 50 fills a tall viewport with a little to scroll.
+ */
+const RESULTS_PAGE_SIZE = 50;
+
+/** Worst-first, so a status filter's options read down from the ones that block a merge. */
+const STATUS_FILTER_ORDER: SentinelStatus[] = [
+  'FAIL',
+  'BLOCKED',
+  'FLAKY',
+  'QUARANTINED',
+  'SKIPPED',
+  'PASS',
+  'NOT_TESTED',
+];
+
+/** The statuses the gate counts as failing — the number the panel header leads with. */
+function isFailing(status: SentinelStatus) {
+  return status === 'FAIL' || status === 'BLOCKED';
+}
+
+const count = (n: number) => n.toLocaleString('en-US');
 
 function PlayGlyph() {
   return (
@@ -231,6 +271,9 @@ function formatGenerated(iso: string) {
 export default function DashboardClient({ data }: { data: DashboardData }) {
   const [theme, setTheme] = useState<Theme>('signal');
   const [selectedId, setSelectedId] = useState<string | null>(data.defaultSelectedId);
+  const [nameQuery, setNameQuery] = useState('');
+  const [statusQuery, setStatusQuery] = useState<SentinelStatus | 'ALL'>('ALL');
+  const [page, setPage] = useState(0);
 
   function onTheme(next: Theme) {
     setTheme(next);
@@ -239,7 +282,41 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
 
   const kpis = [data.kpis.passRate, data.kpis.flakeRate, data.kpis.mttr, data.kpis.coverage];
   const selected = data.results.find((r) => r.id === selectedId) ?? null;
-  const failing = data.results.filter((r) => r.status === 'FAIL' || r.status === 'BLOCKED').length;
+  const failing = data.results.filter((r) => isFailing(r.status)).length;
+
+  // Only offer statuses the run actually produced: a filter for a status that cannot
+  // appear is a control that can only ever return nothing.
+  const statusesPresent = useMemo(
+    () => STATUS_FILTER_ORDER.filter((s) => data.results.some((r) => r.status === s)),
+    [data.results],
+  );
+
+  // The typed value drives the input; the deferred one drives the scan, so typing stays
+  // responsive when the filter has thousands of rows to walk. No timer, no lost keystroke.
+  const needle = useDeferredValue(nameQuery).trim().toLowerCase();
+  const matches = useMemo(
+    () =>
+      data.results.filter(
+        (r) =>
+          (statusQuery === 'ALL' || r.status === statusQuery) &&
+          (needle === '' || r.name.toLowerCase().includes(needle)),
+      ),
+    [data.results, statusQuery, needle],
+  );
+
+  const filtered = needle !== '' || statusQuery !== 'ALL';
+  const failingInMatches = matches.filter((r) => isFailing(r.status)).length;
+  // Honest either way: unfiltered this is the run; filtered it says so, and against what.
+  const resultsSubtitle = filtered
+    ? `${count(matches.length)} of ${count(data.results.length)} tests match · ${count(failingInMatches)} of ${count(failing)} failing`
+    : `${count(data.results.length)} tests · ${count(failing)} failing`;
+
+  const pageCount = Math.max(1, Math.ceil(matches.length / RESULTS_PAGE_SIZE));
+  // Clamped rather than reset: a deferred filter can shrink the match set a render after
+  // the click that changed it, and a page number past the end must not blank the list.
+  const pageIndex = Math.min(page, pageCount - 1);
+  const pageStart = pageIndex * RESULTS_PAGE_SIZE;
+  const visible = matches.slice(pageStart, pageStart + RESULTS_PAGE_SIZE);
 
   return (
     <main className="wd-shell">
@@ -306,29 +383,89 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           <SectionHead
             eyebrow="Latest run"
             title="Test results"
-            subtitle={`${data.results.length} tests · ${failing} failing`}
+            subtitle={resultsSubtitle}
+            controls={
+              <div className="wd-filters">
+                <input
+                  className="wd-filter-search"
+                  type="search"
+                  value={nameQuery}
+                  placeholder="Filter by name"
+                  aria-label="Filter test results by name"
+                  onChange={(e) => {
+                    setNameQuery(e.target.value);
+                    setPage(0);
+                  }}
+                />
+                <select
+                  className="wd-filter-status"
+                  value={statusQuery}
+                  aria-label="Filter test results by status"
+                  onChange={(e) => {
+                    setStatusQuery(e.target.value as SentinelStatus | 'ALL');
+                    setPage(0);
+                  }}
+                >
+                  <option value="ALL">All statuses</option>
+                  {statusesPresent.map((s) => (
+                    <option key={s} value={s}>
+                      {STATUS_META[s].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            }
           />
           <div className="wd-panel">
-            <div className="wd-rows" role="list">
-              {data.results.map((r) => (
+            {matches.length === 0 ? (
+              <p className="wd-empty">No test in this run matches that filter.</p>
+            ) : (
+              <div className="wd-rows" role="list">
+                {visible.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    className="wd-row-btn"
+                    role="listitem"
+                    data-selected={r.id === selectedId}
+                    aria-pressed={r.id === selectedId}
+                    onClick={() => setSelectedId(r.id)}
+                  >
+                    <TestResultRow
+                      name={r.name}
+                      durationMs={r.durationMs}
+                      tags={r.tags}
+                      status={r.status}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+            {pageCount > 1 ? (
+              <div className="wd-pager">
                 <button
-                  key={r.id}
                   type="button"
-                  className="wd-row-btn"
-                  role="listitem"
-                  data-selected={r.id === selectedId}
-                  aria-pressed={r.id === selectedId}
-                  onClick={() => setSelectedId(r.id)}
+                  className="wd-pager-btn"
+                  disabled={pageIndex === 0}
+                  aria-label="Previous page"
+                  onClick={() => setPage(pageIndex - 1)}
                 >
-                  <TestResultRow
-                    name={r.name}
-                    durationMs={r.durationMs}
-                    tags={r.tags}
-                    status={r.status}
-                  />
+                  ‹ Prev
                 </button>
-              ))}
-            </div>
+                <span className="wd-pager-label">
+                  {`Page ${count(pageIndex + 1)} of ${count(pageCount)} · showing ${count(pageStart + 1)}–${count(pageStart + visible.length)} of ${count(matches.length)}`}
+                </span>
+                <button
+                  type="button"
+                  className="wd-pager-btn"
+                  disabled={pageIndex >= pageCount - 1}
+                  aria-label="Next page"
+                  onClick={() => setPage(pageIndex + 1)}
+                >
+                  Next ›
+                </button>
+              </div>
+            ) : null}
           </div>
         </section>
         <section className="wd-section">
@@ -381,7 +518,9 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           />
           <div className="wd-panel">
             {data.learning.length === 0 && (
-              <p className="wd-empty">No learning modules yet — these are generated from test failures.</p>
+              <p className="wd-empty">
+                No learning modules yet — these are generated from test failures.
+              </p>
             )}
             {data.learning.map((l) => (
               <article className="wd-learn-item" key={l.embedId}>
@@ -542,33 +681,35 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
         />
         <div className="wd-panel wd-flakeint">
           {data.flakeTrend.points.length === 0 && data.flakeTrend.topOffenders.length === 0 ? (
-            <p className="wd-empty">No flake history yet — it builds up as the suite runs over time.</p>
+            <p className="wd-empty">
+              No flake history yet — it builds up as the suite runs over time.
+            </p>
           ) : (
-          <>
-          <div className="wd-flakeint-trend">
-            <FlakeSparkline points={data.flakeTrend.points} />
-            <span className="wd-flakeint-legend">
-              flake rate — latest{' '}
-              <strong>
-                {data.flakeTrend.points.length
-                  ? pct(data.flakeTrend.points[data.flakeTrend.points.length - 1]!.flakeRate)
-                  : 'n/a'}
-              </strong>
-            </span>
-          </div>
-          <ul className="wd-offenders">
-            {data.flakeTrend.topOffenders.map((o, i) => (
-              <li className="wd-offender" key={i}>
-                <span className="wd-offender-name">{o.testName}</span>
-                <span className="wd-offender-cause">{o.rootCause}</span>
-                <span className="wd-badge wd-sev--DEGRADED">{pct(o.flakeRate)} flaky</span>
-                <span className="wd-offender-cost">
-                  {o.reRunsCaused} re-runs · {o.ciMinutesLost}m lost
+            <>
+              <div className="wd-flakeint-trend">
+                <FlakeSparkline points={data.flakeTrend.points} />
+                <span className="wd-flakeint-legend">
+                  flake rate — latest{' '}
+                  <strong>
+                    {data.flakeTrend.points.length
+                      ? pct(data.flakeTrend.points[data.flakeTrend.points.length - 1]!.flakeRate)
+                      : 'n/a'}
+                  </strong>
                 </span>
-              </li>
-            ))}
-          </ul>
-          </>
+              </div>
+              <ul className="wd-offenders">
+                {data.flakeTrend.topOffenders.map((o, i) => (
+                  <li className="wd-offender" key={i}>
+                    <span className="wd-offender-name">{o.testName}</span>
+                    <span className="wd-offender-cause">{o.rootCause}</span>
+                    <span className="wd-badge wd-sev--DEGRADED">{pct(o.flakeRate)} flaky</span>
+                    <span className="wd-offender-cost">
+                      {o.reRunsCaused} re-runs · {o.ciMinutesLost}m lost
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </div>
       </section>

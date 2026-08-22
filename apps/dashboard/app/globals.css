@@ -130,6 +130,98 @@ body {
   white-space: nowrap;
 }
 
+.wd-section-head-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* ---- Results filters ---------------------------------------------------- */
+
+.wd-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.wd-filter-search,
+.wd-filter-status {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink0);
+  background: var(--g1);
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm);
+  padding: 0.3rem 0.45rem;
+  line-height: 1.4;
+}
+
+/* Wide enough for a test name fragment, narrow enough to sit beside the select
+   at the 960px breakpoint where the results split collapses to one column. */
+.wd-filter-search {
+  width: 13rem;
+  max-width: 44vw;
+}
+
+.wd-filter-search::placeholder {
+  color: var(--ink2);
+}
+
+.wd-filter-search:focus-visible,
+.wd-filter-status:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 1px;
+}
+
+/* ---- Results pager ------------------------------------------------------ */
+
+.wd-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-top: 1px solid var(--hair-soft);
+  background: var(--g1);
+}
+
+.wd-pager-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink2);
+  text-align: center;
+}
+
+.wd-pager-btn {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink1);
+  background: var(--g2);
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm);
+  padding: 0.25rem 0.55rem;
+  cursor: pointer;
+}
+
+.wd-pager-btn:hover:not(:disabled) {
+  color: var(--ink0);
+  border-color: var(--accent);
+}
+
+/* Disabled says "there is no page that way", so it stays legible rather than vanishing. */
+.wd-pager-btn:disabled {
+  color: var(--ink2);
+  opacity: 0.55;
+  cursor: default;
+}
+
+.wd-pager-btn:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 1px;
+}
+
 /* ---- Grids -------------------------------------------------------------- */
 
 .wd-kpis {
