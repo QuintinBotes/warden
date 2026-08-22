@@ -74,6 +74,11 @@ export function ctrfToExecution(
     if (test.filePath !== undefined) {
       result.filePath = test.filePath;
     }
+    // The dashboard groups and filters results by where they came from. A Vitest run reports
+    // a suite and no file path, so dropping this left every result in such a run ungroupable.
+    if (test.suite !== undefined) {
+      result.suite = test.suite;
+    }
     if (test.message !== undefined) {
       result.errorMessage = test.message;
     }

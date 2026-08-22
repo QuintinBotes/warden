@@ -35638,7 +35638,7 @@ var coerce = {
 };
 var NEVER = INVALID;
 
-// ../core/dist/chunk-5P6HY65B.js
+// ../core/dist/chunk-PXEITAP7.js
 var TestStatus = external_exports.enum(["PASS", "FAIL", "SKIP", "BLOCKED", "FLAKY"]);
 var Priority = external_exports.enum(["P1", "P2", "P3"]);
 var TestType = external_exports.enum([
@@ -35704,6 +35704,12 @@ var TestResultSchema = external_exports.object({
   name: external_exports.string().optional(),
   /** Source file the test lives in, preserved from the runner for the dashboard/reporters. */
   filePath: external_exports.string().optional(),
+  /**
+   * Suite the test belongs to, preserved from the runner. Runners that report a suite
+   * instead of a file path (Vitest, Jest) leave `filePath` empty, and this is then the
+   * only real grouping a result carries.
+   */
+  suite: external_exports.string().optional(),
   status: TestStatus,
   /**
    * Criticality of this test, when the runner said so — CTRF `extra.priority` or a `@P1`-style
@@ -35756,6 +35762,12 @@ var CTRFTestSchema = external_exports.object({
   message: external_exports.string().optional(),
   trace: external_exports.string().optional(),
   filePath: external_exports.string().optional(),
+  /**
+   * The suite the test belongs to. Vitest and Jest reporters emit this where Playwright
+   * emits `filePath`, and it is the only grouping some runners report at all — dropped
+   * here, a whole run arrives at the dashboard with nothing to group or filter by.
+   */
+  suite: external_exports.string().optional(),
   tags: external_exports.array(external_exports.string()).optional(),
   extra: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
 });

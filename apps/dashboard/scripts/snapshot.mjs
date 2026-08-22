@@ -20,9 +20,14 @@ import { fileURLToPath } from 'node:url';
 import { SqliteStore } from '@warden/test-management';
 import { SqliteDashboardApi, seedStore } from '@warden/dashboard-api';
 
+import { demoResultTags, moduleOf, realResultTags } from './result-tags.mjs';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, '..', 'app', 'generated');
-const OUT_FILE = join(OUT_DIR, 'data.json');
+// WARDEN_SNAPSHOT_OUT redirects the write. The committed data.json is the demo snapshot and
+// a build artifact, so anything that snapshots a real store to inspect it — a test, a person
+// pointing this at their own run — needs somewhere else to put the result.
+const OUT_FILE = process.env.WARDEN_SNAPSHOT_OUT ?? join(OUT_DIR, 'data.json');
 
 // ---------------------------------------------------------------------------
 // Presentational lookups (copy only — never numbers).
@@ -38,12 +43,6 @@ const TEST_NAMES = {
   'TC-SEARCH-001': 'search › relevant results',
   'TC-SEARCH-002': 'search › fuzzy-match ranking',
 };
-
-/** Module label derived from a requirement / test id (REQ-AUTH-001 → "Auth"). */
-function moduleOf(id) {
-  const token = id.split('-')[1] ?? '';
-  return token.charAt(0) + token.slice(1).toLowerCase();
-}
 
 // ---------------------------------------------------------------------------
 // Status mapping: core TestStatus → design-system SentinelStatus.
@@ -161,7 +160,8 @@ async function main() {
   // With WARDEN_STORE set, snapshot a REAL store (e.g. one written by `warden run --db`);
   // otherwise seed the canonical demo dataset into a throwaway db in the temp dir.
   const externalStorePath = process.env.WARDEN_STORE;
-  const dbPath = externalStorePath ?? join(tmpdir(), `warden-dashboard-snapshot-${Date.now()}.sqlite`);
+  const dbPath =
+    externalStorePath ?? join(tmpdir(), `warden-dashboard-snapshot-${Date.now()}.sqlite`);
   const store = new SqliteStore(dbPath);
 
   try {
@@ -325,7 +325,9 @@ async function main() {
           // Prefer the real test title the runner now persists; fall back to the demo lookup.
           name: r.name ?? TEST_NAMES[r.testCaseId] ?? r.testCaseId,
           durationMs: r.duration,
-          tags: [moduleOf(r.testCaseId).toLowerCase(), 'e2e'],
+          // Real stores get only groupings the run itself reported, and none when it
+          // reported none; the demo dataset keeps its hand-written module labels.
+          tags: externalStorePath ? realResultTags(r) : demoResultTags(r),
           status,
           replay,
         };
@@ -592,7 +594,7 @@ async function main() {
       flakeTrend: externalStorePath ? { points: [], topOffenders: [] } : flakeTrend,
     };
 
-    mkdirSync(OUT_DIR, { recursive: true });
+    mkdirSync(dirname(OUT_FILE), { recursive: true });
     writeFileSync(OUT_FILE, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
     console.log(`Wrote snapshot → ${OUT_FILE}`);
     console.log(

@@ -90,6 +90,12 @@ export const TestResultSchema = z.object({
   name: z.string().optional(),
   /** Source file the test lives in, preserved from the runner for the dashboard/reporters. */
   filePath: z.string().optional(),
+  /**
+   * Suite the test belongs to, preserved from the runner. Runners that report a suite
+   * instead of a file path (Vitest, Jest) leave `filePath` empty, and this is then the
+   * only real grouping a result carries.
+   */
+  suite: z.string().optional(),
   status: TestStatus,
   /**
    * Criticality of this test, when the runner said so — CTRF `extra.priority` or a `@P1`-style

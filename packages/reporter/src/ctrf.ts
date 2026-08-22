@@ -62,6 +62,9 @@ export function executionToCtrf(
       duration: result.duration,
       message: result.errorMessage,
       filePath: result.filePath,
+      // Same reason as filePath: `warden run` writes this CTRF and `report aggregate` reads
+      // it back, so a grouping that survives ingestion has to survive the round trip too.
+      suite: result.suite,
       tags: result.flakeFlag ? ['flaky'] : undefined,
       extra,
     };

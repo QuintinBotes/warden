@@ -13,6 +13,12 @@ export const CTRFTestSchema = z.object({
   message: z.string().optional(),
   trace: z.string().optional(),
   filePath: z.string().optional(),
+  /**
+   * The suite the test belongs to. Vitest and Jest reporters emit this where Playwright
+   * emits `filePath`, and it is the only grouping some runners report at all — dropped
+   * here, a whole run arrives at the dashboard with nothing to group or filter by.
+   */
+  suite: z.string().optional(),
   tags: z.array(z.string()).optional(),
   extra: z.record(z.string(), z.unknown()).optional(),
 });

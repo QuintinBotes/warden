@@ -82,6 +82,26 @@ describe('executionToCtrf', () => {
     expect(report.results.tests[0]?.filePath).toBe('checkout.spec.ts');
   });
 
+  it('writes the suite back out, so a grouping survives the CTRF round trip', () => {
+    const execution = fixtureExecution({
+      results: [
+        {
+          testCaseId: 'TC-abc',
+          name: 'renders the pane',
+          suite: 'app.dom.test.tsx',
+          status: 'PASS',
+          duration: 10,
+          retries: 0,
+          flakeFlag: false,
+        },
+      ],
+    });
+
+    const report = executionToCtrf(execution);
+
+    expect(report.results.tests[0]?.suite).toBe('app.dom.test.tsx');
+  });
+
   it('falls back to testCaseId as the name when no human-readable name is present', () => {
     const execution = fixtureExecution({
       results: [

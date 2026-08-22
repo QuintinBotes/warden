@@ -56,6 +56,20 @@ describe('ctrfToExecution', () => {
     });
   });
 
+  it('preserves the suite for a runner that reports one instead of a file path', () => {
+    // Vitest's CTRF output names the suite and no filePath. It is then the only grouping the
+    // result carries, so the dashboard has nothing to group or filter by if it is dropped.
+    const report = fixtureReport({
+      tests: [
+        { name: 'renders the pane', status: 'passed', duration: 12, suite: 'app.dom.test.tsx' },
+      ],
+    });
+    const execution = ctrfToExecution(report);
+
+    expect(execution.results[0]?.suite).toBe('app.dom.test.tsx');
+    expect(execution.results[0]?.filePath).toBeUndefined();
+  });
+
   it('maps skipped/pending/other CTRF statuses onto TestStatus', () => {
     const report = fixtureReport({
       tests: [
