@@ -1,13 +1,22 @@
 /**
  * Parsers for the two shapes the Warden CLI hands back over stdout:
  *  - `warden analyze` → GitHub-Actions `key=value` output lines.
- *  - `warden report aggregate` → a JSON gate report.
+ *  - `warden report aggregate --json` → a JSON `GateReport`. (Without `--json` that command
+ *    prints a one-line human summary with no JSON in it at all, which is not parseable here —
+ *    see `warden-cli.ts`.)
  *
- * Both are intentionally lenient: the CLI is a separately-built work-stream, so
- * we tolerate surrounding log noise rather than couple to its exact framing.
+ * Both are intentionally lenient about framing: the CLI is a separately-built
+ * work-stream, so we tolerate surrounding log noise. What is *not* lenient is the
+ * shape — `GateReport` is defined once in `@warden/core` and imported by both the
+ * CLI that writes it and this parser, so the two cannot drift apart again.
  */
 import { WardenError } from '@warden/core';
-import type { ExploratoryFinding } from '@warden/core';
+import type {
+  ExploratoryFinding,
+  GateReport,
+  GateReportFailure,
+  GateReportSummary,
+} from '@warden/core';
 import type { CheckAnnotation, GateVerdict } from './types.js';
 
 /** Parse `key=value` lines (the GitHub-Actions `$GITHUB_OUTPUT` format). */
@@ -25,33 +34,28 @@ export function parseGithubOutput(stdout: string): Record<string, string> {
   return out;
 }
 
-/** A failing test the aggregate step maps back to a file + line for annotations. */
-export interface AggregateFailure {
-  path: string;
-  line?: number;
-  message: string;
-  title?: string;
+/**
+ * A failing test the aggregate step maps back to a file + line for annotations.
+ *
+ * The shared `GateReportFailure` plus the two hints only a CI host uses; the CLI does not
+ * classify priority, so both stay optional and `buildAnnotations` derives a level without them.
+ */
+export interface AggregateFailure extends GateReportFailure {
   priority?: 'P1' | 'P2' | 'P3';
   annotation_level?: CheckAnnotation['annotation_level'];
 }
 
 /** Roll-up counts for the report header. */
-export interface AggregateSummary {
-  total: number;
-  passed: number;
-  failed: number;
-}
+export type AggregateSummary = GateReportSummary;
 
-/** The gate report the action consumes from `warden report aggregate`. */
-export interface AggregateReport {
-  gate: { decision: GateVerdict; reason: string };
-  reportPath?: string;
+/**
+ * The gate report the action consumes from `warden report aggregate --json`: the shared
+ * `GateReport` contract, plus the fields only this action's own rendering adds.
+ */
+export interface AggregateReport extends Omit<GateReport, 'failures'> {
   riskScore?: number;
-  summary?: AggregateSummary;
   failures?: AggregateFailure[];
   findings?: ExploratoryFinding[];
-  /** Optional pre-rendered Markdown; when absent the action renders its own. */
-  markdown?: string;
 }
 
 /**
@@ -86,7 +90,9 @@ export function parseAggregateReport(stdout: string): AggregateReport {
   const end = stdout.lastIndexOf('}');
   if (start === -1 || end === -1 || end < start) {
     throw new WardenError(
-      'Warden: could not find a JSON gate report in `warden report aggregate` output.',
+      'Warden: `warden report aggregate --json` printed no JSON gate report. Either the ' +
+        '`warden` CLI resolved on PATH predates `--json` and is older than this action, or it ' +
+        'failed before the gate was computed.',
       'AGGREGATE_PARSE_ERROR',
     );
   }
@@ -95,7 +101,7 @@ export function parseAggregateReport(stdout: string): AggregateReport {
     parsed = JSON.parse(stdout.slice(start, end + 1)) as Record<string, unknown>;
   } catch {
     throw new WardenError(
-      'Warden: `warden report aggregate` did not return valid JSON.',
+      'Warden: `warden report aggregate --json` did not return valid JSON.',
       'AGGREGATE_PARSE_ERROR',
     );
   }

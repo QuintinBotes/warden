@@ -6,6 +6,12 @@ import { z } from 'zod';
  * validation and compile-time types can never drift.
  */
 
+/**
+ * `SKIP` is a test the author chose not to run — harmless, and the gate treats it that way.
+ * `BLOCKED` is a test that started and never finished (a run cut short by `--max-failures`, a
+ * global timeout, or SIGINT): its result is unknown, so it blocks the merge gate rather than
+ * being counted as a skip. The two are never interchangeable.
+ */
 export const TestStatus = z.enum(['PASS', 'FAIL', 'SKIP', 'BLOCKED', 'FLAKY']);
 export type TestStatus = z.infer<typeof TestStatus>;
 
@@ -85,6 +91,12 @@ export const TestResultSchema = z.object({
   /** Source file the test lives in, preserved from the runner for the dashboard/reporters. */
   filePath: z.string().optional(),
   status: TestStatus,
+  /**
+   * Criticality of this test, when the runner said so — CTRF `extra.priority` or a `@P1`-style
+   * tag. Optional because most suites mark nothing; the gate's `blockOnCritical` and
+   * `warnOnHighCount` rules only fire on results that carry one, never on unmarked tests.
+   */
+  priority: Priority.optional(),
   duration: z.number(), // ms
   errorMessage: z.string().optional(),
   /** Media paths, populated by the runner (WS-12) for the dashboard's E2E replay (WS2-20). */

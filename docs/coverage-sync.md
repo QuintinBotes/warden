@@ -61,7 +61,7 @@ That one model covers the common topologies:
 
 ## What you get
 
-- A **draft PR** in each external target (`warden/sync-<repo>-pr-<n>`) containing the concrete `add` / `update` / `remove` changes — each with a reason tied to the change that motivated it. Removals appear as proposed deletions in the diff.
+- A **draft PR** in each external target (`warden/sync-<repo>-pr-<n>`) containing the concrete `add` / `update` / `remove` changes — each with a reason tied to the change that motivated it. An `update` is a patch, and Warden **applies it to the target file** and commits the resulting file; the diff you review is the one Git computes. Removals appear as proposed deletions in the diff.
 - **Review suggestions** on the source PR when the target is `self` (a README or OpenAPI tweak rides along with the code).
 - A **check-run** on the source PR summarizing everything with links.
 
@@ -71,6 +71,11 @@ That one model covers the common topologies:
 - Generated tests and docs are validated before they're committed; anything invalid is dropped and noted.
 - Re-running on the same PR **updates the existing draft PR** rather than opening duplicates.
 - Removals are proposed as diffs, never applied automatically.
+- **A patch that no longer applies is never committed.** Warden applies an `update` patch to the
+  target file as it stands, matching context exactly and refusing an ambiguous match rather than
+  guessing. When it cannot — the file moved, the code drifted, or Warden has no read access to that
+  repo — the recommendation is left out of the draft PR and named, with the reason, on the summary
+  check-run and in the PR body. A dropped proposal is always stated, never silent.
 
 ## Self-hosting
 

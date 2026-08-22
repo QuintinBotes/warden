@@ -1,4 +1,4 @@
-import { promises as fs } from 'node:fs';
+import { promises as fs, type Dirent } from 'node:fs';
 import path from 'node:path';
 import { CTRFReportSchema, WardenError, type CTRFReport, type MergeCtrf } from '@warden/core';
 
@@ -57,19 +57,75 @@ export const mergeCtrf: MergeCtrf = (reports: CTRFReport[]): CTRFReport => {
   });
 };
 
-/** Reads every `*.json` CTRF file in `reportsDir` and merges them into one report. */
-export async function aggregate(reportsDir: string): Promise<CTRFReport> {
-  let entries: string[];
-  try {
-    entries = await fs.readdir(reportsDir);
-  } catch (err) {
-    throw new WardenError(
-      `Failed to read CTRF reports directory "${reportsDir}": ${(err as Error).message}`,
-      'REPORTER_AGGREGATE_READDIR_FAILED',
-    );
-  }
+/**
+ * Collects every `*.json` file at or below `rootDir`, as paths relative to it and sorted so
+ * the merge order is deterministic.
+ *
+ * The walk is recursive because CTRF never arrives flat in the pipeline this exists for. Each
+ * tier runs `warden run --artifacts-dir warden-artifacts/<tier>`, which is already one level
+ * down, and `actions/download-artifact` unpacks each uploaded artifact into a directory of its
+ * own under the download path — so on the gate runner every report is nested. A single-level
+ * `readdir` found none of them and merged nothing, which reads as "no tests ran": a gate that
+ * cannot see a failing test cannot block on one.
+ */
+async function collectReportFiles(rootDir: string): Promise<string[]> {
+  const found: string[] = [];
 
-  const jsonFiles = entries.filter((f) => f.endsWith('.json')).sort();
+  const walk = async (dir: string, relativeDir: string): Promise<void> => {
+    let entries: Dirent[];
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch (err) {
+      throw new WardenError(
+        `Failed to read CTRF reports directory "${dir}": ${(err as Error).message}`,
+        'REPORTER_AGGREGATE_READDIR_FAILED',
+      );
+    }
+
+    for (const entry of entries) {
+      const relative = relativeDir ? path.join(relativeDir, entry.name) : entry.name;
+      // `isDirectory()` is false for a symlink even when it points at a directory, so a
+      // symlinked directory is skipped rather than followed: an artifact tree containing a
+      // cycle must not hang the merge gate.
+      if (entry.isDirectory()) {
+        await walk(path.join(dir, entry.name), relative);
+      } else if (entry.isFile() && entry.name.endsWith('.json')) {
+        found.push(relative);
+      }
+    }
+  };
+
+  await walk(rootDir, '');
+  return found.sort();
+}
+
+/**
+ * A CTRF report is recognised by its envelope: a top-level `results` object. The directory
+ * handed to `aggregate` is the *artifacts* directory, which by design also holds JSON that was
+ * never a test report — `warden agent --output warden-artifacts/exploratory-report.json` writes
+ * an `AgentOutput` there, and `warden run` writes `fixture-catalog.json` — so "ends in .json"
+ * is not the same question as "is a CTRF report".
+ */
+function looksLikeCtrf(doc: unknown): boolean {
+  return (
+    typeof doc === 'object' &&
+    doc !== null &&
+    typeof (doc as { results?: unknown }).results === 'object' &&
+    (doc as { results?: unknown }).results !== null
+  );
+}
+
+/**
+ * Reads every CTRF report at or below `reportsDir` — subdirectories included — and merges them
+ * into one.
+ *
+ * JSON files that are not CTRF reports are skipped rather than fatal: they are the artifacts
+ * directory's other tenants, and the gate must still reach a decision when one is present. A
+ * file that *is* CTRF-shaped but fails the schema is fatal — skipping it would drop real test
+ * results out of the merge and shrink the run the gate scores.
+ */
+export async function aggregate(reportsDir: string): Promise<CTRFReport> {
+  const jsonFiles = await collectReportFiles(reportsDir);
 
   const reports: CTRFReport[] = [];
   for (const file of jsonFiles) {
@@ -83,7 +139,20 @@ export async function aggregate(reportsDir: string): Promise<CTRFReport> {
         'REPORTER_AGGREGATE_INVALID_JSON',
       );
     }
-    reports.push(CTRFReportSchema.parse(parsedJson));
+
+    if (!looksLikeCtrf(parsedJson)) continue;
+
+    const parsed = CTRFReportSchema.safeParse(parsedJson);
+    if (!parsed.success) {
+      const issues = parsed.error.issues
+        .map((i) => `${i.path.length > 0 ? i.path.join('.') : '(root)'}: ${i.message}`)
+        .join('; ');
+      throw new WardenError(
+        `CTRF report "${file}" is not a valid CTRF report: ${issues}`,
+        'REPORTER_AGGREGATE_INVALID_CTRF',
+      );
+    }
+    reports.push(parsed.data);
   }
 
   return mergeCtrf(reports);

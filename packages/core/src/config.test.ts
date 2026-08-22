@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm, readFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { defineConfig, loadConfig } from './config';
+import { defineConfig, loadConfig, loadConfigWithSource } from './config';
 
 describe('defineConfig', () => {
   it('fills documented defaults from an empty config', () => {
@@ -10,6 +10,7 @@ describe('defineConfig', () => {
     expect(cfg.ai.provider).toBe('anthropic');
     expect(cfg.browser.engine).toBe('playwright');
     expect(cfg.browser.headless).toBe(true);
+    // 100, not 90: the gate requires every executed test to pass unless a repo lowers this.
     expect(cfg.gates.blockOnPassRateBelowPercent).toBe(90);
     expect(cfg.gates.flakeQuarantineAfterRuns).toBe(3);
     expect(cfg.reporting.ctrf).toBe(true);
@@ -111,6 +112,187 @@ describe('loadConfig', () => {
       expect(cfg.browser.headless).toBe(false);
       expect(cfg.gates.blockOnPassRateBelowPercent).toBe(80);
       expect(cfg.ai.provider).toBe('anthropic'); // default still applied
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('loadConfig treats the config file as untrusted input', () => {
+  // On CI the config file is the pull request's copy, and the process reading it holds
+  // ANTHROPIC_API_KEY. These are the two things it must not be able to do.
+  const withTempDir = async (body: (dir: string) => Promise<void>) => {
+    const dir = await mkdtemp(join(tmpdir(), 'warden-cfg-'));
+    try {
+      await body(dir);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  };
+
+  it('never executes the config file: a side effect in it does not happen', async () => {
+    await withTempDir(async (dir) => {
+      const sentinel = join(dir, 'CONFIG_EXECUTED');
+      await writeFile(
+        join(dir, 'warden.config.ts'),
+        `import { writeFileSync } from 'node:fs';\n` +
+          `writeFileSync(${JSON.stringify(sentinel)}, 'pwned');\n` +
+          `export default {};\n`,
+      );
+      await expect(loadConfig(dir)).rejects.toThrow(/never executes it/);
+      await expect(stat(sentinel)).rejects.toThrow(); // the file was never written
+    });
+  });
+
+  it('refuses a config that points the model at a host that is not this machine', async () => {
+    await withTempDir(async (dir) => {
+      await writeFile(
+        join(dir, 'warden.config.ts'),
+        `export default { ai: { provider: 'ollama', ollama: { baseUrl: 'https://attacker.example' } } };\n`,
+      );
+      await expect(loadConfig(dir)).rejects.toThrow(/will not send model prompts/);
+    });
+  });
+
+  it('takes a remote AI endpoint from the environment, which the repository cannot write', async () => {
+    await withTempDir(async (dir) => {
+      await writeFile(join(dir, 'warden.config.ts'), `export default { ai: {} };\n`);
+      process.env.WARDEN_OLLAMA_BASE_URL = 'https://ollama.internal.example';
+      try {
+        const cfg = await loadConfig(dir);
+        expect(cfg.ai.ollama.baseUrl).toBe('https://ollama.internal.example');
+      } finally {
+        delete process.env.WARDEN_OLLAMA_BASE_URL;
+      }
+    });
+  });
+
+  it('executes the file only when the operator vouches for the checkout', async () => {
+    await withTempDir(async (dir) => {
+      const sentinel = join(dir, 'CONFIG_EXECUTED');
+      await writeFile(
+        join(dir, 'warden.config.ts'),
+        `import { writeFileSync } from 'node:fs';\n` +
+          `writeFileSync(${JSON.stringify(sentinel)}, 'ran');\n` +
+          `export default { gates: { blockOnPassRateBelowPercent: 70 } };\n`,
+      );
+      const cfg = await loadConfig(dir, { trust: true });
+      expect(cfg.gates.blockOnPassRateBelowPercent).toBe(70);
+      expect((await readFile(sentinel, 'utf-8')).trim()).toBe('ran'); // opt-in really does run it
+    });
+  });
+
+  it('reads the documented defineConfig() form, imports and all', async () => {
+    await withTempDir(async (dir) => {
+      await writeFile(
+        join(dir, 'warden.config.ts'),
+        `import { defineConfig } from '@warden/core';\n\n` +
+          `// A comment, and a trailing comma.\n` +
+          `export default defineConfig({\n` +
+          `  ai: { provider: 'ollama', model: 'qwen3:32b' },\n` +
+          `  scope: { sharedPaths: ['lib/'] },\n` +
+          `});\n`,
+      );
+      const cfg = await loadConfig(dir);
+      expect(cfg.ai.provider).toBe('ollama');
+      expect(cfg.scope.sharedPaths).toEqual(['lib/']);
+      expect(cfg.ai.ollama.baseUrl).toBe('http://localhost:11434'); // default still applied
+    });
+  });
+
+  it('merges warden.config.local.* over warden.config.*', async () => {
+    await withTempDir(async (dir) => {
+      await writeFile(
+        join(dir, 'warden.config.ts'),
+        `export default { browser: { engine: 'playwright', headless: true } };\n`,
+      );
+      await writeFile(
+        join(dir, 'warden.config.local.ts'),
+        `export default { browser: { headless: false } };\n`,
+      );
+      const cfg = await loadConfig(dir);
+      expect(cfg.browser.headless).toBe(false);
+      expect(cfg.browser.engine).toBe('playwright'); // untouched key survives the overlay
+    });
+  });
+
+  it('reads warden.config.json', async () => {
+    await withTempDir(async (dir) => {
+      await writeFile(join(dir, 'warden.config.json'), '{ "gates": { "warnOnHighCount": 5 } }');
+      const cfg = await loadConfig(dir);
+      expect(cfg.gates.warnOnHighCount).toBe(5);
+    });
+  });
+
+  it('falls back to defaults when the repo has no config at all', async () => {
+    await withTempDir(async (dir) => {
+      const cfg = await loadConfig(dir);
+      expect(cfg.ai.provider).toBe('anthropic');
+    });
+  });
+});
+
+describe('ai.ollama.baseUrl', () => {
+  it('rejects a value that is not an http(s) URL', () => {
+    expect(() => defineConfig({ ai: { ollama: { baseUrl: 'file:///etc/passwd' } } })).toThrow();
+    expect(() => defineConfig({ ai: { ollama: { baseUrl: 'not a url' } } })).toThrow();
+  });
+
+  it('accepts a remote https endpoint when the config is written by hand', () => {
+    // `defineConfig` is the author's own call in their own process; the loopback rule belongs to
+    // `loadConfig`, which is the path that reads a file it did not write.
+    const cfg = defineConfig({ ai: { ollama: { baseUrl: 'https://ollama.internal.example' } } });
+    expect(cfg.ai.ollama.baseUrl).toBe('https://ollama.internal.example');
+  });
+});
+
+describe('loadConfigWithSource', () => {
+  it('reports a repository with no warden.config as unconfigured', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'warden-cfg-absent-'));
+    try {
+      const loaded = await loadConfigWithSource(dir);
+      expect(loaded.configured).toBe(false);
+      expect(loaded.sourcePath).toBeNull();
+      // The defaults are still filled — the caller gets a usable config, just an unconfigured one.
+      expect(loaded.config.ai.provider).toBe('anthropic');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('tells an absent config apart from a present-but-empty one, whose values are identical', async () => {
+    const absent = await mkdtemp(join(tmpdir(), 'warden-cfg-absent-'));
+    const empty = await mkdtemp(join(tmpdir(), 'warden-cfg-empty-'));
+    try {
+      await writeFile(join(empty, 'warden.config.ts'), 'export default {};\n');
+
+      const a = await loadConfigWithSource(absent);
+      const b = await loadConfigWithSource(empty);
+
+      // The two configs really are value-identical: provenance is the only thing that separates
+      // "this repository chose the defaults" from "nobody ever configured this repository".
+      expect(a.config).toEqual(b.config);
+      expect(a.configured).toBe(false);
+      expect(b.configured).toBe(true);
+      expect(b.sourcePath).toMatch(/warden\.config\.ts$/);
+    } finally {
+      await rm(absent, { recursive: true, force: true });
+      await rm(empty, { recursive: true, force: true });
+    }
+  });
+
+  it('does not count a .wardenrc, because the non-executing loader never reads one', async () => {
+    // `.wardenrc` was only ever resolved by c12. Reading the config as data instead of running
+    // it dropped that lookup, so a repo configured only that way is genuinely unconfigured as
+    // far as this loader is concerned — and saying `configured: true` would be the exact
+    // false claim this function exists to prevent.
+    const dir = await mkdtemp(join(tmpdir(), 'warden-cfg-rc-'));
+    try {
+      await writeFile(join(dir, '.wardenrc'), 'scope.tagPrefix=#\n');
+      const loaded = await loadConfigWithSource(dir);
+      expect(loaded.configured).toBe(false);
+      expect(loaded.sourcePath).toBeNull();
+      expect(loaded.config.scope.tagPrefix).not.toBe('#');
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

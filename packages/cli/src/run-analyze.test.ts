@@ -29,7 +29,9 @@ describe('runAnalyze', () => {
       { surface, config: defineConfig() },
     );
 
-    expect(content).toBe('test_tags=@smoke @checkout\nrisk_score=5\nrun_full_suite=false\n');
+    expect(content).toBe(
+      'test_tags=@smoke @checkout\nrisk_score=5\nrun_full_suite=false\nconfigured=true\n',
+    );
   });
 
   it('sets run_full_suite to true when the surface has shared changes', async () => {
@@ -84,5 +86,64 @@ describe('runAnalyze', () => {
         { surface, config: defineConfig() },
       ),
     ).resolves.toBeTypeOf('string');
+  });
+
+  it('marks a repository with no warden.config as unconfigured, and says so once', async () => {
+    // No config is injected, so the real loader runs against a directory that has none.
+    const surface = fixtureChangeSurface({ testTags: [], riskScore: 3 });
+    const warnings: string[] = [];
+
+    const content = await runAnalyze(
+      { base: 'main', head: 'feature', cwd: dir },
+      { surface, warn: (m) => warnings.push(m) },
+    );
+
+    expect(content).toContain('configured=false');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/no warden\.config/i);
+  });
+
+  it('marks a repository that has a warden.config as configured', async () => {
+    await fs.writeFile(path.join(dir, 'warden.config.ts'), 'export default {};\n', 'utf-8');
+    const surface = fixtureChangeSurface({ testTags: [], riskScore: 3 });
+    const warnings: string[] = [];
+
+    const content = await runAnalyze(
+      { base: 'main', head: 'feature', cwd: dir },
+      { surface, warn: (m) => warnings.push(m) },
+    );
+
+    expect(content).toContain('configured=true');
+  });
+
+  it("reports the surface's scope warning instead of emitting a bare test_tags= line", async () => {
+    const warnings: string[] = [];
+    const surface = fixtureChangeSurface({
+      testTags: [],
+      scopeWarning: 'No changed file is under any scope.modulePaths prefix (apps/).',
+    });
+
+    const content = await runAnalyze(
+      { base: 'main', head: 'feature', cwd: dir },
+      { surface, config: defineConfig(), warn: (msg) => warnings.push(msg) },
+    );
+
+    // The machine-readable output is unchanged — the warning is for the human reading the log.
+    expect(content).toContain('test_tags=\n');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('scope.modulePaths');
+  });
+
+  it('stays quiet when the surface scoped cleanly', async () => {
+    const warnings: string[] = [];
+    await runAnalyze(
+      { base: 'main', head: 'feature', cwd: dir },
+      {
+        surface: fixtureChangeSurface({ testTags: ['@apps/checkout'] }),
+        config: defineConfig(),
+        warn: (msg) => warnings.push(msg),
+      },
+    );
+    expect(warnings).toEqual([]);
   });
 });

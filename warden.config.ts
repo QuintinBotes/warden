@@ -20,9 +20,17 @@ export default {
     // Treat the shared contract surface and build config as full-suite triggers.
     sharedPaths: ['packages/core/', 'tsconfig.base.json'],
     highRiskPatterns: ['core', 'schema', 'config'],
+    // This repo's modules are its workspace packages, not `apps/*` — without this the change
+    // surface would find no module in any diff and the self-test would print an empty
+    // `test_tags=` forever.
+    modulePaths: ['packages/', 'apps/'],
   },
   gates: {
     blockOnCritical: true,
+    // Blocks the merge when less than this share of results ended green. Skipped and blocked
+    // tests count against it, so a run that measured almost nothing cannot read as a pass.
+    // It is not a failure allowance — any failing test blocks whatever this says.
+    // Set to 0 to switch the rule off.
     blockOnPassRateBelowPercent: 90,
   },
 };

@@ -21,11 +21,30 @@ export interface LLMProvider {
 | Gemini | Available | `ai.provider: 'gemini'` |
 | Ollama (local/self-hosted) | Available | `ai.provider: 'ollama'` |
 
-Each cloud provider reads its own API key from the environment. Because every provider implements the same `LLMProvider` interface, switching is a one-line config change with no code changes anywhere else.
+Each cloud provider reads its own API key from the environment, and only its own — configuring
+`openai` and setting `ANTHROPIC_API_KEY` credentials nothing. Because every provider implements
+the same `LLMProvider` interface, switching is a one-line config change with no code changes
+anywhere else.
+
+| Provider | Environment variable |
+|----------|----------------------|
+| `anthropic` | `ANTHROPIC_API_KEY` |
+| `openai` | `OPENAI_API_KEY` |
+| `gemini` | `GEMINI_API_KEY`, or `GOOGLE_API_KEY` |
+| `ollama` | none — it talks to a local daemon |
+
+**A missing key is an error, not a downgrade.** `createProvider` throws, and `warden agent` exits
+`1` naming the variable to set, without writing a report. Warden does not substitute a stub: an
+agent report written without a model has empty `findings` and reads as a clean pass, so falling
+back quietly would convert "could not run" into "found nothing".
+
+For a single run, `warden agent --provider <name> --model <id>` overrides `ai.provider`/`ai.model` without touching the config — the route the GitHub Action's `provider` and `model` inputs take. A name outside the four above is rejected rather than quietly falling back to the configured provider.
 
 ### Local models & fallback
 
-`ai.fallbackProvider: 'ollama'` lets Warden run against a local model when no cloud key is present — useful for forks, air-gapped runners, and cost-sensitive routine PRs.
+`ai.fallbackProvider: 'ollama'` lets Warden run against a local model when no cloud key is present — useful for forks, air-gapped runners, and cost-sensitive routine PRs. This is the supported way to run keyless; without it, a missing key stops the run.
+
+The fallback is only tried when the primary provider has no key, and it is checked for credentials in turn: a fallback that is itself uncredentialed produces the same error, naming the fallback rather than the primary.
 
 ```ts
 export default defineConfig({
@@ -36,6 +55,11 @@ export default defineConfig({
   },
 });
 ```
+
+`ollama.baseUrl` is where prompt text is sent, so a config file — which comes from the
+repository under test — may only name a **loopback** host there. A remote Ollama is configured
+from the environment instead, with `WARDEN_OLLAMA_BASE_URL`, which a pull request cannot write.
+See [Configuration](configuration.md#ai--the-ai-engine).
 
 ## Browser engines
 
@@ -50,6 +74,8 @@ Deterministic interactions and AI-driven ones live behind one `BrowserSession` i
 ### Playwright (CI default)
 
 Role-based, deterministic, and headless. Warden configures the context to **capture video, screenshots, and traces**, then lifts those media paths into the report so the dashboard can replay the run. This is the engine the GitHub Action uses.
+
+> **Yours, not one Warden fetched.** `warden run` launches the nearest `node_modules/.bin/playwright` at or above the working directory, or `WARDEN_PLAYWRIGHT_BIN` when you set it. A project with neither fails the run and says so — Warden does not install Playwright on your behalf, because a downloaded one would run against a repo with no config and no specs and report a green run that tested nothing. See [CLI Reference](cli.md#warden-run).
 
 ### Claude-Chrome (local-first)
 

@@ -1,3 +1,4 @@
+import { escapeRegExp } from '@warden/core';
 import type { ChangeSurface, CoverageIndex, ImpactResult, WardenConfig } from '@warden/core';
 import { computeImpact } from './compute-impact.js';
 
@@ -48,9 +49,4 @@ export function selectWithImpact(
     return { grep: impactToGrep(result), runAll: false, result };
   }
   return { grep: null, runAll: false, result };
-}
-
-/** Escape a literal string for safe embedding in a regex alternation. */
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

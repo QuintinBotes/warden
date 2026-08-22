@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import { WardenError, type Reporter, type ReportContext, type TestExecution } from '@warden/core';
-import { computeGateDecision } from './gate-decision.js';
+import { resolveGateDecision } from './gate-decision.js';
 import { renderPrReport } from './pr-report.js';
 
 /** Options for {@link GithubJobSummaryReporter}. */
@@ -15,7 +15,7 @@ export class GithubJobSummaryReporter implements Reporter {
 
   constructor(private readonly opts: GithubJobSummaryReporterOptions = {}) {}
 
-  async report(execution: TestExecution, _ctx: ReportContext): Promise<void> {
+  async report(execution: TestExecution, ctx: ReportContext): Promise<void> {
     const filePath = this.opts.filePath ?? process.env.GITHUB_STEP_SUMMARY;
     if (!filePath) {
       throw new WardenError(
@@ -24,7 +24,7 @@ export class GithubJobSummaryReporter implements Reporter {
       );
     }
 
-    const gate = computeGateDecision(execution);
+    const gate = resolveGateDecision(execution, ctx);
     const markdown = renderPrReport(execution, gate);
     await fs.appendFile(filePath, `${markdown}\n`, 'utf-8');
   }

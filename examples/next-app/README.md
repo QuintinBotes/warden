@@ -43,7 +43,7 @@ story taken further, across whole apps).
 
 ## Wiring Warden
 
-1. Follow [Getting Started](../../docs/getting-started.md): run `npx warden init` in your repo (or
+1. Follow [Getting Started](../../docs/getting-started.md): build the CLI and run `warden init` in your repo (or
    copy `warden.config.ts` / `.github/workflows/ai-qa.yml` from the
    [GitHub Action guide](../../docs/github-action.md)) — the reference workflow lives at
    [`packages/github-action/ai-qa.example.yml`](../../packages/github-action/ai-qa.example.yml).

@@ -1,10 +1,12 @@
 import type {
+  FileAccess,
   GitHubAccess,
   HealRateSummary,
   PrRef,
   ProactiveHealSuggestion,
   RepoTarget,
 } from '@warden/core';
+import { applyUnifiedDiff } from '@warden/core';
 import { isUnifiedDiff } from './patch-utils.js';
 
 /**
@@ -16,11 +18,20 @@ export const PROACTIVE_HEAL_NOTE =
 
 export interface ProactiveHealPublishResult {
   branch: string;
-  /** Present only when there was at least one confident patch to publish. */
+  /** Present only when there was at least one patch that applied to its file. */
   draftPr?: { url: string; number: number };
   checkPosted: boolean;
-  /** Number of suggestions actually published (those carrying a parsed patch). */
+  /** Number of suggestions actually published (those whose patch applied to the real file). */
   suggested: number;
+  /** Suggestions that were NOT published, each with the reason the patch could not be applied. */
+  unapplied: UnappliedSuggestion[];
+}
+
+/** A suggestion that carried a diff but could not be turned into a file change. */
+export interface UnappliedSuggestion {
+  path: string;
+  line: number;
+  reason: string;
 }
 
 export interface PublishProactiveHealOptions {
@@ -48,9 +59,14 @@ function repoTargetOf(sourcePr: PrRef): RepoTarget {
 /**
  * Publishes proactive-heal suggestions via the injected {@link GitHubAccess}:
  *
- * - Suggestions carrying a parsed unified-diff `patch` are collected into ONE idempotent draft PR
- *   on `warden/proactive-heal-pr-<n>` (`openOrUpdateDraftPr`), grouped per target file. When there
- *   is nothing confident to heal, no PR is opened.
+ * - Suggestions carrying a parsed unified-diff `patch` have that patch APPLIED to the file as
+ *   `fileAccess` reads it, and it is the resulting whole file — never the diff text — that is
+ *   published. `openOrUpdateDraftPr` writes whole file contents (the GitHub contents API takes
+ *   nothing else), so handing it a diff replaces the target file with five lines of `@@`.
+ * - Everything that applies goes into ONE idempotent draft PR on
+ *   `warden/proactive-heal-pr-<n>`, one entry per file. A patch that does not apply is not
+ *   committed and is named, with its reason, on the check-run — never dropped in silence.
+ *   When nothing applies, no PR is opened.
  * - A check-run is *always* posted to the source PR, and its conclusion is *always* `neutral` —
  *   proactive healing is never a gate input, so a slow/flaky preview can't turn a PASS into a BLOCK.
  */
@@ -59,47 +75,93 @@ export async function publishProactiveHeal(
   summary: HealRateSummary,
   sourcePr: PrRef,
   gh: GitHubAccess,
+  fileAccess: FileAccess,
   opts: PublishProactiveHealOptions = {},
 ): Promise<ProactiveHealPublishResult> {
   const branch = proactiveHealBranchName(sourcePr);
   const withPatch = suggestions.filter((s) => isUnifiedDiff(s.patch));
+  const { files, published, unapplied } = await applyPatchesPerFile(withPatch, fileAccess);
 
   let draftPr: { url: string; number: number } | undefined;
-  if (withPatch.length > 0) {
-    const files = groupPatchesByPath(withPatch);
+  if (files.length > 0) {
     const draft = await gh.openOrUpdateDraftPr(
       repoTargetOf(sourcePr),
       branch,
       files,
       titleFor(sourcePr),
-      prBody(withPatch, summary, sourcePr),
+      prBody(published, summary, sourcePr),
     );
     draftPr = { url: draft.url, number: draft.number };
   }
 
+  const notes = [...(opts.notes ?? []), ...unappliedNotes(unapplied)];
   await gh.postCheckRun(
     sourcePr,
     'neutral',
     titleFor(sourcePr),
-    checkBody(summary, withPatch.length, opts.notes ?? []),
+    checkBody(summary, published.length, notes),
   );
 
-  return { branch, draftPr, checkPosted: true, suggested: withPatch.length };
+  return { branch, draftPr, checkPosted: true, suggested: published.length, unapplied };
 }
 
-/** One file entry per target path, concatenating the per-locator patches for that file. */
-function groupPatchesByPath(
+/**
+ * Turn each file's suggestions into ONE whole-file entry, by applying their patches in order to
+ * the file as it stands. A patch that does not apply is reported instead of written: the file it
+ * targets is a real test the agent was asked to propose a change to, not to overwrite.
+ */
+async function applyPatchesPerFile(
   suggestions: ProactiveHealSuggestion[],
-): { path: string; content: string }[] {
-  const byPath = new Map<string, string[]>();
+  fileAccess: FileAccess,
+): Promise<{
+  files: { path: string; content: string }[];
+  published: ProactiveHealSuggestion[];
+  unapplied: UnappliedSuggestion[];
+}> {
+  const byPath = new Map<string, ProactiveHealSuggestion[]>();
   for (const s of suggestions) {
     const group = byPath.get(s.locator.filePath) ?? [];
-    group.push(s.patch.trimEnd());
+    group.push(s);
     byPath.set(s.locator.filePath, group);
   }
-  return [...byPath.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([path, patches]) => ({ path, content: `${patches.join('\n')}\n` }));
+
+  const files: { path: string; content: string }[] = [];
+  const published: ProactiveHealSuggestion[] = [];
+  const unapplied: UnappliedSuggestion[] = [];
+
+  for (const [path, group] of [...byPath.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    const original = await fileAccess.readFile(path);
+    if (original === null) {
+      for (const s of group) {
+        unapplied.push({ path, line: s.locator.line, reason: 'file could not be read' });
+      }
+      continue;
+    }
+
+    let content = original;
+    const applied: ProactiveHealSuggestion[] = [];
+    for (const s of group) {
+      const result = applyUnifiedDiff(content, s.patch);
+      if (!result.ok) {
+        unapplied.push({ path, line: s.locator.line, reason: result.reason });
+        continue;
+      }
+      content = result.content;
+      applied.push(s);
+    }
+
+    // An applied patch that changed nothing is not a file change worth committing.
+    if (applied.length === 0 || content === original) continue;
+    files.push({ path, content });
+    published.push(...applied);
+  }
+
+  return { files, published, unapplied };
+}
+
+/** One check-run line per unpublished suggestion — an absent repair is stated, never implied. */
+function unappliedNotes(unapplied: UnappliedSuggestion[]): string[] {
+  return unapplied.map((u) => `not published: ${u.path}:${u.line} — ${u.reason}.`);
 }
 
 function prBody(

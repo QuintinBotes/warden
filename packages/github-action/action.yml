@@ -40,9 +40,23 @@ outputs:
   gate:
     description: 'The QA gate decision: PASS | WARN | BLOCK.'
   risk-score:
-    description: 'The computed change-surface risk score (0-10).'
+    description: >-
+      The computed change-surface risk score (0-10), or the literal `unknown` when the diff could
+      not be read (`warden analyze` failed, or reported no score). `unknown` is never reported as
+      `0`: on that path the action escalates instead — the full `@regression` suite runs and the
+      AI exploratory agent runs regardless of `risk-threshold`. The usual cause is a shallow
+      checkout; set `fetch-depth: 0` on `actions/checkout`.
   report-path:
     description: 'Path to the aggregated CTRF report file.'
+  incomplete-tiers:
+    description: >-
+      Comma-separated names of tiers that did not complete (crashed, timed out, or lost their
+      runner). Empty on a clean run. Any entry forces `gate` to BLOCK: those tiers wrote no
+      results, so the gate saw only part of the suite.
+  configured:
+    description: >-
+      'true' or 'false': whether the analyzed repository has a warden.config. Not set at all when
+      the CLI did not report it, so an unset value means unknown rather than unconfigured.
 
 runs:
   using: 'node20'

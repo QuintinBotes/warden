@@ -1,6 +1,8 @@
 // Assert the @smoke run against the dashboard was green: at least one test ran and none failed.
 // Used by the dashboard-selftest CI job (and runnable locally) to turn a broken dashboard render
-// into a red build. `warden run` itself exits 0 regardless of the gate, so this is the gate check.
+// into a red build. `warden run` now fails the step itself when the gate BLOCKs, but a WARN —
+// notably "no tests ran", the shape a broken dashboard build produces — still exits 0, so this
+// stays as the stricter check: tests actually ran, and every one of them passed.
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

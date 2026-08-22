@@ -14,7 +14,7 @@ import { resolveLinks } from './link-resolver.js';
 import { readTestInventory, type TestInventory } from './test-inventory.js';
 import { readDocInventory, type DocInventory } from './doc-inventory.js';
 import { analyzeGaps } from './gap-analyzer.js';
-import { publish } from './publisher.js';
+import { publish, type UnpublishedRecommendation } from './publisher.js';
 
 const CHECK_TITLE = 'Warden coverage sync';
 
@@ -44,6 +44,8 @@ export interface CoverageSyncSummary {
   recommendations: Recommendation[];
   draftPrs: { repo: string; url: string; number: number }[];
   selfSuggested: number;
+  /** Recommendations whose patch could not be applied, so nothing was written for them. */
+  unpublished: UnpublishedRecommendation[];
   checkPosted: boolean;
 }
 
@@ -111,7 +113,14 @@ export async function runCoverageSync(input: RunCoverageSyncInput): Promise<Cove
     cfg: input.cfg,
   });
 
-  const { draftPrs, selfSuggested } = await publish(recommendations, input.sourcePr, input.gh);
+  const { draftPrs, selfSuggested, unpublished } = await publish(
+    recommendations,
+    input.sourcePr,
+    input.gh,
+    // The reader turns a `patch` recommendation into the whole file it proposes; without it a
+    // patch could only be published as its own diff text.
+    { fileAccessFor: input.fileAccessFor },
+  );
 
   return {
     status: 'published',
@@ -120,6 +129,7 @@ export async function runCoverageSync(input: RunCoverageSyncInput): Promise<Cove
     recommendations,
     draftPrs,
     selfSuggested,
+    unpublished,
     checkPosted: true,
   };
 }
@@ -135,6 +145,7 @@ function emptySummary(
     recommendations: [],
     draftPrs: [],
     selfSuggested: 0,
+    unpublished: [],
     checkPosted: true,
   };
 }

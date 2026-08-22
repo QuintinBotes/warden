@@ -32,20 +32,65 @@ export interface CreateProviderOptions {
 
 type AiProviderName = WardenConfig['ai']['provider'];
 
+/**
+ * The environment variables that credential each provider, in the order a message should
+ * name them. Ollama's empty list is the honest answer rather than a special case: it talks to
+ * a local daemon and there is no key to be missing.
+ */
+const CREDENTIAL_ENV_VARS: Record<AiProviderName, readonly string[]> = {
+  anthropic: ['ANTHROPIC_API_KEY'],
+  openai: ['OPENAI_API_KEY'],
+  gemini: ['GEMINI_API_KEY', 'GOOGLE_API_KEY'],
+  ollama: [],
+};
+
 /** Whether an API key is available for `provider`. Ollama never needs one. */
 function hasApiKey(provider: AiProviderName, env: Record<string, string | undefined>): boolean {
+  // The `?? []` stands in for the old `default:` arm: a provider name from outside the enum is
+  // uncredentialable, not credential-free, so an unknown name must answer false rather than true.
+  const vars = CREDENTIAL_ENV_VARS[provider] as readonly string[] | undefined;
+  if (vars === undefined) return false;
+  return vars.length === 0 || vars.some((name) => Boolean(env[name]));
+}
+
+/**
+ * Whether `opts` already carries a client for `provider`, in which case no credential is
+ * needed: the caller supplied the thing the key would have been used to build. Ollama is
+ * always true because it has nothing to credential.
+ */
+function hasInjectedClient(provider: AiProviderName, opts: CreateProviderOptions): boolean {
   switch (provider) {
     case 'anthropic':
-      return Boolean(env.ANTHROPIC_API_KEY);
+      return opts.client !== undefined;
     case 'openai':
-      return Boolean(env.OPENAI_API_KEY);
+      return opts.openaiClient !== undefined;
     case 'gemini':
-      return Boolean(env.GEMINI_API_KEY ?? env.GOOGLE_API_KEY);
+      return opts.geminiClient !== undefined;
     case 'ollama':
       return true;
     default:
       return false;
   }
+}
+
+/**
+ * The refusal message. It names the variable to set, says why no stub was substituted, and
+ * points at the one provider that runs without a key — so the reader is never left with
+ * "not configured" and no next step.
+ */
+function missingCredentialsMessage(resolved: AiProviderName, ai: WardenConfig['ai']): string {
+  const vars = CREDENTIAL_ENV_VARS[resolved] ?? [];
+  const named = vars.join(' or ');
+  const via =
+    resolved === ai.provider
+      ? `AI provider "${resolved}"`
+      : `AI provider "${resolved}" (reached via ai.fallbackProvider from "${ai.provider}")`;
+  return (
+    `No credentials for ${via}: set ${named}. ` +
+    'Warden will not substitute a stub provider, because a report written without a model ' +
+    'reads exactly like a clean pass. To run without an API key, set ai.provider (or ' +
+    'ai.fallbackProvider) to "ollama", which runs against a local daemon.'
+  );
 }
 
 /** Resolves `ai.provider`, falling back to `ai.fallbackProvider` when the primary key is missing. */
@@ -80,11 +125,22 @@ function buildProvider(
   }
 }
 
+/**
+ * Throws when the provider that survives resolution has no credentials and no injected client,
+ * rather than returning something that cannot reach a model. Construction of the real SDK
+ * clients is lazy, so without this check the first sign of a missing key is a request failure
+ * deep inside a strategy — by which point a caller has already been tempted to swallow it and
+ * carry on with a stub. An agent report produced without a model is indistinguishable from a
+ * clean one, so the refusal has to happen here, before any work starts.
+ */
 export function createProvider(
   ai: WardenConfig['ai'],
   opts: CreateProviderOptions = {},
 ): LLMProvider {
   const env = opts.env ?? process.env;
   const resolved = resolveProviderName(ai, env);
+  if (!hasApiKey(resolved, env) && !hasInjectedClient(resolved, opts)) {
+    throw new ProviderError(missingCredentialsMessage(resolved, ai));
+  }
   return buildProvider(resolved, ai, opts);
 }

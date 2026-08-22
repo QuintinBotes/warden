@@ -3,6 +3,7 @@ import path from 'node:path';
 import {
   contentId,
   createLogger,
+  escapeRegExp,
   loadConfig,
   ProviderError,
   type ChangeSurface,
@@ -93,6 +94,13 @@ export interface RunRunOptions {
   cwd?: string;
   /** Directory the CTRF report and reporter artifacts are written to. */
   artifactsDir: string;
+  /**
+   * Explicit destination for this run's CTRF report. Defaults to `<artifactsDir>/ctrf-report.json`.
+   * A caller that runs several tiers — the GitHub Action does — needs each tier's report to land
+   * beside the others under one directory, which a per-run artifacts directory cannot express:
+   * two tiers sharing one `artifactsDir` overwrite each other's report.
+   */
+  ctrfPath?: string;
 }
 
 /** Collaborators {@link runRun} can use instead of touching a real browser/GitHub. */
@@ -160,7 +168,11 @@ export interface RunRunResult {
   execution: TestExecution;
   /** Where the CTRF report was written on disk. */
   ctrfPath: string;
-  /** The gate decision derived from `execution` and handed to `cfg.plugins` via `onGateDecision`. */
+  /**
+   * The run's final merge-gate decision: the tests-only verdict with flake quarantine, the a11y
+   * and performance budgets and the CUJ gate folded in worst-of. This is what every reporter
+   * publishes (as `ReportContext.gate`) and what `cfg.plugins` receive via `onGateDecision`.
+   */
   gate: GateDecision;
   /** Fixture teardown failures collected during cleanup (WARN-level; never blocks the gate). */
   fixtureTeardownErrors?: FixtureTeardownFailure[];
@@ -244,9 +256,13 @@ async function runRetryRounds(
     });
     if (candidateIds.length === 0) break;
 
+    // Playwright compiles `--grep` as a RegExp, so the names go in escaped: `checkout [beta]`
+    // raw is a character class that no longer matches the test it was built from, and an
+    // unbalanced `[` is not a regex at all and takes the whole tier down with it.
     const grep = candidateIds
       .map((id) => idToName.get(id))
       .filter((name): name is string => Boolean(name))
+      .map(escapeRegExp)
       .join('|');
 
     const delay = retry.backoffMs * Math.pow(retry.backoffMultiplier, attempt);
@@ -356,8 +372,11 @@ async function reconcileFlakeState(
 
 /**
  * Runs tests via the injected (or real Playwright) runner, writes the resulting CTRF report to
- * `artifactsDir/ctrf-report.json`, converts it into a `TestExecution`, and hands that execution
- * to every reporter (injected, or selected from config via `createReporters`).
+ * `artifactsDir/ctrf-report.json`, converts it into a `TestExecution`, folds every gate tier into
+ * one worst-of decision, and only then hands that execution *and that decision* to every reporter
+ * (injected, or selected from config via `createReporters`). Reporters run last on purpose: what
+ * they publish is the verdict a reviewer reads, and it has to be the verdict this function
+ * returns.
  *
  * When a `store` is injected and `cfg.flake.retry.enabled`, a flake-intelligence pass runs first:
  * failing tests are retried with exponential backoff (scoped by `retryOnlyKnownFlaky`), the
@@ -403,7 +422,10 @@ export async function runRun(opts: RunRunOptions, deps: RunRunDeps = {}): Promis
     }
 
     await fs.mkdir(opts.artifactsDir, { recursive: true });
-    const ctrfPath = path.join(opts.artifactsDir, 'ctrf-report.json');
+    const ctrfPath = opts.ctrfPath ?? path.join(opts.artifactsDir, 'ctrf-report.json');
+    // The report may be aimed outside the artifacts dir (one aggregation directory, several
+    // tiers), so its own parent has to exist too.
+    await fs.mkdir(path.dirname(ctrfPath), { recursive: true });
     await fs.writeFile(ctrfPath, JSON.stringify(finalReport, null, 2), 'utf-8');
 
     const execution = ctrfToExecution(finalReport, {
@@ -418,30 +440,7 @@ export async function runRun(opts: RunRunOptions, deps: RunRunDeps = {}): Promis
       results: execution.results,
     });
 
-    const reporters =
-      deps.reporters ??
-      createReporters(cfg, {
-        logger,
-        // In GitHub Actions the job summary renders from $GITHUB_STEP_SUMMARY; locally, fall back
-        // to a file in the artifacts dir so a bare `warden run` writes a useful summary instead of
-        // crashing on the missing env var.
-        jobSummaryPath:
-          process.env.GITHUB_STEP_SUMMARY ?? path.join(opts.artifactsDir, 'job-summary.md'),
-        ...deps.reporterDeps,
-      });
-    const ctx: ReportContext = {
-      config: cfg,
-      artifactsDir: opts.artifactsDir,
-      ...(deps.prNumber !== undefined && { prNumber: deps.prNumber }),
-      ...(deps.headSha !== undefined && { headSha: deps.headSha }),
-      ...(deps.repo !== undefined && { repo: deps.repo }),
-    };
-
-    for (const reporter of reporters) {
-      await reporter.report(execution, ctx);
-    }
-
-    let gate = computeGateDecision(execution);
+    let gate = computeGateDecision(execution, cfg.gates);
 
     if (deps.store) {
       const newlyQuarantined = await reconcileFlakeState(execution, cfg, deps, firstFailures);
@@ -481,6 +480,36 @@ export async function runRun(opts: RunRunOptions, deps: RunRunDeps = {}): Promis
       const outcome = await evaluateCujGateForRun(execution.results, cfg, deps.cuj, logger);
       cujReports = outcome.reports;
       gate = mergeGateDecisions(gate, outcome.gate);
+    }
+
+    // Reporters run last, and only once every tier above has been folded in. A reporter derives
+    // no verdict of its own worth publishing — it posts `ctx.gate` — because a PR comment or a
+    // check run built from test results alone reads `✅ PASS` on a run this function returns as
+    // BLOCK. The merge is still stopped; the surfaces a reviewer actually looks at just lied
+    // about why. Anything a reporter writes to `artifactsDir` therefore lands after the a11y,
+    // performance and CUJ artifacts, which is what lets a report cite them.
+    const reporters =
+      deps.reporters ??
+      createReporters(cfg, {
+        logger,
+        // In GitHub Actions the job summary renders from $GITHUB_STEP_SUMMARY; locally, fall back
+        // to a file in the artifacts dir so a bare `warden run` writes a useful summary instead of
+        // crashing on the missing env var.
+        jobSummaryPath:
+          process.env.GITHUB_STEP_SUMMARY ?? path.join(opts.artifactsDir, 'job-summary.md'),
+        ...deps.reporterDeps,
+      });
+    const ctx: ReportContext = {
+      config: cfg,
+      artifactsDir: opts.artifactsDir,
+      gate,
+      ...(deps.prNumber !== undefined && { prNumber: deps.prNumber }),
+      ...(deps.headSha !== undefined && { headSha: deps.headSha }),
+      ...(deps.repo !== undefined && { repo: deps.repo }),
+    };
+
+    for (const reporter of reporters) {
+      await reporter.report(execution, ctx);
     }
 
     await firePluginHooks(cfg.plugins, { hook: 'onGateDecision', decision: gate });

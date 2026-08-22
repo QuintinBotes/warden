@@ -32,19 +32,22 @@ changed. In this monorepo:
 
 - A PR that only touches `apps/checkout/**` derives the tag `@apps/checkout`, and Warden runs:
   ```bash
-  npx warden run --grep "@apps/checkout" --artifacts-dir ./artifacts
+  warden run --grep "@apps/checkout" --artifacts-dir ./artifacts
   ```
   — only `tests/e2e/checkout.spec.ts` runs; `tests/e2e/cart.spec.ts` is skipped entirely.
 - A PR that only touches `apps/cart/**` derives `@apps/cart` and runs only `cart.spec.ts`.
 - A PR that touches a shared path (see `scope.sharedPaths` in
   [Configuration](../../docs/configuration.md)) escalates to the full suite instead.
+- This works out of the box only because the modules here are under `apps/`. In a repo laid out
+  differently, set `scope.modulePaths` to its module roots — otherwise no path becomes a module
+  and there are no tags to grep.
 
 This is what makes selective regression fast even as the number of modules (and their test
 suites) grows — Warden runs exactly the tests whose module changed, not everything.
 
 ## Wiring Warden
 
-1. Follow [Getting Started](../../docs/getting-started.md): run `npx warden init` in your repo (or
+1. Follow [Getting Started](../../docs/getting-started.md): build the CLI and run `warden init` in your repo (or
    copy `warden.config.ts` / `.github/workflows/ai-qa.yml` from the
    [GitHub Action guide](../../docs/github-action.md)) — the reference workflow lives at
    [`packages/github-action/ai-qa.example.yml`](../../packages/github-action/ai-qa.example.yml).

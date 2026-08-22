@@ -76,9 +76,20 @@ jobs:
           path: ${{ steps.warden.outputs.report-path }}
 
       # The Action already sets a failing check on BLOCK; this makes the job status
-      # mirror the gate for branch-protection required-status-check rules.
+      # mirror the gate for branch-protection required-status-check rules. A tier that did not
+      # complete is one of the ways the gate reaches BLOCK — it wrote no results, so the verdict
+      # covered only part of the suite.
+      # ${{ ... }} is substituted into a run: script as text, before the shell parses it, so any
+      # step output reaches the shell through env: and is read as "$VAR" — never spliced into
+      # the command line, where a value the pull request influenced would become shell.
       - name: Enforce QA gate
         if: always() && steps.warden.outputs.gate == 'BLOCK'
+        env:
+          RISK_SCORE: ${{ steps.warden.outputs.risk-score }}
+          INCOMPLETE_TIERS: ${{ steps.warden.outputs.incomplete-tiers }}
         run: |
-          echo "Warden QA gate: BLOCK (risk ${{ steps.warden.outputs.risk-score }}/10)"
+          echo "Warden QA gate: BLOCK (risk: $RISK_SCORE)"
+          if [ -n "$INCOMPLETE_TIERS" ]; then
+            echo "Tiers that did not complete: $INCOMPLETE_TIERS"
+          fi
           exit 1

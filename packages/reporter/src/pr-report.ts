@@ -5,6 +5,7 @@ import type {
   TestExecution,
   VisualFinding,
 } from '@warden/core';
+import { escapeMarkdownCell } from '@warden/core';
 import { renderVisualRegressionSection } from './visual-comment-reporter.js';
 
 /** Extra, optional context {@link renderPrReport} can weave into the Markdown. */
@@ -24,7 +25,7 @@ const GATE_EMOJI: Record<GateDecision['decision'], string> = {
 
 /** Escapes pipe/newline characters so arbitrary text is safe inside a Markdown table cell. */
 function escapeCell(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+  return escapeMarkdownCell(value);
 }
 
 /**

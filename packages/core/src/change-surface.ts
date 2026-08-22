@@ -27,6 +27,12 @@ export interface ChangeSurface {
   affectedComponents: string[];
   riskScore: number; // 1–10
   riskReasons: RiskReason[];
+  /**
+   * Set only when the diff changed files but none of them matched `scope.modulePaths`, so the
+   * selective tier has no tags to run. Warden says which prefixes it looked under rather than
+   * emitting an empty `test_tags=` that silently widens to the whole suite.
+   */
+  scopeWarning?: string;
 }
 
 export type TestTier = 'smoke' | 'selective' | 'fullRegression' | 'aiExploratory' | 'api';

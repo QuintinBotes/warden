@@ -4,8 +4,8 @@ import { CTRFReportSchema, type CTRFReport, type CTRFTest } from '@warden/core';
  * Pure converter from a Playwright JSON report (`--reporter=json`) to a {@link CTRFReport}.
  *
  * It flattens Playwright's nested suite tree, maps result statuses (`passed`/`failed`/`skipped`/
- * `timedOut`) onto CTRF statuses, and lifts captured media (video/screenshot/trace) file paths
- * into each test's `extra` so the dashboard can replay them. Output is validated with
+ * `timedOut`/`interrupted`) onto CTRF statuses, and lifts captured media (video/screenshot/trace)
+ * file paths into each test's `extra` so the dashboard can replay them. Output is validated with
  * {@link CTRFReportSchema} before it is returned.
  */
 
@@ -67,6 +67,12 @@ function mapStatus(status: string | undefined): CTRFTest['status'] {
       return 'failed';
     case 'skipped':
       return 'skipped';
+    // Playwright marks every unfinished test `interrupted` when the run is cut short:
+    // `--max-failures` tripped, the global timeout hit, or the process took SIGINT/SIGTERM.
+    // The test started and never produced a result, which is CTRF's `pending` — not `skipped`,
+    // which is a choice the author made and which the gate is entitled to read as harmless.
+    case 'interrupted':
+      return 'pending';
     default:
       return 'other';
   }

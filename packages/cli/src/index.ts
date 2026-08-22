@@ -9,12 +9,20 @@ export { runRun, type RunRunOptions, type RunRunDeps, type RunRunResult } from '
 export { runAgent, type RunAgentOptions, type RunAgentDeps } from './run-agent';
 export {
   runReport,
+  toGateReport,
   type RunReportOptions,
   type RunReportDeps,
   type RunReportResult,
 } from './run-report';
 export { runPlan, type RunPlanOptions } from './run-plan';
-export { runInit, type RunInitOptions, type RunInitResult } from './run-init';
+export { createOverwriteConfirm, type ConfirmIo } from './confirm-overwrite';
+export {
+  runInit,
+  type InitFileOutcome,
+  type InitFileStatus,
+  type RunInitOptions,
+  type RunInitResult,
+} from './run-init';
 export {
   runVisualApprove,
   type RunVisualApproveOptions,
@@ -30,3 +38,9 @@ export {
   resolveVcsHeadSha,
   type EnvLike,
 } from './vcs-client';
+
+/**
+ * The Commander surface itself. Exported so the flags the GitHub Action passes can be
+ * asserted against the real parser rather than assumed.
+ */
+export { buildProgram } from './program';

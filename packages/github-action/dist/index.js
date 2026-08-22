@@ -457,13 +457,13 @@ var require_tunnel = __commonJS({
     var debug2;
     if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
       debug2 = function() {
-        var args2 = Array.prototype.slice.call(arguments);
-        if (typeof args2[0] === "string") {
-          args2[0] = "TUNNEL: " + args2[0];
+        var args = Array.prototype.slice.call(arguments);
+        if (typeof args[0] === "string") {
+          args[0] = "TUNNEL: " + args[0];
         } else {
-          args2.unshift("TUNNEL:");
+          args.unshift("TUNNEL:");
         }
-        console.error.apply(console, args2);
+        console.error.apply(console, args);
       };
     } else {
       debug2 = function() {
@@ -3013,8 +3013,8 @@ var require_dispatcher = __commonJS({
       destroy() {
         throw new Error("not implemented");
       }
-      compose(...args2) {
-        const interceptors = Array.isArray(args2[0]) ? args2[0] : args2;
+      compose(...args) {
+        const interceptors = Array.isArray(args[0]) ? args[0] : args;
         let dispatch = this.dispatch.bind(this);
         for (const interceptor of interceptors) {
           if (interceptor == null) {
@@ -9948,8 +9948,8 @@ var require_balanced_pool = __commonJS({
           pool[kWeight] = Math.max(1, pool[kWeight] - this[kErrorPenalty]);
           this._updateBalancedPoolStats();
         });
-        pool.on("disconnect", (...args2) => {
-          const err = args2[2];
+        pool.on("disconnect", (...args) => {
+          const err = args[2];
           if (err && err.code === "UND_ERR_SOCKET") {
             pool[kWeight] = Math.max(1, pool[kWeight] - this[kErrorPenalty]);
             this._updateBalancedPoolStats();
@@ -14898,35 +14898,35 @@ var require_decorator_handler = __commonJS({
         }
         this.#handler = WrapHandler.wrap(handler2);
       }
-      onRequestStart(...args2) {
-        this.#handler.onRequestStart?.(...args2);
+      onRequestStart(...args) {
+        this.#handler.onRequestStart?.(...args);
       }
-      onRequestUpgrade(...args2) {
+      onRequestUpgrade(...args) {
         assert(!this.#onCompleteCalled);
         assert(!this.#onErrorCalled);
-        return this.#handler.onRequestUpgrade?.(...args2);
+        return this.#handler.onRequestUpgrade?.(...args);
       }
-      onResponseStart(...args2) {
+      onResponseStart(...args) {
         assert(!this.#onCompleteCalled);
         assert(!this.#onErrorCalled);
         assert(!this.#onResponseStartCalled);
         this.#onResponseStartCalled = true;
-        return this.#handler.onResponseStart?.(...args2);
+        return this.#handler.onResponseStart?.(...args);
       }
-      onResponseData(...args2) {
+      onResponseData(...args) {
         assert(!this.#onCompleteCalled);
         assert(!this.#onErrorCalled);
-        return this.#handler.onResponseData?.(...args2);
+        return this.#handler.onResponseData?.(...args);
       }
-      onResponseEnd(...args2) {
+      onResponseEnd(...args) {
         assert(!this.#onCompleteCalled);
         assert(!this.#onErrorCalled);
         this.#onCompleteCalled = true;
-        return this.#handler.onResponseEnd?.(...args2);
+        return this.#handler.onResponseEnd?.(...args);
       }
-      onResponseError(...args2) {
+      onResponseError(...args) {
         this.#onErrorCalled = true;
-        return this.#handler.onResponseError?.(...args2);
+        return this.#handler.onResponseError?.(...args);
       }
       /**
        * @deprecated
@@ -24377,8 +24377,8 @@ var require_websocketerror = __commonJS({
         return DOMException;
       }
       return new Proxy(DOMException, {
-        construct(target, args2, newTarget) {
-          const instance = Reflect.construct(target, args2, target);
+        construct(target, args, newTarget) {
+          const instance = Reflect.construct(target, args, target);
           Object.setPrototypeOf(instance, newTarget.prototype);
           return instance;
         }
@@ -26443,8 +26443,8 @@ var init_summary = __esm({
        *
        * @returns {Summary} summary instance
        */
-      addRaw(text, addEOL = false) {
-        this._buffer += text;
+      addRaw(text2, addEOL = false) {
+        this._buffer += text2;
         return addEOL ? this.addEOL() : this;
       }
       /**
@@ -26540,10 +26540,10 @@ var init_summary = __esm({
        *
        * @returns {Summary} summary instance
        */
-      addHeading(text, level) {
+      addHeading(text2, level) {
         const tag = `h${level}`;
         const allowedTag = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(tag) ? tag : "h1";
-        const element = this.wrap(allowedTag, text);
+        const element = this.wrap(allowedTag, text2);
         return this.addRaw(element).addEOL();
       }
       /**
@@ -26572,9 +26572,9 @@ var init_summary = __esm({
        *
        * @returns {Summary} summary instance
        */
-      addQuote(text, cite) {
+      addQuote(text2, cite) {
         const attrs = Object.assign({}, cite && { cite });
-        const element = this.wrap("blockquote", text, attrs);
+        const element = this.wrap("blockquote", text2, attrs);
         return this.addRaw(element).addEOL();
       }
       /**
@@ -26585,8 +26585,8 @@ var init_summary = __esm({
        *
        * @returns {Summary} summary instance
        */
-      addLink(text, href) {
-        const element = this.wrap("a", text, { href });
+      addLink(text2, href) {
+        const element = this.wrap("a", text2, { href });
         return this.addRaw(element).addEOL();
       }
     };
@@ -26853,7 +26853,7 @@ import * as child from "child_process";
 import * as path4 from "path";
 import { setTimeout as setTimeout2 } from "timers";
 function argStringToArray(argString) {
-  const args2 = [];
+  const args = [];
   let inQuotes = false;
   let escaped = false;
   let arg = "";
@@ -26884,7 +26884,7 @@ function argStringToArray(argString) {
     }
     if (c === " " && !inQuotes) {
       if (arg.length > 0) {
-        args2.push(arg);
+        args.push(arg);
         arg = "";
       }
       continue;
@@ -26892,9 +26892,9 @@ function argStringToArray(argString) {
     append(c);
   }
   if (arg.length > 0) {
-    args2.push(arg.trim());
+    args.push(arg.trim());
   }
-  return args2;
+  return args;
 }
 var __awaiter7, IS_WINDOWS2, ToolRunner, ExecState;
 var init_toolrunner = __esm({
@@ -26931,13 +26931,13 @@ var init_toolrunner = __esm({
     };
     IS_WINDOWS2 = process.platform === "win32";
     ToolRunner = class extends events.EventEmitter {
-      constructor(toolPath, args2, options) {
+      constructor(toolPath, args, options) {
         super();
         if (!toolPath) {
           throw new Error("Parameter 'toolPath' cannot be null or empty.");
         }
         this.toolPath = toolPath;
-        this.args = args2 || [];
+        this.args = args || [];
         this.options = options || {};
       }
       _debug(message) {
@@ -26947,28 +26947,28 @@ var init_toolrunner = __esm({
       }
       _getCommandString(options, noPrefix) {
         const toolPath = this._getSpawnFileName();
-        const args2 = this._getSpawnArgs(options);
+        const args = this._getSpawnArgs(options);
         let cmd = noPrefix ? "" : "[command]";
         if (IS_WINDOWS2) {
           if (this._isCmdFile()) {
             cmd += toolPath;
-            for (const a of args2) {
+            for (const a of args) {
               cmd += ` ${a}`;
             }
           } else if (options.windowsVerbatimArguments) {
             cmd += `"${toolPath}"`;
-            for (const a of args2) {
+            for (const a of args) {
               cmd += ` ${a}`;
             }
           } else {
             cmd += this._windowsQuoteCmdArg(toolPath);
-            for (const a of args2) {
+            for (const a of args) {
               cmd += ` ${this._windowsQuoteCmdArg(a)}`;
             }
           }
         } else {
           cmd += toolPath;
-          for (const a of args2) {
+          for (const a of args) {
             cmd += ` ${a}`;
           }
         }
@@ -27306,19 +27306,19 @@ var init_toolrunner = __esm({
 
 // ../../node_modules/.pnpm/@actions+exec@3.0.0/node_modules/@actions/exec/lib/exec.js
 import { StringDecoder } from "string_decoder";
-function exec(commandLine, args2, options) {
+function exec(commandLine, args, options) {
   return __awaiter8(this, void 0, void 0, function* () {
     const commandArgs = argStringToArray(commandLine);
     if (commandArgs.length === 0) {
       throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
     }
     const toolPath = commandArgs[0];
-    args2 = commandArgs.slice(1).concat(args2 || []);
-    const runner = new ToolRunner(toolPath, args2, options);
+    args = commandArgs.slice(1).concat(args || []);
+    const runner = new ToolRunner(toolPath, args, options);
     return runner.exec();
   });
 }
-function getExecOutput(commandLine, args2, options) {
+function getExecOutput(commandLine, args, options) {
   return __awaiter8(this, void 0, void 0, function* () {
     var _a, _b;
     let stdout = "";
@@ -27340,7 +27340,7 @@ function getExecOutput(commandLine, args2, options) {
       }
     };
     const listeners = Object.assign(Object.assign({}, options === null || options === void 0 ? void 0 : options.listeners), { stdout: stdOutListener, stderr: stdErrListener });
-    const exitCode = yield exec(commandLine, args2, Object.assign(Object.assign({}, options), { listeners }));
+    const exitCode = yield exec(commandLine, args, Object.assign(Object.assign({}, options), { listeners }));
     stdout += stdoutDecoder.end();
     stderr += stderrDecoder.end();
     return {
@@ -27788,8 +27788,8 @@ function bindApi(hook2, state, name) {
   hook2.api = { remove: removeHookRef };
   hook2.remove = removeHookRef;
   ["before", "error", "after", "wrap"].forEach((kind) => {
-    const args2 = name ? [state, kind, name] : [state, kind];
-    hook2[kind] = hook2.api[kind] = bindable(addHook, null).apply(null, args2);
+    const args = name ? [state, kind, name] : [state, kind];
+    hook2[kind] = hook2.api[kind] = bindable(addHook, null).apply(null, args);
   });
 }
 function Singular() {
@@ -28344,8 +28344,8 @@ var init_json_with_bigint = __esm({
       if (typeof userReviver !== "function") return value;
       return userReviver(key, value, context);
     };
-    JSONParseV2 = (text, reviver) => {
-      return JSON.parse(text, (key, value, context) => {
+    JSONParseV2 = (text2, reviver) => {
+      return JSON.parse(text2, (key, value, context) => {
         const isBigNumber = typeof value === "number" && (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER);
         const isInt = context && intRegex.test(context.source);
         const isBigInt = isBigNumber && isInt;
@@ -28358,20 +28358,20 @@ var init_json_with_bigint = __esm({
     MAX_DIGITS = MAX_INT.length;
     stringsOrLargeNumbers = /"(?:\\.|[^"])*"|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/g;
     noiseValueWithQuotes = /^"-?\d+n+"$/;
-    JSONParse = (text, reviver) => {
-      if (!text) return originalParse(text, reviver);
-      if (isContextSourceSupported()) return JSONParseV2(text, reviver);
-      const serializedData = text.replace(
+    JSONParse = (text2, reviver) => {
+      if (!text2) return originalParse(text2, reviver);
+      if (isContextSourceSupported()) return JSONParseV2(text2, reviver);
+      const serializedData = text2.replace(
         stringsOrLargeNumbers,
-        (text2, digits, fractional, exponential) => {
-          const isString = text2[0] === '"';
-          const isNoise = isString && noiseValueWithQuotes.test(text2);
-          if (isNoise) return text2.substring(0, text2.length - 1) + 'n"';
+        (text3, digits, fractional, exponential) => {
+          const isString = text3[0] === '"';
+          const isNoise = isString && noiseValueWithQuotes.test(text3);
+          if (isNoise) return text3.substring(0, text3.length - 1) + 'n"';
           const isFractionalOrExponential = fractional || exponential;
           const isLessThanMaxSafeInt = digits && (digits.length < MAX_DIGITS || digits.length === MAX_DIGITS && digits <= MAX_INT);
           if (isString || isFractionalOrExponential || isLessThanMaxSafeInt)
-            return text2;
-          return '"' + text2 + 'n"';
+            return text3;
+          return '"' + text3 + 'n"';
         }
       );
       return originalParse(
@@ -28541,12 +28541,12 @@ async function getResponseData(response) {
   }
   const mimetype = (0, import_content_type.parse)(contentType);
   if (isJSONResponse(mimetype)) {
-    let text = "";
+    let text2 = "";
     try {
-      text = await response.text();
-      return JSONParse(text);
+      text2 = await response.text();
+      return JSONParse(text2);
     } catch (err) {
-      return text;
+      return text2;
     }
   } else if (mimetype.type.startsWith("text/") || mimetype.parameters.charset?.toLowerCase() === "utf-8") {
     return response.text().catch(noop);
@@ -28827,8 +28827,8 @@ var init_dist_src2 = __esm({
       static VERSION = VERSION4;
       static defaults(defaults) {
         const OctokitWithDefaults = class extends this {
-          constructor(...args2) {
-            const options = args2[0] || {};
+          constructor(...args) {
+            const options = args[0] || {};
             if (typeof defaults === "function") {
               super(defaults(options));
               return;
@@ -31416,8 +31416,8 @@ function endpointsToMethods(octokit) {
 }
 function decorate(octokit, scope, methodName, defaults, decorations) {
   const requestWithDefaults = octokit.request.defaults(defaults);
-  function withDecorations(...args2) {
-    let options = requestWithDefaults.endpoint.merge(...args2);
+  function withDecorations(...args) {
+    let options = requestWithDefaults.endpoint.merge(...args);
     if (decorations.mapToData) {
       options = Object.assign({}, options, {
         data: options[decorations.mapToData],
@@ -31435,7 +31435,7 @@ function decorate(octokit, scope, methodName, defaults, decorations) {
       octokit.log.warn(decorations.deprecated);
     }
     if (decorations.renamedParameters) {
-      const options2 = requestWithDefaults.endpoint.merge(...args2);
+      const options2 = requestWithDefaults.endpoint.merge(...args);
       for (const [name, alias] of Object.entries(
         decorations.renamedParameters
       )) {
@@ -31451,7 +31451,7 @@ function decorate(octokit, scope, methodName, defaults, decorations) {
       }
       return requestWithDefaults(options2);
     }
-    return requestWithDefaults(...args2);
+    return requestWithDefaults(...args);
   }
   return Object.assign(withDecorations, requestWithDefaults);
 }
@@ -32553,24 +32553,24 @@ var base64Regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=)
 var base64urlRegex = /^([0-9a-zA-Z-_]{4})*(([0-9a-zA-Z-_]{2}(==)?)|([0-9a-zA-Z-_]{3}(=)?))?$/;
 var dateRegexSource = `((\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-((0[13578]|1[02])-(0[1-9]|[12]\\d|3[01])|(0[469]|11)-(0[1-9]|[12]\\d|30)|(02)-(0[1-9]|1\\d|2[0-8])))`;
 var dateRegex = new RegExp(`^${dateRegexSource}$`);
-function timeRegexSource(args2) {
+function timeRegexSource(args) {
   let secondsRegexSource = `[0-5]\\d`;
-  if (args2.precision) {
-    secondsRegexSource = `${secondsRegexSource}\\.\\d{${args2.precision}}`;
-  } else if (args2.precision == null) {
+  if (args.precision) {
+    secondsRegexSource = `${secondsRegexSource}\\.\\d{${args.precision}}`;
+  } else if (args.precision == null) {
     secondsRegexSource = `${secondsRegexSource}(\\.\\d+)?`;
   }
-  const secondsQuantifier = args2.precision ? "+" : "?";
+  const secondsQuantifier = args.precision ? "+" : "?";
   return `([01]\\d|2[0-3]):[0-5]\\d(:${secondsRegexSource})${secondsQuantifier}`;
 }
-function timeRegex(args2) {
-  return new RegExp(`^${timeRegexSource(args2)}$`);
+function timeRegex(args) {
+  return new RegExp(`^${timeRegexSource(args)}$`);
 }
-function datetimeRegex(args2) {
-  let regex = `${dateRegexSource}T${timeRegexSource(args2)}`;
+function datetimeRegex(args) {
+  let regex = `${dateRegexSource}T${timeRegexSource(args)}`;
   const opts = [];
-  opts.push(args2.local ? `Z?` : `Z`);
-  if (args2.offset)
+  opts.push(args.local ? `Z?` : `Z`);
+  if (args.offset)
     opts.push(`([+-]\\d{2}:?\\d{2})`);
   regex = `${regex}(${opts.join("|")})`;
   return new RegExp(`^${regex}$`);
@@ -34878,9 +34878,9 @@ var ZodFunction = class _ZodFunction extends ZodType {
       });
       return INVALID;
     }
-    function makeArgsIssue(args2, error2) {
+    function makeArgsIssue(args, error2) {
       return makeIssue({
-        data: args2,
+        data: args,
         path: ctx.path,
         errorMaps: [ctx.common.contextualErrorMap, ctx.schemaErrorMap, getErrorMap(), en_default].filter((x) => !!x),
         issueData: {
@@ -34904,10 +34904,10 @@ var ZodFunction = class _ZodFunction extends ZodType {
     const fn = ctx.data;
     if (this._def.returns instanceof ZodPromise) {
       const me = this;
-      return OK(async function(...args2) {
+      return OK(async function(...args) {
         const error2 = new ZodError([]);
-        const parsedArgs = await me._def.args.parseAsync(args2, params).catch((e) => {
-          error2.addIssue(makeArgsIssue(args2, e));
+        const parsedArgs = await me._def.args.parseAsync(args, params).catch((e) => {
+          error2.addIssue(makeArgsIssue(args, e));
           throw error2;
         });
         const result = await Reflect.apply(fn, this, parsedArgs);
@@ -34919,10 +34919,10 @@ var ZodFunction = class _ZodFunction extends ZodType {
       });
     } else {
       const me = this;
-      return OK(function(...args2) {
-        const parsedArgs = me._def.args.safeParse(args2, params);
+      return OK(function(...args) {
+        const parsedArgs = me._def.args.safeParse(args, params);
         if (!parsedArgs.success) {
-          throw new ZodError([makeArgsIssue(args2, parsedArgs.error)]);
+          throw new ZodError([makeArgsIssue(args, parsedArgs.error)]);
         }
         const result = Reflect.apply(fn, this, parsedArgs.data);
         const parsedReturns = me._def.returns.safeParse(result, params);
@@ -34959,9 +34959,9 @@ var ZodFunction = class _ZodFunction extends ZodType {
     const validatedFunc = this.parse(func);
     return validatedFunc;
   }
-  static create(args2, returns, params) {
+  static create(args, returns, params) {
     return new _ZodFunction({
-      args: args2 ? args2 : ZodTuple.create([]).rest(ZodUnknown.create()),
+      args: args ? args : ZodTuple.create([]).rest(ZodUnknown.create()),
       returns: returns || ZodUnknown.create(),
       typeName: ZodFirstPartyTypeKind.ZodFunction,
       ...processCreateParams(params)
@@ -35638,7 +35638,7 @@ var coerce = {
 };
 var NEVER = INVALID;
 
-// ../core/dist/chunk-G2MDWY53.js
+// ../core/dist/chunk-5P6HY65B.js
 var TestStatus = external_exports.enum(["PASS", "FAIL", "SKIP", "BLOCKED", "FLAKY"]);
 var Priority = external_exports.enum(["P1", "P2", "P3"]);
 var TestType = external_exports.enum([
@@ -35705,6 +35705,12 @@ var TestResultSchema = external_exports.object({
   /** Source file the test lives in, preserved from the runner for the dashboard/reporters. */
   filePath: external_exports.string().optional(),
   status: TestStatus,
+  /**
+   * Criticality of this test, when the runner said so — CTRF `extra.priority` or a `@P1`-style
+   * tag. Optional because most suites mark nothing; the gate's `blockOnCritical` and
+   * `warnOnHighCount` rules only fire on results that carry one, never on unmarked tests.
+   */
+  priority: Priority.optional(),
   duration: external_exports.number(),
   // ms
   errorMessage: external_exports.string().optional(),
@@ -35771,6 +35777,25 @@ var CTRFReportSchema = external_exports.object({
     environment: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
   })
 });
+var GatesSchema = external_exports.object({
+  /** A failure on a test marked `P1` blocks, even when the pass-rate floor is cleared. */
+  blockOnCritical: external_exports.boolean().default(true),
+  /**
+   * The gate blocks when the share of results that ended green falls below this percentage.
+   * SKIP and BLOCKED count against it, so a run that measured almost nothing cannot read as
+   * a pass — a `--grep` that matched nothing, or a fixture that skipped the rest.
+   *
+   * It is not a failure allowance: a FAIL blocks unconditionally, whatever this is set to.
+   * The default is 90, the number that has always been documented and shipped in the
+   * `warden init` template. Set it to 0 to switch the rule off.
+   */
+  blockOnPassRateBelowPercent: external_exports.number().default(90),
+  /** More than this many `P2` failures blocks; at least one warns. */
+  warnOnHighCount: external_exports.number().default(2),
+  /** Quarantine a flaky test after this many non-deterministic runs. */
+  flakeQuarantineAfterRuns: external_exports.number().default(3)
+}).default({});
+var DEFAULT_GATE_POLICY = GatesSchema.parse(void 0);
 var GridConfigSchema = external_exports.object({
   /** Off by default; `local` needs no cloud account. */
   enabled: external_exports.boolean().default(false),
@@ -35823,16 +35848,33 @@ var CujSchema = external_exports.object({
   // module/test tags this journey spans
   thresholds: CujThresholdsSchema
 });
-var providerEnum = external_exports.enum(["anthropic", "openai", "gemini", "ollama"]);
+function isHttpUrl(value) {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+var AI_PROVIDERS = ["anthropic", "openai", "gemini", "ollama"];
+var providerEnum = external_exports.enum(AI_PROVIDERS);
 var RoleSchema = external_exports.enum(["viewer", "maintainer", "admin"]);
 var WardenConfigSchema = external_exports.object({
   ai: external_exports.object({
+    // Credentialed from this provider's own variable and no other: ANTHROPIC_API_KEY,
+    // OPENAI_API_KEY, GEMINI_API_KEY/GOOGLE_API_KEY. `ollama` needs none. A missing key is a
+    // hard error, never a stub — an agent report written without a model reads as a clean pass.
     provider: providerEnum.default("anthropic"),
     // A real, current model id. Override per repo; high-risk tiers may bump to Opus.
     model: external_exports.string().default("claude-sonnet-5"),
+    // Used only when the primary provider has no key; the supported way to run keyless is
+    // `'ollama'`. A fallback with no credentials of its own fails the same way the primary does.
     fallbackProvider: providerEnum.optional(),
     ollama: external_exports.object({
-      baseUrl: external_exports.string().default("http://localhost:11434"),
+      // Where prompt text is sent, so it is validated rather than taken on trust: an http(s)
+      // URL, never `file:`/`javascript:`/a bare hostname. A config read from the repo under
+      // test may additionally only name a loopback host — see `assertPromptsStayLocal`.
+      baseUrl: external_exports.string().refine(isHttpUrl, { message: "must be an http:// or https:// URL" }).default("http://localhost:11434"),
       model: external_exports.string().default("qwen3:32b")
     }).default({})
   }).default({}),
@@ -35846,6 +35888,13 @@ var WardenConfigSchema = external_exports.object({
   scope: external_exports.object({
     highRiskPatterns: external_exports.array(external_exports.string()).default(["auth", "payment", "checkout", "admin"]),
     sharedPaths: external_exports.array(external_exports.string()).default(["lib/", "shared/", "packages/core/"]),
+    // Path prefixes whose changed files become *modules* — the unit the selective tier is
+    // scoped to. A changed file under one of these contributes its first two path segments
+    // as a module (`apps/checkout/page.tsx` → `apps/checkout`), which becomes the test tag
+    // `<tagPrefix><module>`. The defaults describe a Next-style app; a repo laid out any
+    // other way (`crates/`, `cmd/`, `internal/`, `libs/`, `services/`) must set this or the
+    // selective tier has nothing to select and `warden analyze` says so.
+    modulePaths: external_exports.array(external_exports.string().trim().min(1, "scope.modulePaths entries must be non-empty prefixes")).default(["apps/", "src/features/"]),
     tagPrefix: external_exports.string().default("@")
   }).default({}),
   tiers: external_exports.object({
@@ -35875,12 +35924,9 @@ var WardenConfigSchema = external_exports.object({
     checkRunAnnotations: external_exports.boolean().default(true),
     prometheus: external_exports.object({ enabled: external_exports.boolean().default(false), pushgatewayUrl: external_exports.string().optional() }).default({})
   }).default({}),
-  gates: external_exports.object({
-    blockOnCritical: external_exports.boolean().default(true),
-    blockOnPassRateBelowPercent: external_exports.number().default(90),
-    warnOnHighCount: external_exports.number().default(2),
-    flakeQuarantineAfterRuns: external_exports.number().default(3)
-  }).default({}),
+  // The merge-gate policy. Defined in `gate-policy.ts` alongside the one function that reads
+  // it, so the schema and the gate can never describe different rules.
+  gates: GatesSchema,
   testManagement: external_exports.object({
     requirementsSource: external_exports.enum(["github_issues", "linear", "jira", "markdown"]).default("github_issues"),
     testCasesDir: external_exports.string().default("tests/cases/"),
@@ -35946,6 +35992,9 @@ var WardenConfigSchema = external_exports.object({
   }).default({}),
   // Flaky-test intelligence: retry policy, root-cause classifier, trend gating.
   flake: external_exports.object({
+    // A retry round re-runs only the previous attempt's failures, selected by exact test title.
+    // The titles are regex-escaped into the runner's `--grep`, so a title containing `[`, `(` or
+    // `|` retries itself and nothing else.
     retry: external_exports.object({
       enabled: external_exports.boolean().default(true),
       maxRetries: external_exports.number().int().min(0).max(5).default(2),
@@ -36102,6 +36151,8 @@ var WardenConfigSchema = external_exports.object({
   // role/label locators used by a PR's affected tests against the preview build and opens a
   // DRAFT healing PR for any that no longer resolve — before the tests go red. It never gates
   // (its check-run is always neutral) and never replaces the reasoning `HealerStrategy`.
+  // Each repair is APPLIED to its spec file and the resulting file is what the draft PR commits;
+  // a repair that no longer matches the file is named on the check-run and committed nowhere.
   // Two-key activation: needs both `enabled: true` and a reachable `previewUrlTemplate`. See
   // docs/proposals/2026-07-08-proactive-self-healing.md.
   proactiveHealing: external_exports.object({
@@ -36258,6 +36309,13 @@ var WardenConfigSchema = external_exports.object({
   }).default({}),
   plugins: external_exports.array(external_exports.custom()).default([])
 });
+var CLI_PACKAGE = "@warden/cli";
+var CLI_BIN = "warden";
+var CLI_LAUNCHER = "npx";
+function cliLauncherArgs(subcommand) {
+  return ["--yes", `--package=${CLI_PACKAGE}`, "--", CLI_BIN, ...subcommand];
+}
+var CLI_COMMAND_PREFIX = `${CLI_LAUNCHER} --yes --package=${CLI_PACKAGE} -- ${CLI_BIN}`;
 var LearningChapterSchema = external_exports.object({
   title: external_exports.string(),
   atMs: external_exports.number()
@@ -36291,6 +36349,9 @@ var PluginManifestSchema = external_exports.object({
   /** Free-form tags for discovery, e.g. `['notifications', 'slack']`. */
   tags: external_exports.array(external_exports.string()).default([])
 });
+function escapeMarkdownCell(value) {
+  return value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+}
 
 // ../orchestrator/dist/index.js
 function errMsg(err) {
@@ -36330,8 +36391,8 @@ import { execFile } from "child_process";
 import { readFileSync } from "fs";
 import { promisify } from "util";
 var execFileAsync = promisify(execFile);
-var defaultExec = async (command, args2, options) => {
-  const { stdout, stderr } = await execFileAsync(command, args2, {
+var defaultExec = async (command, args, options) => {
+  const { stdout, stderr } = await execFileAsync(command, args, {
     env: options?.env,
     cwd: options?.cwd,
     maxBuffer: 64 * 1024 * 1024
@@ -36458,15 +36519,27 @@ function renderFinding(f) {
   return lines.join("\n");
 }
 function renderPrReport(input) {
-  const { prNumber, riskScore, gate, summary: summary2, testTags } = input;
+  const { prNumber, riskScore, gate, summary: summary2, testTags, agent, configured } = input;
   const findings = [...input.findings ?? []].sort(
     (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]
   );
   const parts = [];
   parts.push(`## \u{1F916} Warden AI QA Report \u2014 PR #${prNumber}`);
   parts.push("");
-  const bandNote = testTags ? ` (${riskBand(riskScore)} \u2014 changed: ${testTags})` : ` (${riskBand(riskScore)})`;
-  parts.push(`**Risk Score:** ${riskScore}/10${bandNote}`);
+  if (riskScore === null) {
+    parts.push(
+      "**Risk Score:** unknown \u2014 the change surface was not analyzed, so this PR was not scored."
+    );
+  } else {
+    const bandNote = testTags ? ` (${riskBand(riskScore)} \u2014 changed: ${testTags})` : ` (${riskBand(riskScore)})`;
+    parts.push(`**Risk Score:** ${riskScore}/10${bandNote}`);
+  }
+  if (configured === false) {
+    parts.push("");
+    parts.push(
+      "> \u26A0\uFE0F No `warden.config` was found in this repository. The risk score and the tiers that ran are Warden's built-in defaults, not this repository's \u2014 run `npx warden init` to configure them."
+    );
+  }
   if (summary2) {
     const pct = summary2.total > 0 ? Math.round(summary2.passed / summary2.total * 100) : 100;
     const mark = summary2.failed === 0 ? "\u2705" : "\u274C";
@@ -36480,10 +36553,18 @@ function renderPrReport(input) {
     parts.push("");
     parts.push(findings.map(renderFinding).join("\n\n"));
     parts.push("");
-  } else {
+  } else if (agent?.ran === true) {
     parts.push("### \u{1F41B} Bugs Found (0)");
     parts.push("");
     parts.push("No bugs found by the AI exploratory agent. \u2705");
+    parts.push("");
+  } else {
+    const why = agent ? agent.reason : "its outcome was not recorded for this run";
+    parts.push("### \u{1F41B} Bugs Found (not measured)");
+    parts.push("");
+    parts.push(
+      `The AI exploratory agent did not report on this PR \u2014 ${why}. This report makes no claim about bugs it might have found.`
+    );
     parts.push("");
   }
   if (summary2) {
@@ -36500,11 +36581,51 @@ function renderPrReport(input) {
   parts.push("");
   return parts.join("\n");
 }
-function checkTitle(gate, summary2) {
+function checkTitle(gate, summary2, incompleteTiers = []) {
+  if (incompleteTiers.length > 0) {
+    const names = incompleteTiers.map((t) => t.name).join(", ");
+    const noun = incompleteTiers.length === 1 ? "tier" : "tiers";
+    return `Warden QA: ${gate} \u2014 ${noun} did not complete: ${names}`;
+  }
   if (summary2 && summary2.failed > 0) {
     return `Warden QA: ${gate} \u2014 ${summary2.failed} failing of ${summary2.total}`;
   }
   return `Warden QA: ${gate}`;
+}
+function renderIncompleteTiers(failures) {
+  if (failures.length === 0) return "";
+  const noun = failures.length === 1 ? "tier" : "tiers";
+  const lines = [
+    `> ### \u26D4 ${failures.length} ${noun} did not complete`,
+    ">",
+    `> These tiers wrote no results, so the gate below was evaluated on the tiers that survived \u2014`,
+    `> it is a verdict over part of the suite, not the whole of it.`,
+    ">",
+    "> | Tier | Error |",
+    "> |---|---|",
+    // A CLI error can arrive multi-line (a stack, a stderr blob) and can contain a pipe; either
+    // one ends the table row early and hides the rest of the message.
+    ...failures.map(
+      (f) => `> | \`${f.name}\` | ${escapeMarkdownCell(f.message.replace(/\s+/g, " ").trim())} |`
+    )
+  ];
+  return lines.join("\n");
+}
+function renderUnknownChangeSurface(reason) {
+  if (reason === null) return "";
+  const oneLine = reason.replace(/\s+/g, " ").trim().replace(/`/g, "'");
+  return [
+    "> ### \u26A0\uFE0F Change surface not analyzed \u2014 risk is unknown, not low",
+    ">",
+    `> \`warden analyze\` did not produce a risk score, so this PR's diff was never read: ${oneLine}`,
+    ">",
+    "> Warden escalated rather than guessing: the **full** `@regression` suite ran in place of the",
+    "> diff-scoped tier, and the AI exploratory agent ran regardless of the risk threshold. No part",
+    "> of this run was targeted at your changes.",
+    ">",
+    "> The usual cause is a shallow checkout. `actions/checkout` defaults to `fetch-depth: 1`, which",
+    "> leaves the PR's base commit out of the clone; set `fetch-depth: 0` on the checkout step."
+  ].join("\n");
 }
 
 // src/parse.ts
@@ -36540,7 +36661,7 @@ function parseAggregateReport(stdout) {
   const end = stdout.lastIndexOf("}");
   if (start === -1 || end === -1 || end < start) {
     throw new WardenError(
-      "Warden: could not find a JSON gate report in `warden report aggregate` output.",
+      "Warden: `warden report aggregate --json` printed no JSON gate report. Either the `warden` CLI resolved on PATH predates `--json` and is older than this action, or it failed before the gate was computed.",
       "AGGREGATE_PARSE_ERROR"
     );
   }
@@ -36549,7 +36670,7 @@ function parseAggregateReport(stdout) {
     parsed = JSON.parse(stdout.slice(start, end + 1));
   } catch {
     throw new WardenError(
-      "Warden: `warden report aggregate` did not return valid JSON.",
+      "Warden: `warden report aggregate --json` did not return valid JSON.",
       "AGGREGATE_PARSE_ERROR"
     );
   }
@@ -36565,25 +36686,42 @@ function parseAggregateReport(stdout) {
 }
 
 // src/warden-cli.ts
-var CLI_LAUNCHER = "npx";
-function args(sub) {
-  return ["warden", ...sub];
+var GATE_LINE = /^gate: (PASS|WARN|BLOCK)\b/m;
+function text(value) {
+  return typeof value === "string" ? value : value instanceof Buffer ? value.toString() : "";
+}
+async function execGate(exec2, command, argv, options) {
+  try {
+    return await exec2(command, argv, options);
+  } catch (err) {
+    const failure = err;
+    if (typeof failure.code !== "number") throw err;
+    const result = { stdout: text(failure.stdout), stderr: text(failure.stderr) };
+    if (!GATE_LINE.test(result.stdout) && !GATE_LINE.test(result.stderr)) throw err;
+    return result;
+  }
 }
 async function analyze(exec2, opts) {
   const { baseSha, headSha, ...execOpts } = opts;
   const res = await exec2(
     CLI_LAUNCHER,
-    args(["analyze", "--base", baseSha, "--head", headSha]),
+    cliLauncherArgs(["analyze", "--base", baseSha, "--head", headSha]),
     execOpts
   );
   return parseGithubOutput(res.stdout);
 }
 async function runTier(exec2, opts) {
-  const { grep, output, baseSha, headSha, baseUrl, ...execOpts } = opts;
+  const { grep, output, artifactsDir, baseSha, headSha, baseUrl, ...execOpts } = opts;
   const extra = [];
+  if (artifactsDir) extra.push("--artifacts-dir", artifactsDir);
   if (baseSha && headSha) extra.push("--base", baseSha, "--head", headSha);
   if (baseUrl) extra.push("--base-url", baseUrl);
-  await exec2(CLI_LAUNCHER, args(["run", "--grep", grep, "--output", output, ...extra]), execOpts);
+  await execGate(
+    exec2,
+    CLI_LAUNCHER,
+    cliLauncherArgs(["run", "--grep", grep, "--output", output, ...extra]),
+    execOpts
+  );
 }
 async function runAgent(exec2, opts) {
   const { strategy, url, prNumber, provider, model, output, ...execOpts } = opts;
@@ -36601,13 +36739,22 @@ async function runAgent(exec2, opts) {
     output
   ];
   if (model) cliArgs.push("--model", model);
-  await exec2(CLI_LAUNCHER, args(cliArgs), execOpts);
+  await exec2(CLI_LAUNCHER, cliLauncherArgs(cliArgs), execOpts);
 }
 async function aggregate(exec2, opts) {
   const { reportsDir, prNumber, ...execOpts } = opts;
-  const res = await exec2(
+  const res = await execGate(
+    exec2,
     CLI_LAUNCHER,
-    args(["report", "aggregate", "--reports", reportsDir, "--pr", String(prNumber)]),
+    cliLauncherArgs([
+      "report",
+      "aggregate",
+      "--reports",
+      reportsDir,
+      "--pr",
+      String(prNumber),
+      "--json"
+    ]),
     execOpts
   );
   return parseAggregateReport(res.stdout);
@@ -36617,12 +36764,16 @@ async function aggregate(exec2, opts) {
 function errMsg2(err) {
   return err instanceof Error ? err.message : String(err);
 }
-async function tier(core, name, fn) {
+async function tier(core, incomplete, name, fn) {
   try {
     await fn();
     core.info(`Warden: tier '${name}' completed.`);
+    return void 0;
   } catch (err) {
-    core.warning(`Warden: tier '${name}' failed: ${errMsg2(err)}`);
+    const message = errMsg2(err);
+    core.error(`Warden: tier '${name}' did not complete: ${message}`);
+    incomplete.push({ name, message });
+    return message;
   }
 }
 async function run(deps = {}) {
@@ -36642,13 +36793,16 @@ async function run(deps = {}) {
     core.info("Warden: no pull_request in the event payload; skipping AI QA gate.");
     return {
       gate: "PASS",
-      riskScore: 0,
+      // Nothing was analyzed, so there is no score. `0` here would be the same fabrication one
+      // branch further out: an unmeasured surface reported as the safest one.
+      riskScore: null,
       reportPath: "",
       testTags: "",
       ranAgent: false,
       commentPosted: false,
       checkRunCreated: false,
-      skipped: true
+      skipped: true,
+      incompleteTiers: []
     };
   }
   const pluginPr = {
@@ -36663,6 +36817,7 @@ async function run(deps = {}) {
   const repo = resolveRepo(pr, env);
   const cwd = env.GITHUB_WORKSPACE || process.cwd();
   const reportsDir = env.WARDEN_REPORTS_DIR || "warden-reports";
+  const artifactsDir = env.WARDEN_ARTIFACTS_DIR || "warden-artifacts";
   const appUrl = env.WARDEN_BASE_URL || "http://localhost:3000";
   const childEnv = {
     ...env,
@@ -36672,58 +36827,94 @@ async function run(deps = {}) {
   };
   const execOpts = { env: childEnv, cwd };
   let analysis = {};
+  let unknownChangeSurface = null;
   try {
     analysis = await analyze(exec2, { baseSha: pr.baseSha, headSha: pr.headSha, ...execOpts });
   } catch (err) {
-    core.warning(`Warden: analyze failed, defaulting to smoke-only scope: ${errMsg2(err)}`);
+    unknownChangeSurface = errMsg2(err);
   }
-  const testTags = analysis.test_tags ?? "";
-  const riskScore = Number(analysis.risk_score ?? "0") || 0;
-  const runFullSuite = (analysis.run_full_suite ?? "false") === "true";
-  core.info(
-    `Warden: change surface tags="${testTags}" risk=${riskScore}/10 fullSuite=${runFullSuite}`
-  );
+  const rawRisk = analysis.risk_score?.trim() ?? "";
+  if (unknownChangeSurface === null && !Number.isFinite(Number(rawRisk || NaN))) {
+    unknownChangeSurface = rawRisk === "" ? "`warden analyze` completed but reported no risk_score." : `\`warden analyze\` reported an unreadable risk_score: ${JSON.stringify(rawRisk)}.`;
+  }
+  const testTags = unknownChangeSurface === null ? analysis.test_tags ?? "" : "";
+  const riskScore = unknownChangeSurface === null ? Number(rawRisk) : null;
+  const runFullSuite = unknownChangeSurface === null ? (analysis.run_full_suite ?? "false") === "true" : true;
+  if (unknownChangeSurface === null) {
+    core.info(
+      `Warden: change surface tags="${testTags}" risk=${riskScore}/10 fullSuite=${runFullSuite}`
+    );
+  } else {
+    core.error(
+      `Warden: change surface unknown (${unknownChangeSurface}) \u2014 running the full @regression suite and the AI exploratory agent, and reporting risk as unknown.`
+    );
+  }
+  const configured = analysis.configured === void 0 ? void 0 : analysis.configured === "true";
+  if (configured === false) {
+    core.warning(
+      "Warden: no warden.config found in this repository \u2014 the risk score, the tier selection and the gate below used Warden's built-in defaults, not this repository's. Run `npx warden init` to configure it."
+    );
+  }
+  const incompleteTiers = [];
   await tier(
     core,
+    incompleteTiers,
     "smoke",
     () => runTier(exec2, {
       grep: "@smoke",
       output: path6.join(reportsDir, "smoke.ctrf.json"),
+      artifactsDir: path6.join(artifactsDir, "smoke"),
       ...execOpts
     })
   );
+  if (!runFullSuite && !testTags) {
+    core.warning(
+      "Warden: the change surface produced no test tags, so the regression tier re-runs @smoke. If this repo's modules are not under apps/ or src/features/, set scope.modulePaths in warden.config.ts."
+    );
+  }
   const regressionGrep = runFullSuite ? "@regression" : testTags || "@smoke";
   await tier(
     core,
+    incompleteTiers,
     "regression",
     () => runTier(exec2, {
       grep: regressionGrep,
       output: path6.join(reportsDir, "regression.ctrf.json"),
+      artifactsDir: path6.join(artifactsDir, "regression"),
       baseSha: pr.baseSha,
       headSha: pr.headSha,
       ...baseUrl ? { baseUrl } : {},
       ...execOpts
     })
   );
-  let ranAgent = false;
-  if (riskScore >= riskThreshold) {
-    await tier(core, "agent", async () => {
-      await runAgent(exec2, {
+  let agentOutcome = {
+    ran: false,
+    reason: `risk ${riskScore} is below the threshold of ${riskThreshold}, so the tier was skipped`
+  };
+  if (riskScore === null || riskScore >= riskThreshold) {
+    const failure = await tier(
+      core,
+      incompleteTiers,
+      "agent",
+      () => runAgent(exec2, {
         strategy,
         url: appUrl,
         prNumber: pr.number,
         provider,
         model: model || void 0,
-        output: path6.join(reportsDir, "exploratory.json"),
+        // Deliberately not under `reportsDir`: an AgentOutput is not a CTRF report, and the
+        // aggregate step parses every `*.json` there as one.
+        output: path6.join(artifactsDir, "exploratory.json"),
         ...execOpts
-      });
-      ranAgent = true;
-    });
+      })
+    );
+    agentOutcome = failure === void 0 ? { ran: true } : { ran: false, reason: `the tier failed: ${failure}` };
   } else {
     core.info(
       `Warden: risk ${riskScore} < threshold ${riskThreshold}; skipping AI exploratory agent.`
     );
   }
+  const ranAgent = agentOutcome.ran;
   let report;
   try {
     report = await aggregate(exec2, { reportsDir, prNumber: pr.number, ...execOpts });
@@ -36733,17 +36924,37 @@ async function run(deps = {}) {
       gate: { decision: "BLOCK", reason: `aggregate failed \u2014 gate not evaluated: ${errMsg2(err)}` }
     };
   }
+  if (incompleteTiers.length > 0) {
+    const noun = incompleteTiers.length === 1 ? "tier" : "tiers";
+    const detail = incompleteTiers.map((t) => `${t.name} (${t.message})`).join("; ");
+    report = {
+      ...report,
+      gate: {
+        decision: "BLOCK",
+        reason: `${incompleteTiers.length} ${noun} did not complete: ${detail} \u2014 the gate was evaluated on the tiers that wrote results, which reported ${report.gate.decision}: ${report.gate.reason}`
+      }
+    };
+  }
   const gate = report.gate.decision;
   const reportPath = report.reportPath ?? path6.join(reportsDir, "warden-ctrf.json");
-  const markdown = report.markdown ?? renderPrReport({
+  const baseMarkdown = report.markdown ?? renderPrReport({
     prNumber: pr.number,
     riskScore,
     riskThreshold,
     gate: report.gate,
     summary: report.summary,
     findings: report.findings,
-    testTags
+    testTags,
+    agent: agentOutcome,
+    ...configured !== void 0 && { configured }
   });
+  const notice2 = [
+    renderUnknownChangeSurface(unknownChangeSurface),
+    renderIncompleteTiers(incompleteTiers)
+  ].filter(Boolean).join("\n\n");
+  const markdown = notice2 ? `${notice2}
+
+${baseMarkdown}` : baseMarkdown;
   try {
     await core.summary.addRaw(markdown, true).write();
   } catch (err) {
@@ -36773,7 +36984,7 @@ async function run(deps = {}) {
       status: "completed",
       conclusion: gateToConclusion(gate),
       output: {
-        title: checkTitle(gate, report.summary),
+        title: checkTitle(gate, report.summary, incompleteTiers),
         summary: markdown,
         // GitHub caps a single checks.create at 50 annotations.
         annotations: annotations.slice(0, 50)
@@ -36784,8 +36995,10 @@ async function run(deps = {}) {
     core.warning(`Warden: failed to create check run: ${errMsg2(err)}`);
   }
   core.setOutput("gate", gate);
-  core.setOutput("risk-score", String(riskScore));
+  core.setOutput("risk-score", riskScore === null ? "unknown" : String(riskScore));
   core.setOutput("report-path", reportPath);
+  core.setOutput("incomplete-tiers", incompleteTiers.map((t) => t.name).join(","));
+  if (configured !== void 0) core.setOutput("configured", String(configured));
   if (gate === "BLOCK") {
     core.setFailed(`Warden QA gate: BLOCK \u2014 ${report.gate.reason}`);
   }
@@ -36797,7 +37010,9 @@ async function run(deps = {}) {
     ranAgent,
     commentPosted,
     checkRunCreated,
-    skipped: false
+    skipped: false,
+    incompleteTiers,
+    ...configured !== void 0 && { configured }
   };
 }
 async function main(deps = {}) {
@@ -36834,6 +37049,7 @@ export {
   makeThrowingOctokit,
   parseAggregateReport,
   parseGithubOutput,
+  renderIncompleteTiers,
   renderPrReport,
   resolveCore,
   resolveOctokit,

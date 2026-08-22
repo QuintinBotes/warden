@@ -314,6 +314,9 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@warden/cli':
+        specifier: workspace:*
+        version: link:../cli
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.23)(typescript@5.9.3)

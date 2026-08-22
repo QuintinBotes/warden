@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defineConfig } from '@warden/core';
+import { defineConfig, ProviderError } from '@warden/core';
 import { createProvider } from './create-provider';
 import { AnthropicProvider, type AnthropicLike } from './anthropic-provider';
 import { OpenAIProvider, type OpenAILike } from './providers/openai';
@@ -119,5 +119,43 @@ describe('createProvider', () => {
     const cfg = defineConfig({ ai: { provider: 'openai' } });
     const provider = createProvider(cfg.ai, { openaiClient: stubOpenAIClient, env: {} });
     expect(provider).toBeInstanceOf(OpenAIProvider);
+  });
+});
+
+describe('createProvider credential checking', () => {
+  it('throws rather than building a provider when the resolved provider has no API key', () => {
+    const cfg = defineConfig({ ai: { provider: 'openai' } });
+    expect(() => createProvider(cfg.ai, { env: {} })).toThrow(ProviderError);
+    expect(() => createProvider(cfg.ai, { env: {} })).toThrow(/OPENAI_API_KEY/);
+  });
+
+  it('names every accepted variable when a provider accepts more than one', () => {
+    const cfg = defineConfig({ ai: { provider: 'gemini' } });
+    expect(() => createProvider(cfg.ai, { env: {} })).toThrow(/GEMINI_API_KEY.*GOOGLE_API_KEY/);
+  });
+
+  it('does not consult ANTHROPIC_API_KEY when the configured provider is openai', () => {
+    const cfg = defineConfig({ ai: { provider: 'openai' } });
+    expect(() => createProvider(cfg.ai, { env: { ANTHROPIC_API_KEY: 'k' } })).toThrow(
+      /OPENAI_API_KEY/,
+    );
+  });
+
+  it('reports the fallback provider, not the primary, when the fallback is the one lacking a key', () => {
+    const cfg = defineConfig({ ai: { provider: 'openai', fallbackProvider: 'anthropic' } });
+    expect(() => createProvider(cfg.ai, { env: {} })).toThrow(/ANTHROPIC_API_KEY/);
+    expect(() => createProvider(cfg.ai, { env: {} })).toThrow(/fallbackProvider/);
+  });
+
+  it('builds ollama with no key at all, because it runs locally', () => {
+    const cfg = defineConfig({ ai: { provider: 'ollama' } });
+    expect(() => createProvider(cfg.ai, { fetchImpl: stubFetch, env: {} })).not.toThrow();
+  });
+
+  it('still accepts an injected client without a key, so unit tests never need credentials', () => {
+    const cfg = defineConfig({ ai: { provider: 'anthropic' } });
+    expect(createProvider(cfg.ai, { client: stubClient, env: {} })).toBeInstanceOf(
+      AnthropicProvider,
+    );
   });
 });

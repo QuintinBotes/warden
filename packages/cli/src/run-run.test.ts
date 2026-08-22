@@ -17,6 +17,7 @@ import {
   type TestResult,
 } from '@warden/core';
 import { fakeReporter } from '@warden/core/testing';
+import { computeGateDecision } from '@warden/reporter';
 import { SqliteStore } from '@warden/test-management';
 import { runRun } from './run-run';
 
@@ -51,6 +52,34 @@ describe('runRun', () => {
 
   afterEach(async () => {
     await fs.rm(artifactsDir, { recursive: true, force: true });
+  });
+
+  it('writes the CTRF report where ctrfPath asks, so sibling tiers do not overwrite each other', async () => {
+    const reportsDir = await fs.mkdtemp(path.join(tmpdir(), 'warden-cli-reports-'));
+    try {
+      const smokePath = path.join(reportsDir, 'smoke.ctrf.json');
+      const result = await runRun(
+        { artifactsDir, ctrfPath: smokePath, grep: '@smoke' },
+        { config: defineConfig(), runTests: async () => fixtureCtrf(), reporters: [] },
+      );
+
+      expect(result.ctrfPath).toBe(smokePath);
+      const written = JSON.parse(await fs.readFile(smokePath, 'utf-8'));
+      expect(written.results.summary.tests).toBe(2);
+      // And nothing was left at the default location, which is what would collide.
+      await expect(fs.access(path.join(artifactsDir, 'ctrf-report.json'))).rejects.toThrow();
+
+      // A second tier in the same artifacts directory keeps its own report.
+      const regressionPath = path.join(reportsDir, 'regression.ctrf.json');
+      await runRun(
+        { artifactsDir, ctrfPath: regressionPath, grep: '@regression' },
+        { config: defineConfig(), runTests: async () => fixtureCtrf(), reporters: [] },
+      );
+      await expect(fs.readFile(smokePath, 'utf-8')).resolves.toContain('summary');
+      await expect(fs.readFile(regressionPath, 'utf-8')).resolves.toContain('summary');
+    } finally {
+      await fs.rm(reportsDir, { recursive: true, force: true });
+    }
   });
 
   it('folds the a11y tier gate worst-of into the final gate and writes its CTRF', async () => {
@@ -116,6 +145,81 @@ describe('runRun', () => {
     expect(result.gate.decision).toBe('BLOCK');
     const written = await fs.readFile(path.join(artifactsDir, 'a11y-report.json'), 'utf-8');
     expect(written).toContain('warden-a11y');
+  });
+
+  it('hands reporters the final folded-in gate, so an a11y BLOCK is not posted as a green PASS', async () => {
+    const passing: CTRFReport = {
+      results: {
+        tool: { name: 'playwright' },
+        summary: {
+          tests: 1,
+          passed: 1,
+          failed: 0,
+          skipped: 0,
+          pending: 0,
+          other: 0,
+          start: 0,
+          stop: 1,
+        },
+        tests: [{ name: 'smoke: home ok', status: 'passed', duration: 10 }],
+      },
+    };
+    // What a reporter would put on the PR: the gate it was handed, falling back to the
+    // tests-only derivation every reporter uses when the context carries none.
+    const posted: GateDecision[] = [];
+    const result = await runRun(
+      { artifactsDir },
+      {
+        config: defineConfig({
+          a11y: {
+            enabled: true,
+            routes: [{ pathPrefix: 'apps/checkout/', urlPattern: '/checkout/*' }],
+          },
+        }),
+        runTests: async () => passing,
+        reporters: [
+          {
+            name: 'recorder',
+            async report(execution, ctx) {
+              posted.push(ctx.gate ?? computeGateDecision(execution));
+            },
+          },
+        ],
+        qualityAudits: {
+          changeSurface: {
+            changedFiles: ['apps/checkout/app/page.tsx'],
+            changedModules: [],
+            testTags: [],
+            riskScore: 0,
+            selectedTiers: [],
+          } as never,
+          baseUrl: 'https://preview.example.com',
+          a11yAudit: async () => ({
+            results: [],
+            report: {
+              results: {
+                tool: { name: 'warden-a11y' },
+                summary: {
+                  tests: 1,
+                  passed: 0,
+                  failed: 1,
+                  skipped: 0,
+                  pending: 0,
+                  other: 0,
+                  start: 0,
+                  stop: 1,
+                },
+                tests: [{ name: 'a11y: color-contrast', status: 'failed', duration: 1 }],
+              },
+            } as never,
+            gate: { decision: 'BLOCK', reason: 'axe found a critical violation' },
+          }),
+        },
+      },
+    );
+
+    expect(result.gate.decision).toBe('BLOCK');
+    expect(posted).toEqual([result.gate]);
   });
 
   it('wires the injected runner, writes the CTRF file, and invokes injected reporters', async () => {
@@ -408,6 +512,101 @@ describe('runRun flake intelligence', () => {
     const checkout = result.execution.results.find((r) => r.testCaseId === CHECKOUT_ID);
     expect(checkout?.status).toBe('FLAKY');
     expect(checkout?.retries).toBe(1);
+  });
+
+  it('escapes regex metacharacters in the retry grep so it matches the test it is retrying', async () => {
+    // Playwright compiles `--grep` as a RegExp, so an unescaped `[beta]` becomes a character class
+    // and the retry stops matching the very test it was built from.
+    const couponFail: CTRFTest = {
+      name: 'checkout [beta] applies coupon (50% off)',
+      status: 'failed',
+      duration: 20,
+      message: 'Timeout waiting for redirect',
+      filePath: 'checkout.spec.ts',
+    };
+    const couponPass: CTRFTest = { ...couponFail, status: 'passed', message: undefined };
+    const runner = scriptedRunner([report([couponFail]), report([couponPass])]);
+
+    await runRun(
+      { artifactsDir },
+      {
+        config: defineConfig({}),
+        runTests: runner.run,
+        reporters: [],
+        store,
+        classifier: fakeClassifier(),
+        sleep: async () => {},
+      },
+    );
+
+    expect(runner.calls).toHaveLength(2);
+    const grep = runner.calls[1]?.grep;
+    expect(grep).toBeDefined();
+    expect(new RegExp(grep!).test(couponFail.name)).toBe(true);
+  });
+
+  it('builds a compilable retry grep from a test name with an unbalanced bracket', async () => {
+    // An unescaped `[` is an unterminated character class: Playwright would exit non-zero on the
+    // regex itself and fail the whole tier rather than retry anything.
+    const unbalancedFail: CTRFTest = {
+      name: 'cart [a+ unclosed',
+      status: 'failed',
+      duration: 20,
+      message: 'boom',
+      filePath: 'cart.spec.ts',
+    };
+    const unbalancedPass: CTRFTest = { ...unbalancedFail, status: 'passed', message: undefined };
+    const runner = scriptedRunner([report([unbalancedFail]), report([unbalancedPass])]);
+
+    await runRun(
+      { artifactsDir },
+      {
+        config: defineConfig({}),
+        runTests: runner.run,
+        reporters: [],
+        store,
+        classifier: fakeClassifier(),
+        sleep: async () => {},
+      },
+    );
+
+    expect(runner.calls).toHaveLength(2);
+    const grep = runner.calls[1]?.grep;
+    expect(() => new RegExp(grep!)).not.toThrow();
+    expect(new RegExp(grep!).test(unbalancedFail.name)).toBe(true);
+  });
+
+  it('keeps each failing test separable in a multi-test retry grep', async () => {
+    // The `|` join must remain an alternation of literal titles: a name containing `|` must not
+    // widen the retry set to test titles nobody selected.
+    const pipeFail: CTRFTest = {
+      name: 'search: a|b matches',
+      status: 'failed',
+      duration: 20,
+      message: 'boom',
+      filePath: 'search.spec.ts',
+    };
+    const runner = scriptedRunner([report([pipeFail, checkoutFail]), report([checkoutPass])]);
+
+    await runRun(
+      { artifactsDir },
+      {
+        config: defineConfig({}),
+        runTests: runner.run,
+        reporters: [],
+        store,
+        classifier: fakeClassifier(),
+        sleep: async () => {},
+      },
+    );
+
+    const grep = runner.calls[1]?.grep;
+    const re = new RegExp(grep!);
+    expect(re.test(pipeFail.name)).toBe(true);
+    expect(re.test(checkoutFail.name)).toBe(true);
+    // `b matches` is a different title nobody selected; an unescaped `|` inside the first name
+    // splits it into two alternatives and silently widens the retry set to include it.
+    expect(re.test('b matches')).toBe(false);
   });
 
   it('respects maxRetries and backoff for a test that fails every attempt', async () => {

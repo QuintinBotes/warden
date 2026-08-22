@@ -113,14 +113,39 @@ export interface ActionDeps {
 /** The decision half of a {@link import('@warden/core').GateDecision}. */
 export type GateVerdict = 'PASS' | 'WARN' | 'BLOCK';
 
+/**
+ * A pipeline tier that did not complete — it crashed, timed out, or its runner died before it
+ * wrote a report. Its results are therefore missing from the gate's inputs, which is why the
+ * action records the tier rather than merely logging it.
+ */
+export interface TierFailure {
+  /** Tier name as the pipeline knows it: `smoke`, `regression`, `agent`. */
+  name: string;
+  /** The error the tier failed with, as reported to the user. */
+  message: string;
+}
+
 /** What {@link run} returns — useful for tests and programmatic callers. */
 export interface RunResult {
   gate: GateVerdict;
-  riskScore: number;
+  /**
+   * The change-surface risk score, or `null` when it was never measured — `warden analyze` did
+   * not complete (a shallow checkout is the usual cause) or reported no score. `null` is not a
+   * low risk: the pipeline escalates to the full suite and runs the agent, and the `risk-score`
+   * action output reads `unknown`.
+   */
+  riskScore: number | null;
   reportPath: string;
   testTags: string;
   ranAgent: boolean;
   commentPosted: boolean;
   checkRunCreated: boolean;
   skipped: boolean;
+  /** Tiers that did not complete. Non-empty forces the gate to `BLOCK`; `[]` on a clean run. */
+  incompleteTiers: TierFailure[];
+  /**
+   * Whether the analyzed repository had a `warden.config`. `undefined` means the CLI never said
+   * — an older CLI, or an `analyze` that failed — and unknown is not the same claim as `false`.
+   */
+  configured?: boolean;
 }

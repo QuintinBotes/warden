@@ -42,10 +42,10 @@ GRAFANA_PASSWORD=change-me docker compose -f deploy/docker-compose.yml up -d
 Point Warden's config at your pushgateway so every run publishes metrics:
 
 ```ts
-// warden.config.ts
+// warden.config.ts — literal values only: Warden parses this file as data, never executes it.
 export default {
   reporting: {
-    prometheus: { enabled: true, pushgatewayUrl: process.env.PROMETHEUS_PUSHGATEWAY_URL },
+    prometheus: { enabled: true, pushgatewayUrl: 'http://pushgateway:9091' },
   },
 };
 ```

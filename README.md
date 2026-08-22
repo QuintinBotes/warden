@@ -19,13 +19,13 @@ Full docs live in **[`docs/`](docs/README.md)**:
 
 | Package | What it does |
 |---------|--------------|
-| `@warden/core` | Shared types, Zod schemas, and every platform interface |
-| `@warden/orchestrator` | Diff analysis, risk scoring, tier selection, and the merge gate |
+| `@warden/core` | Shared types, Zod schemas, the merge-gate policy, and every platform interface |
+| `@warden/orchestrator` | Diff analysis, risk scoring, and tier selection |
 | `@warden/agent` | LLM providers (Claude default) + exploratory / generative / healer strategies |
 | `@warden/runner` | Playwright + Claude-Chrome browser engines and CTRF conversion |
 | `@warden/test-management` | SQLite execution history, YAML test cases, coverage, flake quarantine |
 | `@warden/reporter` | CTRF plus GitHub job-summary / PR-comment / check-run surfaces |
-| `@warden/cli` | The `warden` command-line tool |
+| `@warden/cli` | The `warden` command-line tool — not on npm yet; [build it from source](docs/cli.md#installing) |
 | `warden-action` | The published GitHub Action |
 | `@warden/design-system` | "Sentinel" — tokens, themes, and dashboard components |
 | `apps/dashboard` | The requirements-traceability dashboard |

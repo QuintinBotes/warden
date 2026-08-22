@@ -2,12 +2,14 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { App } from '@octokit/app';
 import { createNodeMiddleware } from '@octokit/webhooks';
 import {
+  ConfigError,
   WardenConfigSchema,
+  assertPromptsStayLocal,
   defineConfig,
   type DiffFile,
   type FileAccess,
+  type LoadedConfig,
   type PrRef,
-  type WardenConfig,
 } from '@warden/core';
 import { run, type PullRequestEvent } from './app.js';
 import type { OctokitLike } from './octokit-file-access.js';
@@ -71,15 +73,45 @@ async function fetchPrDiff(octokit: OctokitLike, pr: PrRef): Promise<DiffFile[]>
   return files;
 }
 
-/** Production `loadConfig`: read + validate `configPath` from the source repo, else defaults. */
-async function loadRepoConfig(configPath: string, fileAccess: FileAccess): Promise<WardenConfig> {
+/**
+ * Production `loadConfig`: read + validate `configPath` from the source repo.
+ *
+ * The three outcomes stay three outcomes. An absent config (a 404, which `readFile` reports as
+ * `null`) yields the defaults with `configured: false`, because a repository that never
+ * configured Warden must not be described as one that chose these settings. A config that is
+ * present but unparseable or schema-invalid throws: substituting the defaults for it would run
+ * the whole pipeline against settings the repository did not write, and say nothing.
+ *
+ * The file still comes from the repository under test, so it may not redirect model prompts off
+ * this machine. One that tries is a present-but-invalid config and throws with the rest.
+ */
+export async function loadRepoConfig(
+  configPath: string,
+  fileAccess: FileAccess,
+  warn: (message: string) => void = (message) => console.warn(message),
+): Promise<LoadedConfig> {
   const raw = await fileAccess.readFile(configPath);
-  if (!raw) return defineConfig();
-  try {
-    return WardenConfigSchema.parse(JSON.parse(raw));
-  } catch {
-    return defineConfig();
+  if (!raw) {
+    warn(
+      `warden: no ${configPath} in this repository — coverage sync is running on Warden's ` +
+        "built-in defaults, not this repository's settings.",
+    );
+    return { config: defineConfig(), sourcePath: null, configured: false };
   }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new ConfigError(
+      `Invalid ${configPath}: not valid JSON (${err instanceof Error ? err.message : String(err)})`,
+    );
+  }
+  const result = WardenConfigSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new ConfigError(`Invalid ${configPath}: ${result.error.message}`);
+  }
+  assertPromptsStayLocal(result.data, configPath);
+  return { config: result.data, sourcePath: configPath, configured: true };
 }
 
 /**
@@ -104,7 +136,8 @@ export function createWebhookServer(opts: WebhookServerOptions): Server {
     await run({
       event: payload as unknown as PullRequestEvent,
       octokitFor: () => scoped,
-      loadConfig: (_repo, fileAccess) => loadRepoConfig(configPath, fileAccess),
+      loadConfig: async (_repo, fileAccess) =>
+        (await loadRepoConfig(configPath, fileAccess)).config,
       fetchDiff: fetchPrDiff,
     });
   });

@@ -13,7 +13,7 @@ import { extractLocators } from './locator-extractor.js';
 import { resolveLocators, type LocatingSession } from './locator-resolver.js';
 import { suggestRepairs } from './locator-repair-suggester.js';
 import { summarizeHealRate } from './summarize-heal-rate.js';
-import { publishProactiveHeal } from './publisher.js';
+import { publishProactiveHeal, type UnappliedSuggestion } from './publisher.js';
 
 /**
  * The heal-rate metric sink. A structural subset of `@warden/core`'s `MetricsEmitter`, so a real
@@ -50,6 +50,8 @@ export interface ProactiveHealRunSummary {
   suggestions: ProactiveHealSuggestion[];
   branch?: string;
   draftPr?: { url: string; number: number };
+  /** Suggestions whose patch did not apply to the file and were therefore not published. */
+  unapplied: UnappliedSuggestion[];
   checkPosted: boolean;
   emittedHeal: boolean;
   note: string;
@@ -105,7 +107,16 @@ export async function runProactiveHeal(
     notes.push(`skipped ${skippedByCap} locator(s) over the maxLocatorsPerRun cap (${cap}).`);
   }
 
-  const published = await publishProactiveHeal(suggestions, summary, sourcePr, gh, { notes });
+  const published = await publishProactiveHeal(
+    suggestions,
+    summary,
+    sourcePr,
+    gh,
+    input.fileAccess,
+    {
+      notes,
+    },
+  );
 
   let emittedHeal = false;
   if (input.metrics?.emitHeal) {
@@ -120,6 +131,7 @@ export async function runProactiveHeal(
     suggestions,
     branch: published.branch,
     draftPr: published.draftPr,
+    unapplied: published.unapplied,
     checkPosted: published.checkPosted,
     emittedHeal,
     note: `Checked ${summary.checked} locator(s); published ${published.suggested} draft suggestion(s).`,
@@ -132,6 +144,7 @@ function neutralOutcome(status: ProactiveHealStatus, note: string): ProactiveHea
     summary: emptySummary(),
     resolutions: [],
     suggestions: [],
+    unapplied: [],
     checkPosted: true,
     emittedHeal: false,
     note,

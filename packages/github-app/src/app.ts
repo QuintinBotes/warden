@@ -67,6 +67,7 @@ function noopSummary(): CoverageSyncSummary {
     recommendations: [],
     draftPrs: [],
     selfSuggested: 0,
+    unpublished: [],
     checkPosted: false,
   };
 }

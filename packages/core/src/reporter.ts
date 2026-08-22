@@ -1,3 +1,4 @@
+import type { GateDecision } from './change-surface';
 import type { WardenConfig } from './config';
 import type { TestExecution } from './schema';
 import type { VcsHost } from './vcs';
@@ -19,6 +20,15 @@ export interface ReportContext {
    */
   repo?: { owner: string; repo: string; host?: VcsHost; project?: string };
   artifactsDir: string;
+  /**
+   * The run's final merge-gate decision, after every tier has been folded in worst-of — test
+   * results, flake quarantine, the a11y and performance budgets, and the CUJ gate. A reporter
+   * publishes what a reviewer treats as the verdict, so it must publish *this* and not derive
+   * one from `execution`, which carries test results only. Optional because the `Reporter`
+   * contract is also driven by callers that have no gate beyond the tests (`warden report`);
+   * those reporters fall back to `computeGateDecision(execution)`.
+   */
+  gate?: GateDecision;
 }
 
 export interface Reporter {

@@ -46,7 +46,7 @@ Rotate keys on your normal cadence; Warden reads them only from the environment.
 | GitHub-hosted `ubuntu-latest` | Default. Playwright's official image or `--with-deps` installs browsers. |
 | Self-hosted | Larger repos, private networks, or to control cost. Pre-install the Playwright browsers on the image. |
 
-The Playwright container `mcr.microsoft.com/playwright:v1.52.0-noble` avoids per-run browser installs.
+The Playwright container `mcr.microsoft.com/playwright:v1.52.0-noble` avoids per-run browser installs. Whichever runner you pick, the repo (or the image) has to have Playwright installed before `warden run`: Warden launches the `node_modules/.bin/playwright` it finds — or the one `WARDEN_PLAYWRIGHT_BIN` names — and fails the step when there is none rather than pulling the package from the registry mid-job.
 
 ### Cost control
 
@@ -123,16 +123,20 @@ docker compose -f deploy/docker-compose.yml up -d
 Point the Action at your pushgateway so each run publishes metrics:
 
 ```ts
-// warden.config.ts
+// warden.config.ts — literal values only: the config is read as data, never executed.
 export default defineConfig({
   reporting: {
     prometheus: {
       enabled: true,
-      pushgatewayUrl: process.env.PROMETHEUS_PUSHGATEWAY_URL,
+      pushgatewayUrl: 'http://pushgateway.internal:9091',
     },
   },
 });
 ```
+
+A value that has to be computed (from `process.env`, say) needs `WARDEN_TRUST_CONFIG=1`, which
+evaluates the file as code — set it only on a checkout you vouch for, never on a workflow
+triggered by `pull_request`. See [Configuration](configuration.md#the-config-file-is-read-not-run).
 
 The dashboard reads the same SQLite history your CI writes, so a shared volume (or a synced copy) is the only integration point.
 
@@ -155,4 +159,4 @@ The dashboard reads the same SQLite history your CI writes, so a shared volume (
 
 ## Upgrades
 
-Warden follows semver. Pin the Action to a major tag (`@v1`) to get compatible updates automatically, or to a full version for reproducibility. The `warden.config.ts` schema is validated on load, so an incompatible option fails fast with a clear message rather than silently misbehaving.
+Warden follows semver. Pin the Action to a major tag (`@v1`) to get compatible updates automatically, or to a full version for reproducibility. The `warden.config.ts` file is parsed as data (never executed) and validated on load, so an incompatible option fails fast with a clear message rather than silently misbehaving.

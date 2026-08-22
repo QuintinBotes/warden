@@ -46,6 +46,10 @@ export function executionToCtrf(
       retries: result.retries,
       flakeFlag: result.flakeFlag,
     };
+    // Criticality has to survive the round trip: `warden run` writes this CTRF and
+    // `warden report aggregate` reads it back, and the gate's `blockOnCritical` /
+    // `warnOnHighCount` rules are decided on `priority`. Dropping it here disarmed them.
+    if (result.priority) extra.priority = result.priority;
     if (result.screenshotPath) extra.screenshotPath = result.screenshotPath;
     if (result.videoPath) extra.videoPath = result.videoPath;
     if (result.tracePath) extra.tracePath = result.tracePath;

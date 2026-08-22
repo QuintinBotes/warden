@@ -6,7 +6,7 @@ import {
   type VcsCheckState,
   type VcsProvider,
 } from '@warden/core';
-import { computeGateDecision } from './gate-decision.js';
+import { resolveGateDecision } from './gate-decision.js';
 import { renderPrReport } from './pr-report.js';
 import { repoRefFromContext } from './vcs-comment-reporter.js';
 
@@ -28,7 +28,7 @@ export class VcsCheckReporter implements Reporter {
       throw new WardenError('ctx.headSha is required to post a status', 'REPORTER_NO_HEAD_SHA');
     }
     const repo = repoRefFromContext(ctx, this.provider);
-    const gate = computeGateDecision(execution);
+    const gate = resolveGateDecision(execution, ctx);
     const summary = renderPrReport(execution, gate);
     const state: VcsCheckState =
       gate.decision === 'BLOCK' ? 'failure' : gate.decision === 'WARN' ? 'neutral' : 'success';

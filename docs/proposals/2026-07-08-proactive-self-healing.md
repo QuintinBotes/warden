@@ -217,7 +217,10 @@ URL configured" outcome rather than silently skipping.
    `ProactiveHealSuggestion` with a unified-diff `patch`, filtered by `minConfidence`.
 7. `summarizeHealRate` produces the `HealRateSummary`.
 8. `ProactiveHealPublisher` opens/updates a draft PR (`warden/proactive-heal-pr-<n>`) via
-   `GitHubAccess.openOrUpdateDraftPr` containing every suggestion's patch, and posts a neutral
+   `GitHubAccess.openOrUpdateDraftPr` containing every suggestion's patch — *as built, each
+   patch is applied to its spec file and the resulting file contents are committed, because that
+   seam writes whole files; a patch that no longer applies is reported on the check-run instead* —
+   and posts a neutral
    check-run on the source PR summarizing checked/resolved/missing/ambiguous/healRate — this check
    never fails the build; it is informational only.
 9. `MetricsEmitter.emitHeal(summary, { pr, mode: 'proactive' })` records the heal-rate metric (a

@@ -36,12 +36,12 @@ see [`docs/cli.md`](../../docs/cli.md)):
 
 ## Wiring Warden
 
-1. Follow [Getting Started](../../docs/getting-started.md): run `npx warden init` in your repo (or
+1. Follow [Getting Started](../../docs/getting-started.md): build the CLI and run `warden init` in your repo (or
    copy `warden.config.ts` / `.github/workflows/ai-qa.yml` from the
    [GitHub Action guide](../../docs/github-action.md)) — the reference workflow lives at
    [`packages/github-action/ai-qa.example.yml`](../../packages/github-action/ai-qa.example.yml).
 2. Point the workflow's "Start application" step at `npm run dev` and `WARDEN_BASE_URL` at
    `http://localhost:3000`.
-3. Warden will run `@smoke` on every PR, scope `@regression` to changed modules via
-   `scope.highRiskPatterns` / tag derivation, and load `tests/cases/*.yaml` for requirement
-   traceability in the PR report.
+3. Warden will run `@smoke` on every PR, scope `@regression` to the modules a diff touched —
+   the trees named by `scope.modulePaths`, `apps/` and `src/features/` unless you change them —
+   and load `tests/cases/*.yaml` for requirement traceability in the PR report.

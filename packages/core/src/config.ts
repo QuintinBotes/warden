@@ -1,17 +1,46 @@
+import { existsSync, promises as fs, statSync } from 'node:fs';
+import path from 'node:path';
 import { z } from 'zod';
-import { loadConfig as c12LoadConfig } from 'c12';
 import type { QAPlatformPlugin } from './plugin';
 import { ConfigError } from './errors';
 import { GridConfigSchema } from './grid';
 import { CujTier } from './cuj';
+import { parseConfigModule } from './config-source';
+import { GatesSchema } from './gate-policy';
 
 /**
  * The single Warden configuration surface (`warden.config.ts`). Every field has a
  * documented default so a zero-config repo Just Works; `defineConfig` validates and
- * fills defaults, `loadConfig` reads the file from disk (via c12/jiti).
+ * fills defaults, `loadConfig` reads the file from disk.
+ *
+ * The config file is *untrusted input*: it comes from the repository being tested, which on CI
+ * is a pull request's head. `loadConfig` therefore reads it as data (see `config-source.ts`) and
+ * never executes it, and refuses a config that would send model prompts to a non-loopback host.
+ * Both restrictions lift under `WARDEN_TRUST_CONFIG=1`, which says "this checkout is mine".
  */
 
-const providerEnum = z.enum(['anthropic', 'openai', 'gemini', 'ollama']);
+/** True for a syntactically valid `http:`/`https:` URL. Any other scheme is not an API base. */
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Every AI provider Warden can construct. Exported because a caller that *overrides* the
+ * provider (the `warden agent --provider` flag) has to reject an unknown name rather than
+ * hand a typo to `createProvider` and fail later, and it must reject against this list —
+ * not a second copy of it that can fall a provider behind.
+ */
+export const AI_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama'] as const;
+
+/** One of {@link AI_PROVIDERS}. */
+export type AiProviderName = (typeof AI_PROVIDERS)[number];
+
+const providerEnum = z.enum(AI_PROVIDERS);
 
 /** Warden's three roles for the `enterprise` block; mirrors the `Role` type in `auth.ts`. */
 const RoleSchema = z.enum(['viewer', 'maintainer', 'admin']);
@@ -19,13 +48,24 @@ const RoleSchema = z.enum(['viewer', 'maintainer', 'admin']);
 export const WardenConfigSchema = z.object({
   ai: z
     .object({
+      // Credentialed from this provider's own variable and no other: ANTHROPIC_API_KEY,
+      // OPENAI_API_KEY, GEMINI_API_KEY/GOOGLE_API_KEY. `ollama` needs none. A missing key is a
+      // hard error, never a stub — an agent report written without a model reads as a clean pass.
       provider: providerEnum.default('anthropic'),
       // A real, current model id. Override per repo; high-risk tiers may bump to Opus.
       model: z.string().default('claude-sonnet-5'),
+      // Used only when the primary provider has no key; the supported way to run keyless is
+      // `'ollama'`. A fallback with no credentials of its own fails the same way the primary does.
       fallbackProvider: providerEnum.optional(),
       ollama: z
         .object({
-          baseUrl: z.string().default('http://localhost:11434'),
+          // Where prompt text is sent, so it is validated rather than taken on trust: an http(s)
+          // URL, never `file:`/`javascript:`/a bare hostname. A config read from the repo under
+          // test may additionally only name a loopback host — see `assertPromptsStayLocal`.
+          baseUrl: z
+            .string()
+            .refine(isHttpUrl, { message: 'must be an http:// or https:// URL' })
+            .default('http://localhost:11434'),
           model: z.string().default('qwen3:32b'),
         })
         .default({}),
@@ -48,6 +88,15 @@ export const WardenConfigSchema = z.object({
     .object({
       highRiskPatterns: z.array(z.string()).default(['auth', 'payment', 'checkout', 'admin']),
       sharedPaths: z.array(z.string()).default(['lib/', 'shared/', 'packages/core/']),
+      // Path prefixes whose changed files become *modules* — the unit the selective tier is
+      // scoped to. A changed file under one of these contributes its first two path segments
+      // as a module (`apps/checkout/page.tsx` → `apps/checkout`), which becomes the test tag
+      // `<tagPrefix><module>`. The defaults describe a Next-style app; a repo laid out any
+      // other way (`crates/`, `cmd/`, `internal/`, `libs/`, `services/`) must set this or the
+      // selective tier has nothing to select and `warden analyze` says so.
+      modulePaths: z
+        .array(z.string().trim().min(1, 'scope.modulePaths entries must be non-empty prefixes'))
+        .default(['apps/', 'src/features/']),
       tagPrefix: z.string().default('@'),
     })
     .default({}),
@@ -92,14 +141,9 @@ export const WardenConfigSchema = z.object({
         .default({}),
     })
     .default({}),
-  gates: z
-    .object({
-      blockOnCritical: z.boolean().default(true),
-      blockOnPassRateBelowPercent: z.number().default(90),
-      warnOnHighCount: z.number().default(2),
-      flakeQuarantineAfterRuns: z.number().default(3),
-    })
-    .default({}),
+  // The merge-gate policy. Defined in `gate-policy.ts` alongside the one function that reads
+  // it, so the schema and the gate can never describe different rules.
+  gates: GatesSchema,
   testManagement: z
     .object({
       requirementsSource: z
@@ -193,6 +237,9 @@ export const WardenConfigSchema = z.object({
   // Flaky-test intelligence: retry policy, root-cause classifier, trend gating.
   flake: z
     .object({
+      // A retry round re-runs only the previous attempt's failures, selected by exact test title.
+      // The titles are regex-escaped into the runner's `--grep`, so a title containing `[`, `(` or
+      // `|` retries itself and nothing else.
       retry: z
         .object({
           enabled: z.boolean().default(true),
@@ -395,6 +442,8 @@ export const WardenConfigSchema = z.object({
   // role/label locators used by a PR's affected tests against the preview build and opens a
   // DRAFT healing PR for any that no longer resolve — before the tests go red. It never gates
   // (its check-run is always neutral) and never replaces the reasoning `HealerStrategy`.
+  // Each repair is APPLIED to its spec file and the resulting file is what the draft PR commits;
+  // a repair that no longer matches the file is named on the check-run and committed nowhere.
   // Two-key activation: needs both `enabled: true` and a reachable `previewUrlTemplate`. See
   // docs/proposals/2026-07-08-proactive-self-healing.md.
   proactiveHealing: z
@@ -593,12 +642,186 @@ export function defineConfig(config: WardenConfigInput = {}): WardenConfig {
   return parsed.data;
 }
 
-/** Load `warden.config.{ts,js,mjs,...}` from `cwd`, then validate + fill defaults. */
-export async function loadConfig(cwd: string = process.cwd()): Promise<WardenConfig> {
-  const { config } = await c12LoadConfig<WardenConfigInput>({ name: 'warden', cwd });
-  const parsed = WardenConfigSchema.safeParse(config ?? {});
+/**
+ * Config file extensions, in resolution order. The first one that exists wins; `.json` is parsed
+ * as JSON, every other form is read as data by `parseConfigModule` and never executed.
+ */
+const CONFIG_EXTENSIONS = ['.ts', '.mts', '.cts', '.js', '.mjs', '.cjs', '.json'] as const;
+
+/** Hosts that cannot leave the machine. `.localhost` is reserved for loopback by RFC 6761. */
+function isLoopbackHost(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  return (
+    host === 'localhost' ||
+    host.endsWith('.localhost') ||
+    host === '::1' ||
+    host === '0.0.0.0' ||
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)
+  );
+}
+
+/**
+ * Refuses a config that would send model prompts off the machine.
+ *
+ * `ai.ollama.baseUrl` is the one config field that decides where prompt text goes — and prompt
+ * text is the diff, seeded fixture values and live page text. A config file read from the
+ * repository under test may therefore only name a loopback host: a one-line edit in a pull
+ * request must not be able to redirect every prompt to an endpoint the attacker controls.
+ * A remote Ollama in CI is still supported, from the environment (`WARDEN_OLLAMA_BASE_URL`),
+ * which the repository cannot write.
+ */
+export function assertPromptsStayLocal(cfg: WardenConfig, source: string): void {
+  const { hostname } = new URL(cfg.ai.ollama.baseUrl); // schema already proved it parses
+  if (isLoopbackHost(hostname)) return;
+  throw new ConfigError(
+    `${source} points ai.ollama.baseUrl at ${hostname}, which is not this machine. Warden will ` +
+      `not send model prompts (diffs, fixture values, page text) to a host named by a config ` +
+      `file it read from the repository under test. Set WARDEN_OLLAMA_BASE_URL in the ` +
+      `environment for a remote Ollama, or WARDEN_TRUST_CONFIG=1 on a checkout you trust.`,
+  );
+}
+
+/** Deep-merges `overlay` onto `base`; arrays and scalars replace rather than concatenate. */
+function mergeConfigData(base: unknown, overlay: unknown): unknown {
+  if (!isPlainObject(base) || !isPlainObject(overlay)) return overlay;
+  const out: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(overlay)) {
+    out[key] = key in out ? mergeConfigData(out[key], value) : value;
+  }
+  return out;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Reads `<cwd>/<basename><ext>` for the first `ext` that exists, as data. */
+async function readConfigData(
+  cwd: string,
+  basename: string,
+): Promise<{ file: string; data: unknown } | undefined> {
+  for (const ext of CONFIG_EXTENSIONS) {
+    const file = path.join(cwd, basename + ext);
+    let raw: string;
+    try {
+      raw = await fs.readFile(file, 'utf-8');
+    } catch {
+      continue;
+    }
+    if (ext === '.json') {
+      try {
+        return { file, data: JSON.parse(raw) };
+      } catch (err) {
+        throw new ConfigError(`${basename}${ext} is not valid JSON: ${(err as Error).message}`);
+      }
+    }
+    return { file, data: parseConfigModule(raw, basename + ext) };
+  }
+  return undefined;
+}
+
+/** A config together with where it came from — see {@link loadConfigWithSource}. */
+export interface LoadedConfig {
+  /** The validated config, every default filled. Identical whether or not a file was found. */
+  config: WardenConfig;
+  /** Absolute path of the file the config was read from, or `null` when none was found. */
+  sourcePath: string | null;
+  /**
+   * Whether a config source was actually found. `false` means every value below is a built-in
+   * default that this repository never chose, which is not something a caller may present as
+   * a configured verdict.
+   */
+  configured: boolean;
+}
+
+/** Resolve a config-file candidate to an existing file, or `null`. */
+function existingFile(candidate: string): string | null {
+  return existsSync(candidate) && statSync(candidate).isFile() ? candidate : null;
+}
+
+/** Options for {@link loadConfig}. */
+export interface LoadConfigOptions {
+  /**
+   * Evaluate `warden.config.ts` as code (via c12/jiti) instead of reading it as data, and allow
+   * it to name a remote AI endpoint. Only ever true for a checkout whose contents you vouch for
+   * — never for a pull request's head. Defaults to `WARDEN_TRUST_CONFIG=1` in the environment.
+   */
+  trust?: boolean;
+}
+
+/**
+ * Load `warden.config.{ts,mts,cts,js,mjs,cjs,json}` from `cwd` (with `warden.config.local.*`
+ * merged on top when present), then validate + fill defaults.
+ *
+ * **The file is read, not run.** See `config-source.ts` for why, and for the grammar a config
+ * has to stay inside. A config using anything beyond literal data throws `ConfigError` naming
+ * the line rather than being partially understood.
+ */
+export async function loadConfig(
+  cwd: string = process.cwd(),
+  opts: LoadConfigOptions = {},
+): Promise<WardenConfig> {
+  return (await loadConfigWithSource(cwd, opts)).config;
+}
+
+/**
+ * Load the config as {@link loadConfig} does, and report which file it came from.
+ *
+ * An absent config and a present-but-empty one produce byte-identical values, because every
+ * field has a default. Only `configured` tells them apart, and callers that report a verdict —
+ * a risk score, a tier selection, a merge-gate comment — have to say which one they were given
+ * rather than presenting the defaults as this repository's own settings.
+ */
+export async function loadConfigWithSource(
+  cwd: string = process.cwd(),
+  opts: LoadConfigOptions = {},
+): Promise<LoadedConfig> {
+  const trusted = opts.trust ?? process.env.WARDEN_TRUST_CONFIG === '1';
+
+  let raw: unknown;
+  let source = 'warden.config';
+  let sourcePath: string | null = null;
+  if (trusted) {
+    // Opt-in only: c12 hands the file to jiti, which transpiles and executes it.
+    const { loadConfig: c12LoadConfig } = await import('c12');
+    const loaded = await c12LoadConfig<WardenConfigInput>({ name: 'warden', cwd });
+    raw = loaded.config;
+    // c12 replaces `configFile` with the resolved absolute path when it finds one and otherwise
+    // leaves it at the bare lookup name, so "absolute and still on disk" is the signal.
+    const file = loaded.configFile;
+    if (file && path.isAbsolute(file)) sourcePath = existingFile(file);
+  } else {
+    const found = await readConfigData(cwd, 'warden.config');
+    const local = await readConfigData(cwd, 'warden.config.local');
+    if (found) {
+      source = path.basename(found.file);
+      sourcePath = found.file;
+    }
+    if (local) {
+      source = path.basename(local.file);
+      sourcePath = local.file;
+    }
+    raw = found && local ? mergeConfigData(found.data, local.data) : (local ?? found)?.data;
+  }
+
+  const parsed = WardenConfigSchema.safeParse(raw ?? {});
   if (!parsed.success) {
     throw new ConfigError(`Invalid warden.config: ${parsed.error.message}`);
   }
-  return parsed.data;
+
+  // The environment belongs to whoever runs Warden, not to the repository being tested, so an
+  // endpoint set there overrides the file and is taken at its word.
+  const envBaseUrl = process.env.WARDEN_OLLAMA_BASE_URL;
+  if (envBaseUrl) {
+    if (!isHttpUrl(envBaseUrl)) {
+      throw new ConfigError(
+        `WARDEN_OLLAMA_BASE_URL is not an http:// or https:// URL: ${envBaseUrl}`,
+      );
+    }
+    parsed.data.ai.ollama.baseUrl = envBaseUrl;
+  } else if (!trusted) {
+    assertPromptsStayLocal(parsed.data, source);
+  }
+
+  return { config: parsed.data, sourcePath, configured: sourcePath !== null };
 }

@@ -6,12 +6,14 @@ import {
   createLogger,
   defineConfig,
   type CTRFReport,
+  type GateDecision,
   type LogEntry,
   type TestResult,
   type WardenConfig,
 } from '@warden/core';
 import { fixtureChangeSurface } from '@warden/core/testing';
 import type { CujSource, ExecutionHistory } from '@warden/cuj';
+import { computeGateDecision } from '@warden/reporter';
 import { evaluateCujGateForRun } from './cuj-gate';
 import { runRun } from './run-run';
 
@@ -165,6 +167,35 @@ describe('runRun folds the CUJ gate into the final decision', () => {
     expect(runResult.gate.decision).toBe('WARN');
     expect(runResult.cujReports).toBeDefined();
     expect(runResult.cujReports![0]!.status).toBe('DEGRADED');
+  });
+
+  it('hands reporters the CUJ-merged gate, not the tests-only one', async () => {
+    // Reporters have no gate of their own; they post what the context carries, falling back to
+    // the tests-only derivation. A green test run whose journey degraded must not post PASS.
+    const posted: GateDecision[] = [];
+    const runResult = await runRun(
+      { grep: '@apps/checkout', artifactsDir },
+      {
+        config: enabledCfg(),
+        runTests: async () => allPassCtrf(),
+        reporters: [
+          {
+            name: 'recorder',
+            async report(execution, ctx) {
+              posted.push(ctx.gate ?? computeGateDecision(execution));
+            },
+          },
+        ],
+        cuj: {
+          source: memSource({ 'checkout.yaml': CHECKOUT_DEF }),
+          changeSurface: surface(),
+          signalsByCuj: { 'CUJ-checkout': [{ kind: 'perf', value: 999, passed: false }] },
+        },
+      },
+    );
+
+    expect(runResult.gate.decision).toBe('WARN');
+    expect(posted).toEqual([runResult.gate]);
   });
 
   it('behaves exactly as before when no cuj collaborator is injected', async () => {

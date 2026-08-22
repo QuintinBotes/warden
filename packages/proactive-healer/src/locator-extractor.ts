@@ -55,6 +55,7 @@ const SESSION_FILL = /\bfill\(\s*(['"`])(.+?)\1\s*,\s*(['"`])(.+?)\3\s*\)/g;
 
 function scanSource(source: string, filePath: string, testCaseId: string): LocatorRef[] {
   const matches: RawMatch[] = [];
+  const sourceLines = source.split('\n');
 
   collect(source, GET_BY_ROLE, (m) => ({ kind: 'click', role: m[2]!, name: m[4]! }), matches);
   collect(source, GET_BY_LABEL, (m) => ({ kind: 'fill', role: 'label', name: m[2]! }), matches);
@@ -69,13 +70,17 @@ function scanSource(source: string, filePath: string, testCaseId: string): Locat
     const key = `${m.index}:${m.kind}:${m.role}:${m.name}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    const line = lineOf(source, m.index);
     refs.push({
       filePath,
-      line: lineOf(source, m.index),
+      line,
       testCaseId,
       kind: m.kind,
       role: m.role,
       name: m.name,
+      // Carried so a repair patch is built against the real line rather than a reconstruction
+      // of it — a patch that cannot be applied is a patch that must not be committed.
+      sourceLine: sourceLines[line - 1] ?? '',
     });
   }
   return refs;

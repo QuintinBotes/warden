@@ -14,6 +14,18 @@ function ctx(overrides: Partial<ReportContext> = {}): ReportContext {
 }
 
 describe('VcsCheckReporter', () => {
+  it('posts a failure state when the final gate BLOCKed on a tier the tests do not show', async () => {
+    const fake = createFakeVcsProvider({ host: 'gitlab' });
+
+    await new VcsCheckReporter(fake).report(
+      fixtureExecution(), // every test passed
+      ctx({ gate: { decision: 'BLOCK', reason: '1 critical a11y violation' } }),
+    );
+
+    expect(fake.statuses[0]!.status.state).toBe('failure');
+    expect(fake.statuses[0]!.status.summary).toContain('1 critical a11y violation');
+  });
+
   it('posts a success status when all tests pass', async () => {
     const fake = createFakeVcsProvider({ host: 'bitbucket' });
     await new VcsCheckReporter(fake).report(fixtureExecution(), ctx());

@@ -30,6 +30,20 @@ describe('GithubJobSummaryReporter', () => {
     expect(content).toContain('TC-042');
   });
 
+  it('renders the final gate it was handed rather than the tests-only verdict', async () => {
+    const reporter = new GithubJobSummaryReporter({ filePath });
+
+    await reporter.report(fixtureExecution(), {
+      config: defineConfig(),
+      artifactsDir: dir,
+      gate: { decision: 'BLOCK', reason: 'p95 LCP 4200ms over a 2500ms budget' },
+    });
+
+    const content = await fs.readFile(filePath, 'utf-8');
+    expect(content).toContain('QA Gate: ⛔ BLOCK');
+    expect(content).toContain('p95 LCP 4200ms over a 2500ms budget');
+  });
+
   it('appends across multiple report() calls', async () => {
     const reporter = new GithubJobSummaryReporter({ filePath });
     const execution = fixtureExecution();

@@ -1,11 +1,13 @@
 import { spawn } from 'node:child_process';
 import { BrowserError, type CTRFReport } from '@warden/core';
 import { playwrightJsonToCtrf } from './playwright-ctrf';
+import { resolvePlaywrightCli } from './playwright-cli';
 
 /**
- * Integration glue that actually shells out to Playwright. This is intentionally NOT unit-tested
- * (it launches real browsers and a child process); the pure conversion it delegates to,
- * {@link playwrightJsonToCtrf}, is covered instead.
+ * Integration glue that actually shells out to Playwright. Launching real browsers is not
+ * unit-tested; which binary gets launched is — see `run-playwright.test.ts`, which drives a real
+ * child process through a stand-in CLI on disk. The pure conversion this delegates to,
+ * {@link playwrightJsonToCtrf}, is covered separately.
  */
 
 export interface RunPlaywrightOptions {
@@ -33,18 +35,20 @@ export interface RunPlaywrightOptions {
 }
 
 function shellPlaywright(opts: RunPlaywrightOptions): Promise<CTRFReport> {
-  const args = ['playwright', 'test', '--reporter=json'];
+  const args = ['test', '--reporter=json'];
   if (opts.grep) args.push('--grep', opts.grep);
   if (opts.configPath) args.push('--config', opts.configPath);
   if (opts.shard) args.push('--shard', opts.shard);
 
   const gridEnv = opts.connectUrl ? { PLAYWRIGHT_CONNECT_WS_ENDPOINT: opts.connectUrl } : {};
+  const env = { ...process.env, ...gridEnv, ...opts.env };
+  const cwd = opts.cwd ?? process.cwd();
+  // Resolved, never fetched: `npx playwright` installs the package when the repo has none, so a
+  // repo that never asked for Playwright got one downloaded and a run that tested nothing.
+  const cli = resolvePlaywrightCli(cwd, env);
 
   return new Promise<string>((resolve, reject) => {
-    const child = spawn('npx', args, {
-      cwd: opts.cwd,
-      env: { ...process.env, ...gridEnv, ...opts.env },
-    });
+    const child = spawn(cli, args, { cwd, env });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk: Buffer) => {
@@ -74,12 +78,24 @@ function shellPlaywright(opts: RunPlaywrightOptions): Promise<CTRFReport> {
   });
 }
 
-/** Run Playwright browser tests and return a CTRF report. */
+/**
+ * Run Playwright browser tests and return a CTRF report. Rejects with a {@link BrowserError} when
+ * the project has no Playwright installed — Warden will not download one to fill the gap.
+ */
 export function runPlaywright(opts: RunPlaywrightOptions = {}): Promise<CTRFReport> {
-  return shellPlaywright(opts);
+  return runOrReject(opts);
 }
 
 /** Run Playwright-driven API tests (defaults to the `@api` grep tag) and return a CTRF report. */
 export function runApiTests(opts: RunPlaywrightOptions = {}): Promise<CTRFReport> {
-  return shellPlaywright({ grep: '@api', ...opts });
+  return runOrReject({ grep: '@api', ...opts });
+}
+
+/** Keeps resolution failures on the returned promise rather than throwing synchronously. */
+function runOrReject(opts: RunPlaywrightOptions): Promise<CTRFReport> {
+  try {
+    return shellPlaywright(opts);
+  } catch (err) {
+    return Promise.reject(err);
+  }
 }

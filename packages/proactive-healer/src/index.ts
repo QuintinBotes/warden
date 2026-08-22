@@ -21,13 +21,19 @@ export {
   type SuggestRepairsOptions,
 } from './locator-repair-suggester.js';
 export { summarizeHealRate } from './summarize-heal-rate.js';
-export { isUnifiedDiff, renderLocatorCall, buildLocatorPatch } from './patch-utils.js';
+export {
+  isUnifiedDiff,
+  renderLocatorCall,
+  rewriteLocatorInLine,
+  buildLocatorPatch,
+} from './patch-utils.js';
 export {
   publishProactiveHeal,
   proactiveHealBranchName,
   PROACTIVE_HEAL_NOTE,
   type ProactiveHealPublishResult,
   type PublishProactiveHealOptions,
+  type UnappliedSuggestion,
 } from './publisher.js';
 export {
   runProactiveHeal,

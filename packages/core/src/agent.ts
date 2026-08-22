@@ -65,6 +65,13 @@ export interface AgentOutput {
   generatedFiles?: GeneratedFile[];
   diagnosis?: HealerDiagnosis;
   markdownReport: string;
+  /**
+   * `LLMProvider.name` of the provider that produced this output — `"anthropic"`, `"openai"`,
+   * `"gemini"`, `"ollama"`, or `"stub"` for a `--stub-provider` run that called no model.
+   * Optional because a strategy invoked directly does not set it; `warden agent` always does.
+   * Without it, an empty `findings` array cannot be told apart from a run that never happened.
+   */
+  provider?: string;
 }
 
 export interface AgentStrategy {

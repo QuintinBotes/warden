@@ -13,7 +13,7 @@ export {
   type OctokitResponse,
 } from './octokit-file-access.js';
 export { createOctokitGitHubAccess } from './octokit-github-access.js';
-export { createWebhookServer, type WebhookServerOptions } from './server.js';
+export { createWebhookServer, loadRepoConfig, type WebhookServerOptions } from './server.js';
 export {
   handleOverrideComment,
   parseOverrideCommand,

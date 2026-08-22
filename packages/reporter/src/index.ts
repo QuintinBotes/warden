@@ -4,7 +4,7 @@ export {
   renderVisualFindingsTable,
   renderVisualRegressionSection,
 } from './visual-comment-reporter.js';
-export { computeGateDecision } from './gate-decision.js';
+export { computeGateDecision, resolveGateDecision } from './gate-decision.js';
 export { CtrfReporter } from './ctrf-reporter.js';
 export {
   GithubJobSummaryReporter,

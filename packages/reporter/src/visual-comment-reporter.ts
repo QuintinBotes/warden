@@ -1,4 +1,5 @@
 import type { VisualFinding } from '@warden/core';
+import { escapeMarkdownCell } from '@warden/core';
 
 const SEVERITY_EMOJI: Record<VisualFinding['severity'], string> = {
   HIGH: '🔴',
@@ -8,7 +9,7 @@ const SEVERITY_EMOJI: Record<VisualFinding['severity'], string> = {
 
 /** Escapes pipe/newline characters so arbitrary text is safe inside a Markdown table cell. */
 function escapeCell(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+  return escapeMarkdownCell(value);
 }
 
 /** Renders `changedRatio` (0..1) as a percentage with two decimals. */

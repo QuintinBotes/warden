@@ -142,3 +142,41 @@ describe('playwrightJsonToCtrf', () => {
     expect(summary.stop).toBe(summary.start + 1234);
   });
 });
+
+describe('playwrightJsonToCtrf — an interrupted run', () => {
+  // Playwright marks every unfinished test `interrupted` when the run is cut short:
+  // `--max-failures` tripped, the global timeout hit, or the process took SIGINT/SIGTERM.
+  const interruptedJson = {
+    config: { version: '1.61.1' },
+    stats: { startTime: '2026-07-07T12:00:00.000Z', duration: 1200 },
+    suites: [
+      {
+        title: 'checkout.spec.ts',
+        file: 'e2e/checkout.spec.ts',
+        specs: [
+          {
+            title: 'adds to cart',
+            file: 'e2e/checkout.spec.ts',
+            tests: [{ results: [{ status: 'passed', duration: 100 }] }],
+          },
+          {
+            title: 'completes payment',
+            file: 'e2e/checkout.spec.ts',
+            tests: [{ results: [{ status: 'interrupted', duration: 0 }] }],
+          },
+        ],
+      },
+    ],
+  };
+
+  it('records an interrupted test as pending, never as skipped', () => {
+    const { tests } = playwrightJsonToCtrf(interruptedJson).results;
+    // `skipped` is a choice the author made; `pending` is a test that started and never finished.
+    expect(byName(tests, 'completes payment').status).toBe('pending');
+  });
+
+  it('counts the unfinished test under pending so the summary is not silently green', () => {
+    const { summary } = playwrightJsonToCtrf(interruptedJson).results;
+    expect(summary).toMatchObject({ tests: 2, passed: 1, failed: 0, skipped: 0, pending: 1 });
+  });
+});

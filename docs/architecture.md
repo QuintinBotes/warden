@@ -45,8 +45,8 @@ Warden is a pnpm + Turborepo monorepo of small, single-purpose packages that com
 | `@warden/agent` | The LLM provider abstraction (Claude by default) and the three agent strategies. |
 | `@warden/runner` | Browser engines (Playwright, Claude-Chrome) and the Playwright→CTRF converter, including captured media. |
 | `@warden/test-management` | Persistent SQLite execution history, Git-YAML test cases, the coverage matrix, and flake quarantine. |
-| `@warden/reporter` | The four reporting surfaces and PR-report rendering. |
-| `@warden/cli` | The `warden` binary that composes all of the above. |
+| `@warden/reporter` | The four reporting surfaces and PR-report rendering. Publishes the final gate the caller hands it on `ReportContext.gate`; derives one from test results only when the caller has none. |
+| `@warden/cli` | The `warden` binary that composes all of the above. Unpublished; [built from source](cli.md#installing). |
 | `warden-action` | The published GitHub Action. |
 
 ## The three agent strategies
@@ -61,7 +61,11 @@ Warden ships three AI agents, each behind the same `AgentStrategy` interface:
 
 The orchestrator's most important job is computing the **change surface** from the diff:
 
-- Files → changed modules (by convention, `apps/<module>/` and `src/features/<module>/`).
+- Files → changed modules: a changed file under one of `scope.modulePaths` (`apps/` and
+  `src/features/` by default) contributes the module named by its first two path segments.
+  A repo laid out any other way — `crates/`, `cmd/`, `libs/` — sets `scope.modulePaths` to its
+  own roots; left unset there, the change surface finds no modules and says so rather than
+  emitting empty tags that quietly widen the run.
 - Modules → Playwright test tags (`@apps/checkout`).
 - Shared/infrastructure changes (`lib/`, `shared/`, `packages/core/`, `*.config.ts`) escalate to the full suite.
 - High-risk patterns (`auth`, `payment`, `checkout`, …) raise the risk score, which selects the test tier.
@@ -83,7 +87,7 @@ Every seam is swappable:
 
 - **AI provider** — implement `LLMProvider` (Anthropic/Claude by default, with OpenAI, Gemini, and Ollama available).
 - **Browser engine** — implement `BrowserEngine` (Playwright, Claude-Chrome, and Stagehand available).
-- **Reporter** — implement `Reporter` for a new surface.
+- **Reporter** — implement `Reporter` for a new surface. Publish `ctx.gate` (or `resolveGateDecision(execution, ctx)`) as the verdict: it is the run's final worst-of decision, which `computeGateDecision(execution)` alone cannot see.
 - **Plugins** — Vite-style lifecycle hooks (`onPROpened`, `onTestExecutionComplete`, `onBugFound`, `onGateDecision`) plus provider/engine/reporter overrides.
 
 Swapping any of these is a config-level change, not a fork.

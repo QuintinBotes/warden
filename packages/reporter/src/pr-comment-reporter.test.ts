@@ -12,6 +12,25 @@ function makeMockOctokit() {
 }
 
 describe('PrCommentReporter', () => {
+  it('posts the final gate it was handed, not a PASS derived from the tests alone', async () => {
+    const octokit = makeMockOctokit();
+    const reporter = new PrCommentReporter(octokit);
+    const execution = fixtureExecution(); // every test passed
+
+    await reporter.report(execution, {
+      config: defineConfig(),
+      artifactsDir: '/tmp/artifacts',
+      prNumber: 482,
+      repo: { owner: 'acme', repo: 'checkout' },
+      gate: { decision: 'BLOCK', reason: '1 critical a11y violation' },
+    });
+
+    const body = octokit.issues.createComment.mock.calls[0]?.[0].body;
+    expect(body).toContain('QA Gate: ⛔ BLOCK');
+    expect(body).toContain('1 critical a11y violation');
+    expect(body).not.toContain('All tests passed');
+  });
+
   it('posts renderPrReport markdown as an issue comment', async () => {
     const octokit = makeMockOctokit();
     const reporter = new PrCommentReporter(octokit);

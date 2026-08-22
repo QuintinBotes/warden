@@ -58,6 +58,7 @@ describe('extractLocators', () => {
         kind: 'click',
         role: 'button',
         name: 'Buy',
+        sourceLine: "  await page.getByRole('button', { name: 'Buy' }).click();",
       },
       {
         filePath: 'tests/e2e/checkout.spec.ts',
@@ -66,6 +67,7 @@ describe('extractLocators', () => {
         kind: 'fill',
         role: 'label',
         name: 'Email',
+        sourceLine: "  await page.getByLabel('Email').fill('a@b.com');",
       },
       {
         filePath: 'tests/e2e/checkout.spec.ts',
@@ -74,6 +76,7 @@ describe('extractLocators', () => {
         kind: 'click',
         role: 'link',
         name: 'Terms',
+        sourceLine: "    .getByRole('link', { name: 'Terms', exact: true })",
       },
       {
         filePath: 'tests/e2e/session.spec.ts',
@@ -82,6 +85,7 @@ describe('extractLocators', () => {
         kind: 'click',
         role: 'button',
         name: 'Sign in',
+        sourceLine: "  await session.click('button', 'Sign in');",
       },
       {
         filePath: 'tests/e2e/session.spec.ts',
@@ -90,9 +94,23 @@ describe('extractLocators', () => {
         kind: 'fill',
         role: 'label',
         name: 'Username',
+        sourceLine: "  await session.fill('Username', 'admin');",
       },
     ];
     expect(refs).toEqual(expected);
+  });
+
+  it("carries each locator's exact source line, so a repair patch is one that applies", async () => {
+    const files = memFileAccess({ 'tests/e2e/checkout.spec.ts': checkout });
+    const lines = checkout.split('\n');
+
+    const refs = await extractLocators([tc('TC-1', 'tests/e2e/checkout.spec.ts')], files);
+
+    expect(refs.length).toBeGreaterThan(0);
+    for (const ref of refs) {
+      expect(ref.sourceLine).toBe(lines[ref.line - 1]);
+      expect(ref.sourceLine).toContain(ref.name);
+    }
   });
 
   it('ignores dynamic (non-string) locator names and non-locator code', async () => {

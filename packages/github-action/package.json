@@ -1,7 +1,7 @@
 {
   "name": "warden-action",
   "version": "0.4.1",
-  "description": "Warden GitHub Action — tiered AI QA on every PR",
+  "description": "Warden GitHub Action \u2014 tiered AI QA on every PR",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -29,6 +29,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@warden/cli": "workspace:*",
     "tsup": "^8.3.5",
     "typescript": "^5.6.3"
   }

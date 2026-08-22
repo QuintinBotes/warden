@@ -1,5 +1,5 @@
 import { WardenError, type Reporter, type ReportContext, type TestExecution } from '@warden/core';
-import { computeGateDecision } from './gate-decision.js';
+import { resolveGateDecision } from './gate-decision.js';
 import type { CheckRunAnnotation, OctokitChecksClient } from './octokit-like.js';
 import { renderPrReport } from './pr-report.js';
 
@@ -20,7 +20,7 @@ export class CheckRunReporter implements Reporter {
       );
     }
 
-    const gate = computeGateDecision(execution);
+    const gate = resolveGateDecision(execution, ctx);
     const summary = renderPrReport(execution, gate);
 
     const annotations: CheckRunAnnotation[] = execution.results

@@ -13,8 +13,14 @@ export { loadPrEvent, resolveRepo } from './event.js';
 export type { PrContext } from './event.js';
 export { parseGithubOutput, parseAggregateReport } from './parse.js';
 export type { AggregateReport, AggregateFailure, AggregateSummary } from './parse.js';
-export { renderPrReport, buildAnnotations, gateToConclusion, checkTitle } from './report.js';
-export type { PrReportInput } from './report.js';
+export {
+  renderPrReport,
+  buildAnnotations,
+  gateToConclusion,
+  checkTitle,
+  renderIncompleteTiers,
+} from './report.js';
+export type { PrReportInput, AgentTierOutcome } from './report.js';
 export {
   analyze as wardenAnalyze,
   runTier as wardenRunTier,
@@ -43,6 +49,7 @@ export type {
   GateVerdict,
   OctokitLike,
   RunResult,
+  TierFailure,
 } from './types.js';
 
 /** True when this module is the process entry point (the compiled Action). */

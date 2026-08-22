@@ -73,17 +73,26 @@ export interface DraftPrResult {
   number: number;
 }
 
-/** Minimal, injectable write access to GitHub for publishing suggestions. */
+/**
+ * Minimal, injectable write access to GitHub for publishing suggestions.
+ *
+ * Both file-carrying calls take WHOLE-FILE CONTENTS, never a diff: `openOrUpdateDraftPr` commits
+ * `content` as the file body (the GitHub contents API takes nothing else) and `addPrSuggestions`
+ * renders it into a suggestion block a reviewer commits with one click. A caller holding a patch
+ * must apply it first — `applyUnifiedDiff` — and publish nothing for a patch that does not apply.
+ */
 export interface GitHubAccess {
   openOrUpdateDraftPr(
     repo: RepoTarget,
     branch: string,
-    files: { path: string; content: string | null }[], // null content = delete
+    /** Whole-file contents, not diffs; `null` content = delete. */
+    files: { path: string; content: string | null }[],
     title: string,
     body: string,
   ): Promise<DraftPrResult>;
   addPrSuggestions(
     pr: PrRef,
+    /** Whole-file contents, not diffs — this is rendered as a committable suggestion. */
     files: { path: string; content: string }[],
     summary: string,
   ): Promise<void>;

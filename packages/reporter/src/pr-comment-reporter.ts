@@ -1,5 +1,5 @@
 import { WardenError, type Reporter, type ReportContext, type TestExecution } from '@warden/core';
-import { computeGateDecision } from './gate-decision.js';
+import { resolveGateDecision } from './gate-decision.js';
 import type { OctokitIssuesClient } from './octokit-like.js';
 import { renderPrReport } from './pr-report.js';
 
@@ -20,7 +20,7 @@ export class PrCommentReporter implements Reporter {
       throw new WardenError('ctx.repo is required to post a PR comment', 'REPORTER_NO_REPO');
     }
 
-    const gate = computeGateDecision(execution);
+    const gate = resolveGateDecision(execution, ctx);
     const body = renderPrReport(execution, gate);
 
     await this.octokit.issues.createComment({

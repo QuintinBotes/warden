@@ -75,6 +75,25 @@ describe('CheckRunReporter', () => {
     ]);
   });
 
+  it('concludes failure on a green test run whose final gate BLOCKed on another tier', async () => {
+    const octokit = makeMockOctokit();
+    const reporter = new CheckRunReporter(octokit);
+    const execution = fixtureExecution(); // every test passed
+
+    await reporter.report(execution, {
+      config: defineConfig(),
+      artifactsDir: '/tmp/artifacts',
+      headSha: 'abc123',
+      repo: { owner: 'acme', repo: 'checkout' },
+      gate: { decision: 'BLOCK', reason: '1 critical a11y violation' },
+    });
+
+    const call = octokit.checks.create.mock.calls[0]?.[0];
+    expect(call.conclusion).toBe('failure');
+    expect(call.output.summary).toContain('1 critical a11y violation');
+    expect(call.output.summary).not.toContain('All tests passed');
+  });
+
   it('throws a WardenError when repo or headSha is missing', async () => {
     const octokit = makeMockOctokit();
     const reporter = new CheckRunReporter(octokit);

@@ -25,6 +25,12 @@ export interface LocatorRef {
   role: string;
   /** Accessible name for `click`; label text for `fill`. */
   name: string;
+  /**
+   * The exact text of `line` as it stands in the file, when the ref came from a real source
+   * read. A repair patch built from it is one that APPLIES; without it the best a patch can do
+   * is describe the change in reconstructed form, and the publisher will not commit it blind.
+   */
+  sourceLine?: string;
 }
 
 export type LocatorStatus = 'resolved' | 'ambiguous' | 'missing';

@@ -78,13 +78,20 @@ interface FakeExecState {
   exec: ExecFn;
 }
 
-function fakeExec(aggregate: unknown, risk = '7', runFull = 'false'): FakeExecState {
+function fakeExec(
+  aggregate: unknown,
+  risk = '7',
+  runFull = 'false',
+  configured?: string,
+): FakeExecState {
   const calls: { command: string; args: string[] }[] = [];
   const exec: ExecFn = (command, args) => {
     calls.push({ command, args });
     if (args.includes('analyze')) {
+      // `configured` omitted reproduces a CLI old enough not to emit the line at all.
+      const provenance = configured === undefined ? '' : `configured=${configured}\n`;
       return Promise.resolve({
-        stdout: `test_tags=@apps/checkout\nrisk_score=${risk}\nrun_full_suite=${runFull}\n`,
+        stdout: `test_tags=@apps/checkout\nrisk_score=${risk}\nrun_full_suite=${runFull}\n${provenance}`,
         stderr: '',
       });
     }
@@ -231,6 +238,63 @@ describe('run', () => {
     expect(runCall).toBeDefined();
   });
 
+  it('never posts a silently confident green for a repository with no warden.config', async () => {
+    const passing = {
+      gate: { decision: 'PASS', reason: 'All tests passed' },
+      reportPath: 'warden-reports/warden-ctrf.json',
+      summary: { total: 1, passed: 1, failed: 0 },
+    };
+    const { exec } = fakeExec(passing, '3', 'false', 'false');
+
+    const result = await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: { GITHUB_REPOSITORY: 'acme/shop' },
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    // The gate itself is untouched: the tests that ran passed, so the check stays green.
+    expect(result.gate).toBe('PASS');
+    expect(octo.checks[0]?.conclusion).toBe('success');
+    // But every surface says where the risk score came from.
+    expect(core.warnings.some((w) => /no warden\.config/i.test(w))).toBe(true);
+    expect(octo.comments[0]?.body).toContain('warden.config');
+    expect(core.summaryRaw.join('\n')).toContain('warden.config');
+    expect(core.outputs.configured).toBe('false');
+    expect(result.configured).toBe(false);
+  });
+
+  it('claims a repository is configured only when the CLI said so', async () => {
+    const passing = { gate: { decision: 'PASS', reason: 'All tests passed' } };
+
+    const withLine = await run({
+      core,
+      octokit: octo.octokit,
+      exec: fakeExec(passing, '3', 'false', 'true').exec,
+      env: { GITHUB_REPOSITORY: 'acme/shop' },
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+    expect(withLine.configured).toBe(true);
+    expect(core.outputs.configured).toBe('true');
+
+    // An older CLI emits no `configured` line; unknown provenance is neither claim.
+    const core2 = fakeCore({ ...inputs });
+    const withoutLine = await run({
+      core: core2,
+      octokit: fakeOctokit().octokit,
+      exec: fakeExec(passing, '3', 'false').exec,
+      env: { GITHUB_REPOSITORY: 'acme/shop' },
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+    expect(withoutLine.configured).toBeUndefined();
+    expect(core2.outputs.configured).toBeUndefined();
+    expect(core2.warnings.some((w) => /warden\.config/i.test(w))).toBe(false);
+  });
+
   it('fails closed (BLOCK) when the aggregate step crashes', async () => {
     const exec: ExecFn = (_command, args) => {
       if (args.includes('analyze')) {
@@ -282,6 +346,95 @@ describe('run', () => {
     expect(core.outputs.gate).toBe('PASS');
     expect(core.failed).toHaveLength(0);
     expect(octo.checks[0]?.conclusion).toBe('success');
+  });
+
+  it('says the agent did not run — and why — when the agent tier fails', async () => {
+    const passReport = {
+      gate: { decision: 'PASS', reason: 'All exit criteria met' },
+      reportPath: 'warden-reports/warden-ctrf.json',
+      summary: { total: 10, passed: 10, failed: 0 },
+      failures: [],
+      findings: [],
+    };
+    const exec: ExecFn = (_command, args) => {
+      if (args.includes('analyze')) {
+        return Promise.resolve({
+          stdout: 'test_tags=@apps/checkout\nrisk_score=8\nrun_full_suite=false\n',
+          stderr: '',
+        });
+      }
+      if (args.includes('aggregate')) {
+        return Promise.resolve({ stdout: JSON.stringify(passReport), stderr: '' });
+      }
+      if (args.includes('agent')) {
+        return Promise.reject(new Error("error: unknown option '--provider'"));
+      }
+      return Promise.resolve({ stdout: '{}', stderr: '' });
+    };
+
+    const result = await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: { GITHUB_REPOSITORY: 'acme/shop' },
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    expect(result.ranAgent).toBe(false);
+    // The PR comment, the job summary and the check-run all carry the same Markdown, so none of
+    // them may credit an agent that crashed before it made a single request.
+    const body = octo.comments[0]?.body ?? '';
+    expect(body).not.toContain('No bugs found');
+    expect(body).toContain('did not report on this PR');
+    expect(body).toContain("unknown option '--provider'");
+    expect(core.summaryRaw.join('\n')).not.toContain('No bugs found');
+    expect(octo.checks[0]?.output?.summary ?? '').not.toContain('No bugs found');
+  });
+
+  it('says the agent was skipped, not clean, when risk is below the threshold', async () => {
+    const passReport = {
+      gate: { decision: 'PASS', reason: 'All exit criteria met' },
+      reportPath: 'warden-reports/warden-ctrf.json',
+      summary: { total: 10, passed: 10, failed: 0 },
+      failures: [],
+      findings: [],
+    };
+    const { exec } = fakeExec(passReport, '2', 'false');
+    await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: {},
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    const body = octo.comments[0]?.body ?? '';
+    expect(body).not.toContain('No bugs found');
+    expect(body).toContain('risk 2 is below the threshold of 4');
+  });
+
+  it('still reports a clean agent run as clean', async () => {
+    const passReport = {
+      gate: { decision: 'PASS', reason: 'All exit criteria met' },
+      reportPath: 'warden-reports/warden-ctrf.json',
+      summary: { total: 10, passed: 10, failed: 0 },
+      failures: [],
+      findings: [],
+    };
+    const { exec } = fakeExec(passReport, '8', 'false');
+    const result = await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: {},
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    expect(result.ranAgent).toBe(true);
+    expect(octo.comments[0]?.body ?? '').toContain('No bugs found by the AI exploratory agent');
   });
 
   it('runs the full regression suite when run_full_suite is true', async () => {
@@ -366,5 +519,298 @@ describe('run', () => {
     });
 
     expect(seen).toHaveLength(0);
+  });
+
+  it('fails closed (BLOCK) when a test tier crashes, naming the lost tier on every surface', async () => {
+    // The regression tier — the one selected to cover this diff — dies. The smoke tier's CTRF
+    // file survives, so `warden report aggregate` scores a green subset of the suite.
+    const exec: ExecFn = (_command, args) => {
+      const sub = args.slice(args.indexOf('warden') + 1).join(' ');
+      if (sub.startsWith('analyze')) {
+        return Promise.resolve({
+          stdout: 'test_tags=@apps/checkout\nrisk_score=2\nrun_full_suite=false\n',
+          stderr: '',
+        });
+      }
+      if (sub.startsWith('run --grep @apps/checkout')) {
+        return Promise.reject(new Error('playwright: browser crashed (SIGKILL)'));
+      }
+      if (sub.startsWith('report aggregate')) {
+        return Promise.resolve({
+          stdout: JSON.stringify({
+            gate: { decision: 'PASS', reason: 'All tests passed' },
+            summary: { total: 3, passed: 3, failed: 0 },
+          }),
+          stderr: '',
+        });
+      }
+      return Promise.resolve({ stdout: '{}', stderr: '' });
+    };
+
+    const result = await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: { GITHUB_REPOSITORY: 'acme/shop' },
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    // A verdict over an unknown subset of the suite is not a PASS.
+    expect(result.gate).toBe('BLOCK');
+    expect(core.outputs.gate).toBe('BLOCK');
+    expect(result.incompleteTiers).toEqual([
+      { name: 'regression', message: 'playwright: browser crashed (SIGKILL)' },
+    ]);
+    expect(core.outputs['incomplete-tiers']).toBe('regression');
+
+    // The step is red, not green-with-a-warning.
+    expect(core.failed.length).toBeGreaterThan(0);
+    expect(core.failed.join('\n')).toContain('regression');
+
+    // Surface 4: the check run is a failure and its title says what was lost.
+    expect(octo.checks[0]?.conclusion).toBe('failure');
+    expect(octo.checks[0]?.output?.title).toMatch(/regression/);
+    expect(octo.checks[0]?.output?.title).not.toBe('Warden QA: PASS');
+
+    // Surfaces 2 and 3: the job summary and the PR comment both say a tier was lost, and why.
+    const summaryText = core.summaryRaw.join('\n');
+    expect(summaryText).toContain('regression');
+    expect(summaryText).toContain('browser crashed');
+    expect(octo.comments[0]?.body).toContain('browser crashed');
+  });
+
+  it('fails closed when the risk-gated AI agent tier crashes', async () => {
+    const exec: ExecFn = (_command, args) => {
+      const sub = args.slice(args.indexOf('warden') + 1).join(' ');
+      if (sub.startsWith('analyze')) {
+        return Promise.resolve({
+          stdout: 'test_tags=@apps/checkout\nrisk_score=8\nrun_full_suite=false\n',
+          stderr: '',
+        });
+      }
+      if (sub.startsWith('agent')) {
+        return Promise.reject(new Error('anthropic: 529 overloaded'));
+      }
+      if (sub.startsWith('report aggregate')) {
+        return Promise.resolve({
+          stdout: JSON.stringify({
+            gate: { decision: 'PASS', reason: 'All tests passed' },
+            summary: { total: 9, passed: 9, failed: 0 },
+          }),
+          stderr: '',
+        });
+      }
+      return Promise.resolve({ stdout: '{}', stderr: '' });
+    };
+
+    const result = await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: {},
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    expect(result.ranAgent).toBe(false);
+    expect(result.gate).toBe('BLOCK');
+    expect(result.incompleteTiers.map((t) => t.name)).toEqual(['agent']);
+    expect(core.failed.length).toBeGreaterThan(0);
+  });
+
+  it('keeps the aggregate BLOCK reason when a tier also failed to complete', async () => {
+    const exec: ExecFn = (_command, args) => {
+      const sub = args.slice(args.indexOf('warden') + 1).join(' ');
+      if (sub.startsWith('analyze')) {
+        return Promise.resolve({
+          stdout: 'test_tags=@apps/checkout\nrisk_score=1\nrun_full_suite=false\n',
+          stderr: '',
+        });
+      }
+      if (sub.startsWith('run --grep @smoke')) {
+        return Promise.reject(new Error('runner evicted'));
+      }
+      if (sub.startsWith('report aggregate')) {
+        return Promise.resolve({ stdout: JSON.stringify(BLOCK_REPORT), stderr: '' });
+      }
+      return Promise.resolve({ stdout: '{}', stderr: '' });
+    };
+
+    await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: {},
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    const failed = core.failed.join('\n');
+    expect(failed).toContain('smoke');
+    expect(failed).toContain('1 CRITICAL failure(s)');
+  });
+
+  it('reports no incomplete tiers when every tier completes', async () => {
+    const passReport = {
+      gate: { decision: 'PASS', reason: 'All exit criteria met' },
+      reportPath: 'warden-reports/warden-ctrf.json',
+      summary: { total: 10, passed: 10, failed: 0 },
+    };
+    const { exec } = fakeExec(passReport, '2', 'false');
+    const result = await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: {},
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    expect(result.incompleteTiers).toEqual([]);
+    expect(core.outputs['incomplete-tiers']).toBe('');
+    expect(result.gate).toBe('PASS');
+    expect(core.summaryRaw.join('\n')).not.toContain('did not complete');
+  });
+
+  it('treats an unreadable diff as an unknown change surface, not as risk 0', async () => {
+    // `actions/checkout` defaults to `fetch-depth: 1`, which leaves the PR's base commit out of
+    // the clone, so `git diff <base> <head>` cannot run. That is an absent measurement. Read as a
+    // measured 0 it silently deselects the whole pipeline: the diff-scoped tier falls back to
+    // `@smoke` (already run), the agent is skipped, and the report claims LOW risk.
+    const seen: string[] = [];
+    const exec: ExecFn = (_command, args) => {
+      const sub = args.slice(args.indexOf('warden') + 1).join(' ');
+      seen.push(sub);
+      if (sub.startsWith('analyze')) {
+        return Promise.reject(
+          new Error(
+            'Failed to run `git diff --name-status base-sha-000 head-sha-123`: fatal: bad object base-sha-000',
+          ),
+        );
+      }
+      if (sub.startsWith('report aggregate')) {
+        return Promise.resolve({
+          stdout: JSON.stringify({
+            gate: { decision: 'PASS', reason: 'All tests passed' },
+            summary: { total: 4, passed: 4, failed: 0 },
+          }),
+          stderr: '',
+        });
+      }
+      return Promise.resolve({ stdout: '', stderr: '' });
+    };
+
+    const result = await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: { GITHUB_REPOSITORY: 'acme/shop' },
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    // Surface 1: the output says unknown. `0` would be indistinguishable from a measured 0.
+    expect(result.riskScore).toBeNull();
+    expect(core.outputs['risk-score']).toBe('unknown');
+
+    // Scope escalates instead of collapsing: the full regression suite runs, and the smoke tier
+    // is not run twice under a different name.
+    expect(seen.filter((s) => s.startsWith('run --grep @smoke')).length).toBe(1);
+    expect(seen.some((s) => s.startsWith('run --grep @regression'))).toBe(true);
+
+    // An unknown risk cannot be below the threshold, so the agent is not skipped.
+    expect(result.ranAgent).toBe(true);
+    expect(seen.some((s) => s.startsWith('agent'))).toBe(true);
+
+    // Surfaces 2, 3 and 4 all say unknown, and none of them claims LOW risk.
+    const summaryText = core.summaryRaw.join('\n');
+    const body = octo.comments[0]?.body ?? '';
+    const check = octo.checks[0]?.output?.summary ?? '';
+    for (const text of [summaryText, body, check]) {
+      expect(text).toContain('**Risk Score:** unknown');
+      expect(text).not.toContain('0/10');
+      expect(text).not.toContain('LOW');
+      expect(text).toContain('fatal: bad object base-sha-000');
+      expect(text).toContain('fetch-depth: 0');
+    }
+  });
+
+  it.each([
+    ['no output at all', ''],
+    ['no risk_score key', 'test_tags=@apps/checkout\nrun_full_suite=false\n'],
+    ['an empty risk_score', 'risk_score=\n'],
+    ['an unreadable risk_score', 'risk_score=n/a\n'],
+  ])('does not invent a risk score when analyze completes with %s', async (_name, stdout) => {
+    // `Number('')` is 0 and `Number(undefined)` is NaN; neither absence is a measurement of zero.
+    const exec: ExecFn = (_command, args) => {
+      const sub = args.slice(args.indexOf('warden') + 1).join(' ');
+      if (sub.startsWith('analyze')) return Promise.resolve({ stdout, stderr: '' });
+      if (sub.startsWith('report aggregate')) {
+        return Promise.resolve({
+          stdout: JSON.stringify({ gate: { decision: 'PASS', reason: 'ok' } }),
+          stderr: '',
+        });
+      }
+      return Promise.resolve({ stdout: '', stderr: '' });
+    };
+
+    const result = await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: {},
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    expect(result.riskScore).toBeNull();
+    expect(core.outputs['risk-score']).toBe('unknown');
+    expect(result.ranAgent).toBe(true);
+  });
+
+  it('still reports a measured risk of 0 as a measurement', async () => {
+    const passReport = { gate: { decision: 'PASS', reason: 'All exit criteria met' } };
+    const { exec } = fakeExec(passReport, '0', 'false');
+    const result = await run({
+      core,
+      octokit: octo.octokit,
+      exec,
+      env: {},
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    expect(result.riskScore).toBe(0);
+    expect(core.outputs['risk-score']).toBe('0');
+    expect(result.ranAgent).toBe(false);
+    expect(octo.comments[0]?.body).toContain('0/10');
+    expect(octo.comments[0]?.body).not.toContain('unknown');
+  });
+
+  it('says the selective tier fell back to smoke when analyze produced no tags', async () => {
+    const { calls, exec } = fakeExec(BLOCK_REPORT, '2', 'false');
+    // A repo whose modules are not under `apps/` or `src/features/`: analyze finds nothing.
+    const noTags: ExecFn = (command, args) =>
+      args.includes('analyze')
+        ? Promise.resolve({
+            stdout: 'test_tags=\nrisk_score=2\nrun_full_suite=false\n',
+            stderr: '',
+          })
+        : exec(command, args);
+
+    await run({
+      core,
+      octokit: octo.octokit,
+      exec: noTags,
+      env: {},
+      eventPath: '/event.json',
+      fs: fakeFs(PR_EVENT),
+    });
+
+    expect(core.warnings.some((w) => w.includes('scope.modulePaths'))).toBe(true);
+    // And the fallback it warned about is the one the regression tier actually took.
+    const regression = calls.find((c) => c.args.some((a) => a.endsWith('regression.ctrf.json')));
+    expect(regression?.args).toContain('@smoke');
   });
 });

@@ -67,4 +67,36 @@ describe('computeChangeSurface', () => {
     expect(surface.riskScore).toBe(risk.score);
     expect(surface.riskReasons).toEqual(risk.reasons);
   });
+
+  it('derives modules from a configured modulePaths layout that is not apps/ or src/features/', () => {
+    // A Rust workspace: nothing lives under `apps/`, so the shipped default finds no module.
+    const rust = defineConfig({ scope: { modulePaths: ['crates/'] } });
+    const surface = computeChangeSurface(
+      [file('crates/agent-runtime/src/lib.rs'), file('crates/block-engine/src/parse.rs')],
+      rust,
+    );
+    expect(surface.changedModules).toEqual(['crates/agent-runtime', 'crates/block-engine']);
+    expect(surface.testTags).toEqual(['@crates/agent-runtime', '@crates/block-engine']);
+    expect(surface.scopeWarning).toBeUndefined();
+  });
+
+  it('accepts a modulePaths prefix written without its trailing slash', () => {
+    const go = defineConfig({ scope: { modulePaths: ['internal'] } });
+    const surface = computeChangeSurface(
+      [file('internal/billing/charge.go'), file('internals-notes/README.md')],
+      go,
+    );
+    expect(surface.changedModules).toEqual(['internal/billing']);
+  });
+
+  it('says why selective testing has no tags when nothing matched modulePaths', () => {
+    const surface = computeChangeSurface([file('crates/agent-runtime/src/lib.rs')], cfg);
+    expect(surface.testTags).toEqual([]);
+    expect(surface.scopeWarning).toContain('scope.modulePaths');
+    expect(surface.scopeWarning).toContain('apps/');
+  });
+
+  it('does not warn about an empty diff, which is not a misconfiguration', () => {
+    expect(computeChangeSurface([], cfg).scopeWarning).toBeUndefined();
+  });
 });

@@ -10,6 +10,7 @@ export { PlaywrightEngine } from './playwright-engine';
 export { ClaudeChromeEngine, type ClaudeChromeMcpClient } from './claude-chrome-engine';
 export { playwrightJsonToCtrf, type PlaywrightJsonToCtrfOptions } from './playwright-ctrf';
 export { runPlaywright, runApiTests, type RunPlaywrightOptions } from './run-playwright';
+export { findPlaywrightCli, resolvePlaywrightCli, PLAYWRIGHT_BIN_ENV } from './playwright-cli';
 
 // --- Work-stream A: stagehand + k6 + zap + appium ---
 

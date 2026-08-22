@@ -1,5 +1,6 @@
 import {
   contentId,
+  readPriority,
   type CTRFReport,
   type TestExecution,
   type TestResult,
@@ -8,8 +9,13 @@ import {
 
 /**
  * Maps a CTRF test status onto the Warden `TestStatus` enum. CTRF's `pending` roughly
- * corresponds to a test that was started but never finished, which we treat as `BLOCKED`;
- * `other` (a catch-all in CTRF) is treated as `SKIP` since there is no better analog.
+ * corresponds to a test that was started but never finished, which we treat as `BLOCKED` —
+ * and `BLOCKED` blocks the merge gate, because an unfinished test's result is unknown.
+ * That is where Playwright's `interrupted` lands.
+ *
+ * `other` (a catch-all in CTRF) is treated as `SKIP`: the runners that emit it do so for
+ * findings that are deliberately non-blocking — an informational ZAP alert, a visual diff
+ * configured with `gate: 'warn'` — so it must not be conflated with an unfinished test.
  */
 const CTRF_STATUS_MAP: Record<CTRFReport['results']['tests'][number]['status'], TestStatus> = {
   passed: 'PASS',
@@ -59,6 +65,12 @@ export function ctrfToExecution(
       flakeFlag: meta?.flakeFlag ?? false,
       artifacts: [],
     };
+    // Criticality reaches the gate only if the runner marked it. `blockOnCritical` and
+    // `warnOnHighCount` are decided on this field, so an unmarked test stays unmarked.
+    const priority = readPriority(test);
+    if (priority !== undefined) {
+      result.priority = priority;
+    }
     if (test.filePath !== undefined) {
       result.filePath = test.filePath;
     }

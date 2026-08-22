@@ -21,7 +21,8 @@ project.
 
 Every example follows the same three steps described in [Getting Started](../docs/getting-started.md):
 
-1. **Scaffold**: run `npx warden init` in your copied project (or hand-copy `warden.config.ts` and
+1. **Scaffold**: build the CLI ([CLI Reference](../docs/cli.md#installing) — it is not on npm yet)
+   and run `warden init` in your copied project (or hand-copy `warden.config.ts` and
    `.github/workflows/ai-qa.yml` from the [GitHub Action guide](../docs/github-action.md) — the
    reference workflow lives at [`packages/github-action/ai-qa.example.yml`](../packages/github-action/ai-qa.example.yml)).
 2. **Add the `ANTHROPIC_API_KEY` secret** so the AI exploratory tier and PR report can run.
