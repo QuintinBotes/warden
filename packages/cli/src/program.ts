@@ -94,6 +94,12 @@ export function buildProgram(deps: ProgramDeps = {}): Command {
     const message = err instanceof Error ? err.message : String(err);
     stderr.write(`warden: ${message}\n`);
     proc.exitCode = 1;
+    // Marked as already reported, then rethrown. The throw is what stops the action and what
+    // the tests assert on; the mark is what stops `bin/warden.ts` printing the same failure a
+    // second time as a raw Node rejection. Without it a user sees the sentence this line wrote
+    // and then twenty lines of stack for the same event, and in a CI log the sentence is the
+    // part that scrolls away.
+    if (err instanceof Error) (err as Error & { wardenReported?: true }).wardenReported = true;
     throw err;
   }
 
