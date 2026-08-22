@@ -598,6 +598,15 @@
   color: var(--ink2);
   margin: 0;
 }
+.sentinel-replay-emptyhint {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--ink2);
+  /* Long enough to be a sentence, short enough not to become the panel. */
+  max-width: 34rem;
+  margin: 0.5rem 0 0;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .sentinel-switch-btn {

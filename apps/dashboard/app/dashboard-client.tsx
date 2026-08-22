@@ -284,6 +284,10 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
   const selected = data.results.find((r) => r.id === selectedId) ?? null;
   const failing = data.results.filter((r) => isFailing(r.status)).length;
 
+  // Whether ANY result in the run captured replay media. Derived from the same `results`
+  // the list draws, so it cannot drift from what the panel would actually have to show.
+  const runHasMedia = useMemo(() => data.results.some((r) => r.replay !== null), [data.results]);
+
   // Only offer statuses the run actually produced: a filter for a status that cannot
   // appear is a control that can only ever return nothing.
   const statusesPresent = useMemo(
@@ -471,12 +475,16 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
         <section className="wd-section">
           <SectionHead
             eyebrow="Replay"
-            title={selected ? selected.name : 'Replay'}
-            subtitle={selected?.replay?.errorMessage ?? undefined}
+            // Heading a specific test over an empty panel reads as "this test's replay is
+            // missing". When no result in the run captured any, that is a claim about the
+            // runner, not about the selected test, so the head names neither.
+            title={runHasMedia && selected ? selected.name : 'Replay'}
+            subtitle={(runHasMedia ? selected?.replay?.errorMessage : null) ?? undefined}
           />
           <ReplayViewer
-            screenshots={selected?.replay?.screenshots}
-            tracePath={selected?.replay?.tracePath}
+            screenshots={runHasMedia ? selected?.replay?.screenshots : undefined}
+            tracePath={runHasMedia ? selected?.replay?.tracePath : undefined}
+            emptyScope={runHasMedia ? 'test' : 'run'}
           />
         </section>
       </div>

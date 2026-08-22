@@ -30,4 +30,18 @@ describe('ReplayViewer', () => {
     expect(screen.getByText(/No replay media/i)).toBeInTheDocument();
     expect(container.querySelector('.sentinel-replay--empty')).toBeInTheDocument();
   });
+
+  it('blames the test, not the run, when only this test is missing media', () => {
+    render(<ReplayViewer />);
+    expect(screen.getByText('No replay media captured for this test.')).toBeInTheDocument();
+  });
+
+  it('says the run captured nothing, and what does capture media, when scoped to the run', () => {
+    render(<ReplayViewer emptyScope="run" />);
+    expect(
+      screen.getByText('No replay media was captured anywhere in this run.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Playwright run with screenshots or tracing/i)).toBeInTheDocument();
+    expect(screen.getByText(/Vitest capture none/i)).toBeInTheDocument();
+  });
 });

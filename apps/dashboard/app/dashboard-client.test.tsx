@@ -166,3 +166,52 @@ describe('DashboardClient — the test-results list', () => {
     expect(screen.getByRole('heading', { name: 'unit › case 003' })).toBeInTheDocument();
   });
 });
+
+describe('DashboardClient — the replay panel', () => {
+  const withReplay = (r: ResultRow): ResultRow => ({
+    ...r,
+    replay: {
+      errorMessage: null,
+      screenshots: ['data:image/svg+xml;utf8,<svg/>'],
+      tracePath: 'data:application/json,{}',
+    },
+  });
+
+  it('does not head a test name when no result in the run captured any media', () => {
+    // Every result has replay: null — a Vitest run, which captures no screenshots.
+    render(<DashboardClient data={makeData(passingResults(3))} />);
+
+    expect(screen.queryByRole('heading', { name: 'unit › case 001' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Replay' })).toBeInTheDocument();
+  });
+
+  it('says the absence is the run’s, and what does capture media, when the run has none', () => {
+    render(<DashboardClient data={makeData(passingResults(3))} />);
+
+    expect(
+      screen.getByText('No replay media was captured anywhere in this run.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Playwright run with screenshots or tracing/i)).toBeInTheDocument();
+  });
+
+  it('blames the selected test when the run has media but that test does not', () => {
+    const results = passingResults(3);
+    results[0] = withReplay(results[0]!);
+
+    render(<DashboardClient data={makeData(results)} />);
+    fireEvent.click(screen.getByText('unit › case 002'));
+
+    expect(screen.getByRole('heading', { name: 'unit › case 002' })).toBeInTheDocument();
+    expect(screen.getByText('No replay media captured for this test.')).toBeInTheDocument();
+  });
+
+  it('shows the media when the selected test captured some', () => {
+    const results = passingResults(3).map(withReplay);
+
+    render(<DashboardClient data={makeData(results)} />);
+
+    expect(screen.getByRole('heading', { name: 'unit › case 001' })).toBeInTheDocument();
+    expect(screen.getByAltText('Screenshot 1')).toBeInTheDocument();
+    expect(screen.getByText('Download trace')).toBeInTheDocument();
+  });
+});
