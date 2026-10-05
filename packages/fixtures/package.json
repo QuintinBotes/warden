@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@warden/core": "workspace:*",
-    "js-yaml": "^5.2.1"
+    "js-yaml": "^5.4.2"
   },
   "devDependencies": {
     "tsup": "^8.3.5",
